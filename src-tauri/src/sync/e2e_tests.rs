@@ -107,6 +107,12 @@ impl Device {
     pub(super) fn new() -> Device {
         let dir = tempfile::tempdir().expect("device dir");
         let conn = db::open(&dir.path().join("todo.sqlite3")).expect("open db");
+        // The tests assert French texts (default board columns…).
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('language', '\"fr\"')",
+            [],
+        )
+        .expect("pin the language");
         Device {
             db: Arc::new(Mutex::new(conn)),
             _dir: dir,

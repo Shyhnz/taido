@@ -227,3 +227,12 @@ case "$input" in *"Codex : C'est fait."*) echo "Création de test.txt par Codex"
         Some("Création de test.txt par Codex")
     );
 }
+
+#[test]
+fn the_instruction_is_english_and_names_the_language_of_the_recap() {
+    let en = system_prompt("Codex", Language::En);
+    assert!(en.contains("a single sentence in English"), "{en}");
+    let fr = system_prompt("Claude Code", Language::Fr);
+    assert!(fr.contains("a single sentence in French"), "{fr}");
+    assert!(fr.contains("Claude Code"));
+}

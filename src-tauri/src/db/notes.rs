@@ -10,6 +10,7 @@ use rusqlite::{params, Connection, OptionalExtension, Row};
 use crate::db::positions::{self, Scope};
 use crate::db::{new_id, non_empty, now_utc, subjects, tasks};
 use crate::error::{AppError, AppResult};
+use crate::i18n::{self, Language};
 use crate::model::{
     CreateNoteGroupInput, CreateNotePageInput, MoveNotePageInput, NoteGroup, NoteKind,
     NoteLinkKind, NoteLinkRef, NotePage, NoteTarget, ReorderInput, UpdateNoteGroupInput,
@@ -21,8 +22,6 @@ pub const MAX_NOTE_BODY_BYTES: usize = sync_proto::MAX_NOTE_BODY_BYTES;
 /// Longest page title (bytes): the sync protocol's limit.
 pub const MAX_NOTE_TITLE_BYTES: usize = sync_proto::MAX_NOTE_TITLE_BYTES;
 
-/// The refusal of restoring a page whose project is in the trash.
-pub const TRASHED_PROJECT: &str = "Le projet de cette page est dans la corbeille.";
 const GROUP_COLUMNS: &str = "id, subject_id, name, position";
 /// The pages of a project in the trash (or of a sub-project whose parent is) are out of reach
 /// until it is restored: `FROM note_pages np` + this, then `WHERE np.deleted_at IS NULL AND
@@ -259,9 +258,10 @@ pub fn move_page(conn: &Connection, input: &MoveNotePageInput) -> AppResult<Note
             )?;
         }
         NoteTarget::Summaries if page.kind != NoteKind::Summary => {
-            return Err(AppError::Invalid(
-                "only a summary goes to « Résumés de tâches »".into(),
-            ));
+            return Err(AppError::Invalid(format!(
+                "only a summary goes to \"{}\"",
+                i18n::task_summaries(i18n::current_language(&tx))
+            )));
         }
         target => {
             // A summary sent outside any group goes to « Résumés de tâches ».
@@ -310,18 +310,16 @@ pub fn set_pinned(conn: &Connection, id: &str, pinned: bool) -> AppResult<NotePa
     get_page(conn, id)
 }
 
-/// Suffix of a duplicated page's title.
-const COPY_SUFFIX: &str = " (copie)";
-
-/// « <title> (copie) », the title cut (on a character boundary) so the whole stays within
-/// [`MAX_NOTE_TITLE_BYTES`].
-fn copy_title(title: &str) -> String {
-    let room = MAX_NOTE_TITLE_BYTES.saturating_sub(COPY_SUFFIX.len());
+/// « <title> (copy) » (« (copie) »), the title cut (on a character boundary) so the whole
+/// stays within [`MAX_NOTE_TITLE_BYTES`].
+fn copy_title(lang: Language, title: &str) -> String {
+    let suffix = i18n::copy_suffix(lang);
+    let room = MAX_NOTE_TITLE_BYTES.saturating_sub(suffix.len());
     let mut end = title.len().min(room);
     while !title.is_char_boundary(end) {
         end -= 1;
     }
-    format!("{}{COPY_SUFFIX}", title[..end].trim_end())
+    format!("{}{suffix}", title[..end].trim_end())
 }
 
 /// Copies a page (title « … (copie) », same text, kind and group, not pinned) right after
@@ -345,7 +343,7 @@ pub fn duplicate_page(conn: &Connection, id: &str) -> AppResult<NotePage> {
             page.subject_id,
             page.group_id,
             page.kind.as_str(),
-            copy_title(&page.title),
+            copy_title(i18n::current_language(&tx), &page.title),
             page.body,
             page.source_task_id,
             position,
@@ -376,7 +374,9 @@ pub fn restore_page(conn: &Connection, id: &str) -> AppResult<NotePage> {
     );
     let live: Option<bool> = conn.query_row(&sql, [id], |r| r.get(0)).optional()?;
     if live == Some(false) {
-        return Err(AppError::Invalid(TRASHED_PROJECT.into()));
+        return Err(AppError::Invalid(
+            i18n::trashed_project(i18n::current_language(conn)).into(),
+        ));
     }
     let n = conn.execute(
         "UPDATE note_pages SET deleted_at = NULL, updated_at = ?2 \
@@ -990,7 +990,7 @@ mod tests {
         subjects::delete(&conn, &s).expect("trash project");
         let refused = restore_page(&conn, &p.id);
         assert!(
-            matches!(&refused, Err(AppError::Invalid(m)) if m == TRASHED_PROJECT),
+            matches!(&refused, Err(AppError::Invalid(m)) if m == i18n::trashed_project(Language::Fr)),
             "{refused:?}"
         );
         let stamp: Option<String> = conn
@@ -1451,6 +1451,22 @@ mod tests {
         assert_eq!(
             (sum_copy.kind, sum_copy.group_id),
             (NoteKind::Summary, None)
+        );
+    }
+
+    #[test]
+    fn the_copy_suffix_follows_the_language() {
+        let conn = open_in_memory().expect("db");
+        let s = subject(&conn, "S");
+        let p = page_in(&conn, &s, None, "A");
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('language', '\"en\"')",
+            [],
+        )
+        .expect("en");
+        assert_eq!(
+            duplicate_page(&conn, &p.id).expect("copy").title,
+            "A (copy)"
         );
     }
 

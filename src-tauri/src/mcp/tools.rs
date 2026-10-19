@@ -77,7 +77,7 @@ pub fn definitions() -> Value {
                     },
                     "inbox": {
                         "type": "boolean",
-                        "description": "true: the tasks without a project (« Sans projet »)."
+                        "description": "true: the tasks without a project (the Inbox)."
                     }
                 },
                 "additionalProperties": false
@@ -110,7 +110,7 @@ pub fn definitions() -> Value {
                     },
                     "inbox": {
                         "type": "boolean",
-                        "description": "true: no project (« Sans projet »)."
+                        "description": "true: no project (the Inbox)."
                     },
                     "due_date": {
                         "type": "string",
@@ -339,7 +339,7 @@ fn list_projects(conn: &Connection, current: &str) -> AppResult<Outcome> {
     read_only(&json!({
         "current_task": current_ref(&detail),
         "projects": projects,
-        "inbox": "Tasks without a project (« Sans projet »): pass inbox=true.",
+        "inbox": "Tasks without a project (the Inbox): pass inbox=true.",
     }))
 }
 
@@ -350,7 +350,7 @@ struct ListTasksArgs {
     inbox: bool,
 }
 
-/// Open tasks of « Sans projet », or of a project **and its sub-projects** (product decision,
+/// Open tasks of the Inbox, or of a project **and its sub-projects** (product decision,
 /// 2026-10-05: listing « Globex » must find a task of « Globex › Hooli »), each naming its project.
 fn list_tasks(conn: &Connection, current: &str, args: &Value) -> AppResult<Outcome> {
     let a: ListTasksArgs = parse(args)?;
@@ -452,11 +452,11 @@ fn place(
     Ok((d.subject.map(|s| s.id), d.section.map(|s| s.id)))
 }
 
-/// « Perso › Maison », « Perso » or « Sans projet ».
+/// « Perso › Maison », « Perso » or the Inbox.
 fn place_label(conn: &Connection, d: &TaskDetail) -> AppResult<String> {
     let project = match &d.subject {
         Some(s) => subjects::label(conn, &s.id)?,
-        None => return Ok("« Sans projet »".into()),
+        None => return Ok("Inbox".into()),
     };
     Ok(match &d.section {
         Some(sec) => format!("{project} › {}", sec.name),
@@ -588,7 +588,7 @@ fn notebook_project(
             .map(|s| s.id)
             .ok_or_else(|| {
                 AppError::Invalid(
-                    "the current task has no project (« Sans projet »): pass project_id".into(),
+                    "the current task has no project (the Inbox): pass project_id".into(),
                 )
             })?,
     };

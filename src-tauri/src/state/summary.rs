@@ -5,6 +5,8 @@ use std::path::Path;
 
 use serde_json::Value;
 
+use crate::i18n::{activity, Language};
+
 /// Question line shown for Waiting(Question).
 pub const QUESTION_MAX: usize = 160;
 /// « Claude a fini · {première phrase} ».
@@ -125,18 +127,6 @@ fn first_sentence(text: &str) -> &str {
     text
 }
 
-/// Line of an Error session, from `StopFailure.error`.
-pub fn error_text(kind: Option<&str>) -> String {
-    match kind {
-        Some("rate_limit") => "Limite d'usage atteinte".into(),
-        Some("overloaded") => "Serveurs surchargés, réessaie".into(),
-        Some("authentication_failed") => "Claude Code n'est plus connecté".into(),
-        Some("billing_error") => "Problème de facturation".into(),
-        Some(other) if !other.trim().is_empty() => format!("Erreur : {}", other.trim()),
-        _ => "Erreur".into(),
-    }
-}
-
 /// Errors that stop the work until the user acts: they notify.
 pub fn is_blocking_error(kind: &str) -> bool {
     matches!(
@@ -150,17 +140,23 @@ pub fn is_blocking_error(kind: &str) -> bool {
 }
 
 /// Activity of a Working session, from `PreToolUse`.
-pub fn activity(tool_name: &str, input: &Value, cwd: Option<&str>) -> String {
-    summary(tool_name, input, cwd, false)
+pub fn activity(lang: Language, tool_name: &str, input: &Value, cwd: Option<&str>) -> String {
+    summary(lang, tool_name, input, cwd, false)
 }
 
 /// Summary of a permission request: as the activity, with the domain for web
 /// tools.
-pub fn permission(tool_name: &str, input: &Value, cwd: Option<&str>) -> String {
-    summary(tool_name, input, cwd, true)
+pub fn permission(lang: Language, tool_name: &str, input: &Value, cwd: Option<&str>) -> String {
+    summary(lang, tool_name, input, cwd, true)
 }
 
-fn summary(tool_name: &str, input: &Value, cwd: Option<&str>, permission: bool) -> String {
+fn summary(
+    lang: Language,
+    tool_name: &str,
+    input: &Value,
+    cwd: Option<&str>,
+    permission: bool,
+) -> String {
     let field = |key: &str| {
         input
             .get(key)
@@ -170,22 +166,22 @@ fn summary(tool_name: &str, input: &Value, cwd: Option<&str>, permission: bool) 
     };
     match tool_name {
         "Bash" => match field("command") {
-            Some(cmd) => format!("Commande : {}", truncate(&one_line(cmd), COMMAND_MAX)),
-            None => "Commande".into(),
+            Some(cmd) => activity::command_with(lang, &truncate(&one_line(cmd), COMMAND_MAX)),
+            None => activity::command(lang).into(),
         },
-        "Edit" | "MultiEdit" | "Write" => with_file("Édition", field("file_path"), cwd),
-        "Read" => with_file("Lecture", field("file_path"), cwd),
-        "Grep" | "Glob" => "Recherche dans le code".into(),
+        "Edit" | "MultiEdit" | "Write" => with_file(activity::edit(lang), field("file_path"), cwd),
+        "Read" => with_file(activity::read(lang), field("file_path"), cwd),
+        "Grep" | "Glob" => activity::code_search(lang).into(),
         "WebFetch" | "WebSearch" => match field("url").and_then(domain).filter(|_| permission) {
-            Some(domain) => format!("Recherche web · {domain}"),
-            None => "Recherche web".into(),
+            Some(domain) => format!("{} · {domain}", activity::web_search(lang)),
+            None => activity::web_search(lang).into(),
         },
         "Task" | "Agent" => match field("description") {
-            Some(d) => format!("Sous-agent : {}", truncate(&one_line(d), NAME_MAX)),
-            None => "Sous-agent".into(),
+            Some(d) => activity::sub_agent_with(lang, &truncate(&one_line(d), NAME_MAX)),
+            None => activity::sub_agent(lang).into(),
         },
         name => match mcp_server(name) {
-            Some(server) => format!("Outil {server}"),
+            Some(server) => activity::mcp_tool(lang, server),
             None => truncate(name, NAME_MAX),
         },
     }
@@ -336,12 +332,12 @@ mod tests {
     fn tool_summaries_from_real_payloads() {
         let input = fixture_field("PreToolUse-Bash.json", "tool_input");
         assert_eq!(
-            activity("Bash", &input, None),
+            activity(Language::Fr, "Bash", &input, None),
             "Commande : echo spike1 > /dev/null"
         );
         let input = fixture_field("PermissionRequest-Bash.json", "tool_input");
         assert_eq!(
-            permission("Bash", &input, None),
+            permission(Language::Fr, "Bash", &input, None),
             "Commande : touch spike-1.txt"
         );
     }
@@ -428,34 +424,30 @@ mod tests {
         ];
         for (tool, input, act, perm) in cases {
             if act.is_empty() {
-                let a = activity(tool, &input, cwd);
+                let a = activity(Language::Fr, tool, &input, cwd);
                 assert!(a.starts_with("Commande : npm test"), "{a}");
                 assert_eq!(a.chars().count(), "Commande : ".len() + COMMAND_MAX);
                 assert!(a.ends_with('…'));
                 continue;
             }
-            assert_eq!(activity(tool, &input, cwd), act, "{tool} activity");
-            assert_eq!(permission(tool, &input, cwd), perm, "{tool} permission");
+            assert_eq!(
+                activity(Language::Fr, tool, &input, cwd),
+                act,
+                "{tool} activity"
+            );
+            assert_eq!(
+                permission(Language::Fr, tool, &input, cwd),
+                perm,
+                "{tool} permission"
+            );
         }
         let deep = format!("/Users/me/app/{}/file.rs", "dir/".repeat(30));
-        let s = activity("Edit", &json!({ "file_path": deep }), cwd);
+        let s = activity(Language::Fr, "Edit", &json!({ "file_path": deep }), cwd);
         assert!(s.starts_with("Édition …") && s.ends_with("/file.rs"), "{s}");
     }
 
     #[test]
-    fn error_texts() {
-        assert_eq!(error_text(Some("rate_limit")), "Limite d'usage atteinte");
-        assert_eq!(
-            error_text(Some("overloaded")),
-            "Serveurs surchargés, réessaie"
-        );
-        assert_eq!(
-            error_text(Some("authentication_failed")),
-            "Claude Code n'est plus connecté"
-        );
-        assert_eq!(error_text(Some("billing_error")), "Problème de facturation");
-        assert_eq!(error_text(Some("server_error")), "Erreur : server_error");
-        assert_eq!(error_text(None), "Erreur");
+    fn blocking_errors() {
         assert!(is_blocking_error("rate_limit") && !is_blocking_error("overloaded"));
     }
 }

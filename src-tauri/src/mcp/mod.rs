@@ -62,8 +62,8 @@ const INSTRUCTIONS: &str = "Taido is the to-do app that opened this Claude Code 
     names another project, section or task. These tools only add: to delete, complete, rename \
     or move something, tell the user to do it in Taido. Each project also has a notebook of \
     pages (access, decisions, links…): list_note_pages, read_note_page, create_note_page, \
-    add_to_note_page. Quand l'utilisateur dit \"range ça dans les notes du projet\", utilise \
-    create_note_page ou add_to_note_page.";
+    add_to_note_page. When the user says things like \"put that in the project notes\", use \
+    create_note_page or add_to_note_page.";
 
 /// HTTP answer to one POSTed message.
 #[derive(Debug, PartialEq)]

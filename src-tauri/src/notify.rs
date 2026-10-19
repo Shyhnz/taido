@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use crate::i18n::{self, Language};
 use crate::model::{Agent, SessionState};
 use crate::state::machine::Session;
 
@@ -178,28 +179,16 @@ pub fn title(subject: Option<&str>, task: &str) -> String {
     }
 }
 
-/// The state of the session, as the second line says it (`src/i18n/fr.ts`, `line`): only the
+/// The state of the session, as the second line says it (`line` in `src/i18n`): only the
 /// state, never what Claude said.
-pub fn body(agent: Agent, session: &Session) -> String {
+pub fn body(lang: Language, agent: Agent, session: &Session) -> String {
     let name = agent.label();
     match session.state {
-        SessionState::Waiting => format!("{name} attend ta réponse"),
-        SessionState::Done => format!("{name} a fini"),
-        SessionState::Crashed => "Session arrêtée".into(),
-        SessionState::Error => error_label(session.error_kind.as_deref()),
+        SessionState::Waiting => i18n::agent_waiting(lang, name),
+        SessionState::Done => i18n::agent_done(lang, name),
+        SessionState::Crashed => i18n::session_stopped(lang).into(),
+        SessionState::Error => i18n::error_text(lang, session.error_kind.as_deref()),
         _ => name.into(),
-    }
-}
-
-/// Same labels as `agentErrorLabel` in `src/i18n/fr.ts`.
-fn error_label(kind: Option<&str>) -> String {
-    match kind {
-        None => "Erreur".into(),
-        Some("rate_limit") => "Limite d'usage atteinte".into(),
-        Some("overloaded") => "Serveurs surchargés, réessaie".into(),
-        Some("authentication_failed") => "Claude Code n'est plus connecté".into(),
-        Some("billing_error") => "Problème de facturation".into(),
-        Some(kind) => format!("Erreur : {kind}"),
     }
 }
 

@@ -198,4 +198,9 @@ describe("the English table", () => {
     expect(codex.claude.missing).toContain("@openai/codex");
     expect(JSON.stringify(walk(codex))).not.toContain("Claude");
   });
+
+  it("names the phone in the language of the app", () => {
+    expect(en.sync.phoneDeviceName).toBe("Phone");
+    expect(fr.sync.phoneDeviceName).toBe("Téléphone");
+  });
 });

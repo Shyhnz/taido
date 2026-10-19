@@ -11,6 +11,7 @@
  */
 
 import type { AccountInfo } from "../../bindings";
+import { t } from "../../i18n";
 import {
   type AccountResponse,
   type ErrorBody,
@@ -54,8 +55,8 @@ export const REQUEST_TIMEOUT_MS = 60_000;
 export const LOGOUT_TIMEOUT_MS = 5_000;
 /** Same as the Mac: the account read never holds a sync long. */
 export const ACCOUNT_TIMEOUT_MS = 10_000;
-/** `device_name` of the phone (§ 2.2). */
-export const PHONE_DEVICE_NAME = "Téléphone";
+/** `device_name` of the phone (§ 2.2), in the language of the app. */
+export const PHONE_DEVICE_NAME = t.sync.phoneDeviceName;
 export const FILE_STATUS_TIMEOUT_MS = 15_000;
 export const FILE_CHUNK_TIMEOUT_MS = 5 * 60_000;
 export const FILE_DOWNLOAD_TIMEOUT_MS = 30 * 60_000;

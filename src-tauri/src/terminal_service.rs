@@ -250,11 +250,11 @@ impl TerminalService {
             return Ok(open);
         }
         let mut env = self.env().vars.clone();
-        let (scope, bin) = {
+        let (scope, bin, lang) = {
             let conn = db.lock()?;
             let scope = ask::scope(&conn, subject_id)?;
             let bin = self.agent_binary(&conn, &env, Agent::Claude)?;
-            (scope, bin)
+            (scope, bin, crate::i18n::current_language(&conn))
         };
         let cwd = match &scope.root {
             Some(root) => root.clone(),
@@ -269,9 +269,9 @@ impl TerminalService {
         env.insert("TAIDO_HOOK_TOKEN".into(), self.hook_token.clone());
         env.insert(ask::ASK_ID_VAR.into(), terminal_id.clone());
         let args = terminal::claude_args(
-            &terminal::system_prompt(&scope),
+            &terminal::system_prompt(&scope, lang),
             &self.data_dir.join(ask::MCP_FILE),
-            &terminal::session_name(&scope),
+            &terminal::session_name(&scope, lang),
         );
         let info = TerminalInfo {
             id: terminal_id.clone(),

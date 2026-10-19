@@ -219,7 +219,7 @@ fn run_inner(
                 let mut used = 0;
                 for e in exchanges.iter().rev() {
                     let text: String = e.text.trim().chars().take(EXCHANGE_MAX_CHARS).collect();
-                    let line = format!("[{}] {} : {text}", e.at, e.who);
+                    let line = format!("[{}] {}: {text}", e.at, e.who);
                     used += line.chars().count();
                     if used > CONVERSATION_MAX_CHARS && !kept.is_empty() {
                         break;
@@ -228,7 +228,7 @@ fn run_inner(
                 }
                 kept.reverse();
                 let text = format!(
-                    "Conversation de la tâche « {title} » ({} échanges, les derniers ci-dessous)\n\n{}",
+                    "Conversation of the task \"{title}\" ({} exchanges, the latest below)\n\n{}",
                     exchanges.len(),
                     kept.join("\n\n")
                 );
@@ -238,7 +238,7 @@ fn run_inner(
                 if scope.subjects.contains(&subject) {
                     let q = questions::get(conn, &a.id)?;
                     let text = format!(
-                        "Question posée le {} : {}\nRéponse : {}",
+                        "Question asked on {}: {}\nAnswer: {}",
                         q.asked_at, q.question, q.answer
                     );
                     return Ok((text, Some(AskStep::ReadConversation { title: q.question })));

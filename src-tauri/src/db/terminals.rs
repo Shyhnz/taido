@@ -151,8 +151,9 @@ pub fn pause_all_open(conn: &Connection) -> AppResult<usize> {
     let tx = conn.unchecked_transaction()?;
     // Taido V2.1: quitting stops the chronos (before the sessions pause).
     crate::db::time_segments::close_all(&tx, &now, crate::model::ChronoStop::AppClosed)?;
+    let lang = crate::i18n::current_language(&tx);
     for row in agent_sessions::with_open_terminal(&tx)? {
-        let (next, _) = transition(&row.session, &Event::AppQuit, &now);
+        let (next, _) = transition(lang, &row.session, &Event::AppQuit, &now);
         if next != row.session {
             agent_sessions::save(&tx, &row.id, &next, &now)?;
         }

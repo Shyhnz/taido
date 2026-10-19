@@ -142,7 +142,7 @@ fn claude_is_launched_with_the_spec_arguments_and_environment() {
     assert_eq!(args[8..10], ["--permission-mode", "acceptEdits"]);
     assert_eq!(args[10], "--append-system-prompt-file");
     let context = std::fs::read_to_string(args[11]).expect("context file");
-    assert!(context.contains("- Tâche : Export CSV"));
+    assert!(context.contains("- Task: Export CSV"));
     assert!(args[11].starts_with(&*f.data_dir.path().to_string_lossy()));
     // The prompt has a newline: the fake prints it over two ARG lines.
     assert!(out.contains("ARG:Export CSV"));

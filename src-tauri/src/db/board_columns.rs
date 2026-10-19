@@ -1,7 +1,7 @@
 //! Kanban columns (Taido V2.2, 2026-10-09): the progress of the tasks, per project.
 //!
 //! Each project, and « Sans projet » (`subject_id` NULL), has its own ordered columns, created
-//! on first use with [`DEFAULT_COLUMNS`]. The last one is the done column: it holds the
+//! on first use with [`i18n::default_columns`] (the language of the moment). The last one is the done column: it holds the
 //! completed tasks, and moving a card there completes its task. A task without column, or
 //! whose column belongs to another project (it moved), is in the first column. Launching
 //! Claude on a task of the first column moves it once to the second ([`advance_on_claude`]).
@@ -11,11 +11,8 @@ use sync_proto::EPOCH_STAMP;
 
 use crate::db::{new_id, non_empty, now_utc, tasks};
 use crate::error::{AppError, AppResult};
+use crate::i18n;
 use crate::model::SetCompletedInput;
-
-/// Columns of a new board (product choice); the last one is the done column. Names are user
-/// data from then on (renamable), hence French here.
-pub const DEFAULT_COLUMNS: [&str; 4] = ["À faire", "En cours", "À valider", "Terminé"];
 
 /// One column, in board order.
 #[derive(Debug, Clone, PartialEq)]
@@ -69,23 +66,17 @@ pub fn ensure(conn: &Connection, subject_id: Option<&str>) -> AppResult<Vec<Colu
         return Ok(columns);
     }
     let now = now_utc();
+    let names = i18n::default_columns(i18n::current_language(conn));
     // A savepoint: `ensure` also runs inside other transactions (a Claude launch).
     conn.execute_batch("SAVEPOINT ensure_columns")?;
     let created = (|| -> AppResult<()> {
-        for (i, name) in DEFAULT_COLUMNS.iter().enumerate() {
+        for (i, name) in names.iter().enumerate() {
             let id = default_id(subject_id, i);
             let inserted = conn.execute(
                 "INSERT INTO board_columns (id, subject_id, name, position, is_done, \
                  created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6) \
                  ON CONFLICT(id) DO NOTHING",
-                params![
-                    id,
-                    subject_id,
-                    name,
-                    i as f64,
-                    i == DEFAULT_COLUMNS.len() - 1,
-                    now
-                ],
+                params![id, subject_id, name, i as f64, i == names.len() - 1, now],
             )?;
             if inserted > 0 {
                 queue_as_default(conn, &id)?;
@@ -273,6 +264,7 @@ pub fn advance_on_claude(conn: &Connection, task_id: &str) -> AppResult<bool> {
 mod tests {
     use super::*;
     use crate::db::{open_in_memory, test_support};
+    use crate::model::Language;
 
     fn names(columns: &[ColumnRow]) -> Vec<String> {
         columns.iter().map(|c| c.name.clone()).collect()
@@ -287,12 +279,66 @@ mod tests {
         .expect("column")
     }
 
+    fn set_language(conn: &Connection, language: Option<crate::model::Language>) {
+        match language {
+            Some(l) => {
+                crate::db::settings::update(
+                    conn,
+                    &crate::model::SettingsPatch {
+                        language: Some(l),
+                        ..Default::default()
+                    },
+                )
+                .expect("language");
+            }
+            None => {
+                conn.execute("DELETE FROM settings WHERE key = 'language'", [])
+                    .expect("clear");
+            }
+        }
+    }
+
+    #[test]
+    fn default_board_columns_in_english_when_language_is_en() {
+        let conn = open_in_memory().expect("db");
+        set_language(&conn, Some(crate::model::Language::En));
+        let p = test_support::subject(&conn, "Summit Events");
+        let columns = ensure(&conn, Some(&p)).expect("ensure");
+        assert_eq!(
+            names(&columns),
+            ["To do", "In progress", "To review", "Done"]
+        );
+        assert!(columns[3].is_done);
+    }
+
+    #[test]
+    fn default_board_columns_are_english_while_the_language_is_unset() {
+        let conn = open_in_memory().expect("db");
+        set_language(&conn, None);
+        let columns = ensure(&conn, None).expect("ensure");
+        assert_eq!(
+            names(&columns),
+            ["To do", "In progress", "To review", "Done"]
+        );
+    }
+
+    #[test]
+    fn default_board_columns_in_french_when_language_is_fr() {
+        let conn = open_in_memory().expect("db");
+        set_language(&conn, Some(crate::model::Language::Fr));
+        let columns = ensure(&conn, None).expect("ensure");
+        assert_eq!(
+            names(&columns),
+            ["À faire", "En cours", "À valider", "Terminé"]
+        );
+    }
+
     #[test]
     fn a_board_starts_with_the_default_columns() {
         let conn = open_in_memory().expect("db");
         let p = test_support::subject(&conn, "Summit Events");
         let columns = ensure(&conn, Some(&p)).expect("ensure");
-        assert_eq!(names(&columns), DEFAULT_COLUMNS);
+        assert_eq!(names(&columns), i18n::default_columns(Language::Fr));
         assert!(columns[3].is_done);
         assert_eq!(ensure(&conn, Some(&p)).expect("again"), columns);
         // « Sans projet » has its own.
@@ -373,7 +419,7 @@ mod tests {
 
     #[test]
     fn index_rules() {
-        let columns: Vec<ColumnRow> = DEFAULT_COLUMNS
+        let columns: Vec<ColumnRow> = i18n::default_columns(Language::Fr)
             .iter()
             .enumerate()
             .map(|(i, n)| ColumnRow {

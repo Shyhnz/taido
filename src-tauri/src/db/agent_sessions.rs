@@ -164,6 +164,7 @@ pub fn facts_where(
          LEFT JOIN terminals tm ON tm.id = s.current_terminal_id \
          WHERE {task_where}"
     );
+    let lang = crate::i18n::current_language(conn);
     let mut stmt = conn.prepare(&sql)?;
     let rows = stmt.query_map(params_from_iter(params), |r| {
         let waiting_kind: Option<String> = r.get(2)?;
@@ -180,6 +181,7 @@ pub fn facts_where(
             updated_at: r.get(9)?,
             started_at: r.get(10)?,
             question: r.get(11)?,
+            lang,
         };
         Ok((r.get::<_, String>(0)?, facts))
     })?;

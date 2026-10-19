@@ -1,13 +1,12 @@
 //! « Portefeuille » (Taido V2.6): every project on one line, and the CSV
 //! export of the time segments. Groups (visual only) and « Sans projet » are not projects.
 
-use std::fmt::Write as _;
-
 use chrono::{DateTime, Duration, Local};
 use rusqlite::{params, Connection};
 
 use crate::db::subjects;
 use crate::error::AppResult;
+use crate::i18n::{self, export, Language};
 use crate::model::{Agent, ChronoStop, DashboardTask, Portfolio, PortfolioRow};
 use crate::views::dashboard::{self, dashboard};
 
@@ -106,33 +105,36 @@ pub fn portfolio(conn: &Connection, days: u32, now: DateTime<Local>) -> AppResul
     })
 }
 
-fn csv_field(value: &str) -> String {
-    if value.contains([';', '"', '\n', '\r']) {
+fn csv_field(value: &str, separator: char) -> String {
+    if value.contains([separator, '"', '\n', '\r']) {
         format!("\"{}\"", value.replace('"', "\"\""))
     } else {
         value.to_string()
     }
 }
 
-fn reason_label(reason: Option<&str>, agent: Agent) -> String {
+fn reason_label(lang: Language, reason: Option<&str>, agent: Agent) -> String {
     match reason.and_then(ChronoStop::parse) {
-        Some(ChronoStop::Waiting) => "attend ta réponse".into(),
-        Some(ChronoStop::TurnEnded) => format!("{} a fini", agent.label()),
-        Some(ChronoStop::SessionClosed) => "session fermée".into(),
-        Some(ChronoStop::TaskDone) => "tâche terminée".into(),
-        Some(ChronoStop::AppClosed) => "Taido fermé".into(),
+        Some(ChronoStop::Waiting) => export::waiting(lang).into(),
+        Some(ChronoStop::TurnEnded) => i18n::agent_done(lang, agent.label()),
+        Some(ChronoStop::SessionClosed) => export::session_closed(lang).into(),
+        Some(ChronoStop::TaskDone) => export::task_done(lang).into(),
+        Some(ChronoStop::AppClosed) => export::app_closed(lang).into(),
         None => String::new(),
     }
 }
 
 /// « Exporter les temps (CSV) »: one line per segment started in the period, every project
-/// (and « Sans projet »). `;`-separated with a UTF-8 BOM, so that Excel opens it in French.
+/// (and the Inbox), in the user's language. Separated by `;` in French and `,` otherwise, with
+/// a UTF-8 BOM, so that Excel opens it in the user's own settings.
 pub fn time_csv(conn: &Connection, days: u32, now: DateTime<Local>) -> AppResult<String> {
+    let lang = i18n::current_language(conn);
+    let sep = export::separator(lang);
     let days = days.clamp(1, 366);
     let first_day = now.date_naive() - Duration::days(i64::from(days) - 1);
     let from = dashboard::midnight(first_day);
     let mut stmt = conn.prepare(
-        "SELECT COALESCE(s.name, 'Sans projet'), t.title, ts.started_at, ts.ended_at, \
+        "SELECT s.name, t.title, ts.started_at, ts.ended_at, \
          ts.source, ts.stop_reason, ts.note, a.agent \
          FROM time_segments ts JOIN tasks t ON t.id = ts.task_id \
          LEFT JOIN subjects s ON s.id = t.subject_id \
@@ -142,7 +144,7 @@ pub fn time_csv(conn: &Connection, days: u32, now: DateTime<Local>) -> AppResult
     )?;
     let rows = stmt.query_map(params![], |r| {
         Ok((
-            r.get::<_, String>(0)?,
+            r.get::<_, Option<String>>(0)?,
             r.get::<_, String>(1)?,
             r.get::<_, String>(2)?,
             r.get::<_, Option<String>>(3)?,
@@ -152,11 +154,10 @@ pub fn time_csv(conn: &Connection, days: u32, now: DateTime<Local>) -> AppResult
             r.get::<_, Option<String>>(7)?,
         ))
     })?;
-    let mut out = String::from(
-        "\u{feff}Projet;Tâche;Début;Fin;Durée;Durée (min);Source;Raison d'arrêt;Note\r\n",
-    );
+    let mut out = export::csv_header(lang);
     for row in rows {
         let (project, task, started, ended, source, reason, note, agent) = row?;
+        let project = project.unwrap_or_else(|| export::no_project(lang).to_string());
         // Segments whose session is gone read as Claude, the only agent before Codex.
         let agent = agent.as_deref().and_then(Agent::parse).unwrap_or_default();
         let Some(start) = parse(&started) else {
@@ -167,26 +168,24 @@ pub fn time_csv(conn: &Connection, days: u32, now: DateTime<Local>) -> AppResult
         }
         let end = ended.as_deref().and_then(parse);
         let secs = (end.unwrap_or(now) - start).num_seconds().max(0);
-        let _ = write!(
-            out,
-            "{};{};{};{};{}:{:02}:{:02};{};{};{};{}\r\n",
-            csv_field(&project),
-            csv_field(&task),
-            start.format("%Y-%m-%d %H:%M"),
+        let fields = [
+            csv_field(&project, sep),
+            csv_field(&task, sep),
+            start.format("%Y-%m-%d %H:%M").to_string(),
             end.map(|e| e.format("%Y-%m-%d %H:%M").to_string())
-                .unwrap_or_else(|| "en cours".into()),
-            secs / 3600,
-            secs % 3600 / 60,
-            secs % 60,
-            (secs + 30) / 60,
+                .unwrap_or_else(|| export::running(lang).into()),
+            format!("{}:{:02}:{:02}", secs / 3600, secs % 3600 / 60, secs % 60),
+            ((secs + 30) / 60).to_string(),
             if source == "manual" {
-                "à la main"
+                export::by_hand(lang).into()
             } else {
-                agent.label()
+                agent.label().to_string()
             },
-            reason_label(reason.as_deref(), agent),
-            csv_field(&note),
-        );
+            reason_label(lang, reason.as_deref(), agent),
+            csv_field(&note, sep),
+        ];
+        out.push_str(&fields.join(&sep.to_string()));
+        out.push_str("\r\n");
     }
     Ok(out)
 }
@@ -291,7 +290,40 @@ mod tests {
         assert!(lines[1].starts_with(
             "Summit Events;Modèle;2026-10-09 13:00;2026-10-09 14:00;1:00:00;60;Claude;"
         ));
-        assert_eq!(csv_field("a;b"), "\"a;b\"");
+        assert_eq!(csv_field("a;b", ';'), "\"a;b\"");
+        assert_eq!(csv_field("a;b", ','), "a;b");
+    }
+
+    #[test]
+    fn the_time_export_is_in_english_and_comma_separated_when_the_language_is_en() {
+        let conn = open_in_memory().expect("db");
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('language', '\"en\"')",
+            [],
+        )
+        .expect("en");
+        let t = test_support::task(&conn, "Export, final", None, None);
+        let start = iso(now() - chrono::Duration::hours(2));
+        let end = iso(now() - chrono::Duration::hours(1));
+        conn.execute(
+            "INSERT INTO time_segments (id, task_id, source, started_at, ended_at, \
+             stop_reason, created_at, updated_at) \
+             VALUES ('seg', ?1, 'manual', ?2, ?3, NULL, ?2, ?3)",
+            rusqlite::params![t, start, end],
+        )
+        .expect("segment");
+        let csv = time_csv(&conn, 7, now()).expect("csv");
+        let lines: Vec<&str> = csv.trim_end().split("\r\n").collect();
+        assert_eq!(
+            lines[0],
+            "\u{feff}Project,Task,Start,End,Duration,Duration (min),Source,Stop reason,Note"
+        );
+        assert!(
+            lines[1].starts_with("Inbox,\"Export, final\","),
+            "{}",
+            lines[1]
+        );
+        assert!(lines[1].contains(",by hand,"), "{}", lines[1]);
     }
 
     #[test]

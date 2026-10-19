@@ -105,7 +105,7 @@ fn mcp_config_points_to_the_app_server_with_env_headers() {
 
 #[test]
 fn hooks_settings_pre_allow_the_app_tools() {
-    let v = hooks_settings(4242);
+    let v = hooks_settings(Language::Fr, 4242);
     let allow: Vec<&str> = v["permissions"]["allow"]
         .as_array()
         .expect("allow")
@@ -145,18 +145,16 @@ fn context_lists_the_task_and_truncates_the_description() {
         subtasks: vec![(true, "Colonnes"), (false, "Tests")],
         attachments: &[],
     });
-    assert!(
-        text.starts_with("Contexte fourni par Taido :\n- Projet : Globex\n- Tâche : Export CSV\n")
-    );
+    assert!(text.starts_with("Context provided by Taido:\n- Project: Globex\n- Task: Export CSV\n"));
     let description = text
         .lines()
-        .find(|l| l.starts_with("- Description : "))
+        .find(|l| l.starts_with("- Description: "))
         .expect("description line");
     assert_eq!(
         description.chars().count(),
-        "- Description : ".chars().count() + DESCRIPTION_MAX_CHARS + 1
+        "- Description: ".chars().count() + DESCRIPTION_MAX_CHARS + 1
     );
-    assert!(text.ends_with("- Sous-tâches :\n  - [x] Colonnes\n  - [ ] Tests\n"));
+    assert!(text.ends_with("- Subtasks:\n  - [x] Colonnes\n  - [ ] Tests\n"));
 }
 
 #[test]
@@ -169,7 +167,7 @@ fn context_without_project_description_or_subtasks() {
         subtasks: vec![],
         attachments: &[],
     });
-    assert_eq!(text, "Contexte fourni par Taido :\n- Tâche : Seule\n");
+    assert_eq!(text, "Context provided by Taido:\n- Task: Seule\n");
 }
 
 #[test]
@@ -184,14 +182,14 @@ fn context_of_a_subtask_names_its_parent() {
     });
     assert_eq!(
         text,
-        "Contexte fourni par Taido :\n- Projet : Globex\n- Sous-tâche de : Export CSV\n\
-         - Tâche : Colonnes\n"
+        "Context provided by Taido:\n- Project: Globex\n- Subtask of: Export CSV\n\
+         - Task: Colonnes\n"
     );
 }
 
 #[test]
 fn hooks_settings_shape() {
-    let v = hooks_settings(4242);
+    let v = hooks_settings(Language::Fr, 4242);
     let hooks = v["hooks"].as_object().expect("hooks");
     assert_eq!(hooks.len(), EVENTS.len());
     assert!(!hooks.contains_key("MessageDisplay"));
@@ -381,5 +379,5 @@ fn attachments_reach_claude() {
         subtasks: Vec::new(),
         attachments: &files,
     });
-    assert!(text.contains("- Pièces jointes (lisibles) :\n  - /x/maquette.png\n"));
+    assert!(text.contains("- Attachments (readable):\n  - /x/maquette.png\n"));
 }

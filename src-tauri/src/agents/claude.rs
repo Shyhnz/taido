@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use serde_json::{json, Value};
 
 use super::BinarySpec;
+use crate::i18n::{self, Language};
 use crate::model::PermissionMode;
 
 /// Development override pointing to `fake-claude`.
@@ -70,14 +71,14 @@ pub struct TaskContext<'a> {
 
 /// Content of `contexts/<agent_session_id>.md`.
 pub fn context_text(ctx: &TaskContext<'_>) -> String {
-    let mut out = format!("Contexte fourni par {APP_NAME} :\n");
+    let mut out = format!("Context provided by {APP_NAME}:\n");
     if let Some(subject) = ctx.subject {
-        out.push_str(&format!("- Projet : {subject}\n"));
+        out.push_str(&format!("- Project: {subject}\n"));
     }
     if let Some(parent) = ctx.parent {
-        out.push_str(&format!("- Sous-tâche de : {parent}\n"));
+        out.push_str(&format!("- Subtask of: {parent}\n"));
     }
-    out.push_str(&format!("- Tâche : {}\n", ctx.title));
+    out.push_str(&format!("- Task: {}\n", ctx.title));
     let description = ctx.description.trim();
     if !description.is_empty() {
         let truncated: String = description.chars().take(DESCRIPTION_MAX_CHARS).collect();
@@ -86,17 +87,17 @@ pub fn context_text(ctx: &TaskContext<'_>) -> String {
         } else {
             ""
         };
-        out.push_str(&format!("- Description : {truncated}{ellipsis}\n"));
+        out.push_str(&format!("- Description: {truncated}{ellipsis}\n"));
     }
     if !ctx.subtasks.is_empty() {
-        out.push_str("- Sous-tâches :\n");
+        out.push_str("- Subtasks:\n");
         for (done, text) in &ctx.subtasks {
             let mark = if *done { "x" } else { " " };
             out.push_str(&format!("  - [{mark}] {text}\n"));
         }
     }
     if !ctx.attachments.is_empty() {
-        out.push_str("- Pièces jointes (lisibles) :\n");
+        out.push_str("- Attachments (readable):\n");
         for path in ctx.attachments {
             out.push_str(&format!("  - {path}\n"));
         }
@@ -234,7 +235,7 @@ fn http_hook(port: u16, timeout: u64, status: Option<&str>) -> Value {
 /// Content of `claude-hooks.json`. `SessionStart` accepts only `command` hooks:
 /// it relays its stdin to the server with curl, failures ignored (E1). Also pre-allows the
 /// app's MCP tools (`permissions.allow`).
-pub fn hooks_settings(port: u16) -> Value {
+pub fn hooks_settings(lang: Language, port: u16) -> Value {
     let mut hooks = serde_json::Map::new();
     for event in EVENTS {
         let hook = match *event {
@@ -248,11 +249,9 @@ pub fn hooks_settings(port: u16) -> Value {
                 ),
                 "timeout": 5
             }),
-            "PermissionRequest" => http_hook(
-                port,
-                600,
-                Some(&format!("En attente de ta réponse dans {APP_NAME}…")),
-            ),
+            "PermissionRequest" => {
+                http_hook(port, 600, Some(&i18n::permission_status(lang, APP_NAME)))
+            }
             _ => http_hook(port, 5, None),
         };
         let mut group = json!({ "hooks": [hook] });

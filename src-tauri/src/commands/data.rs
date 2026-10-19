@@ -1295,6 +1295,12 @@ pub async fn update_settings(
 ) -> AppResult<Settings> {
     let conn = state.db.lock()?;
     let settings = settings::update(&conn, &patch)?;
+    #[cfg(target_os = "macos")]
+    if let Some(lang) = patch.language {
+        if let Err(e) = crate::app_menu(&app, lang).and_then(|m| app.set_menu(m)) {
+            log::warn!("cannot refresh the menu bar: {e}");
+        }
+    }
     notify(&app, &conn, &[DataScope::Settings], None);
     // The shared theme (synced setting `appearance`) goes like any other local change.
     if settings.sync_theme

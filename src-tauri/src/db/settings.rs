@@ -88,6 +88,11 @@ pub fn get(conn: &Connection) -> AppResult<Settings> {
     })
 }
 
+/// The chosen language alone (`None` while unset), for texts the core builds.
+pub fn language(conn: &Connection) -> Option<Language> {
+    read::<Language>(conn, LANGUAGE).ok().flatten()
+}
+
 /// Writes the fields present in the patch; the panel width is clamped to 360–1000.
 pub fn update(conn: &Connection, patch: &SettingsPatch) -> AppResult<Settings> {
     let tx = conn.unchecked_transaction()?;
@@ -215,11 +220,20 @@ pub(crate) fn remove(conn: &Connection, key: &str) -> AppResult<()> {
 mod tests {
     use super::*;
     use crate::db::open_in_memory;
+    use rusqlite::Connection;
+
+    /// A database as a first launch finds it: no language chosen (tests pin French otherwise).
+    fn open_fresh() -> Connection {
+        let conn = open_in_memory().expect("db");
+        conn.execute("DELETE FROM settings WHERE key = 'language'", [])
+            .expect("clear");
+        conn
+    }
     use crate::model::{Tutorial, TutorialStatus};
 
     #[test]
     fn defaults() {
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         let s = get(&conn).expect("get");
         assert_eq!(
             s,
@@ -248,7 +262,7 @@ mod tests {
 
     #[test]
     fn language_setting_round_trips() {
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         assert_eq!(get(&conn).expect("get").language, None);
         let s = update(
             &conn,
@@ -290,14 +304,14 @@ mod tests {
 
     #[test]
     fn an_unreadable_language_falls_back_to_unset() {
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         write(&conn, LANGUAGE, &"klingon").expect("write");
         assert_eq!(get(&conn).expect("get").language, None);
     }
 
     #[test]
     fn patch_is_partial_and_persisted() {
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         let s = update(
             &conn,
             &SettingsPatch {
@@ -350,7 +364,7 @@ mod tests {
 
     #[test]
     fn tutorial_progress_is_kept_whole() {
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         assert_eq!(
             get(&conn).expect("get").tutorial.status,
             TutorialStatus::NotStarted
@@ -408,7 +422,7 @@ mod tests {
 
     #[test]
     fn unreadable_tutorial_falls_back_to_not_started() {
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         conn.execute(
             "INSERT INTO settings (key, value) VALUES ('tutorial', '\"oops\"')",
             [],
@@ -427,7 +441,7 @@ mod tests {
             (1000, 1000),
             (5000, 1000),
         ];
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         for (input, expected) in cases {
             let s = update(
                 &conn,
@@ -443,7 +457,7 @@ mod tests {
 
     #[test]
     fn unreadable_values_fall_back_to_defaults() {
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         conn.execute(
             "INSERT INTO settings (key, value) VALUES ('theme', 'not json'), ('panel_width', '20')",
             [],
@@ -466,7 +480,7 @@ mod tests {
     #[test]
     fn editor_is_stored_by_name() {
         use crate::model::Editor;
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         let cases = [
             (Editor::Cursor, "\"cursor\""),
             (Editor::Zed, "\"zed\""),
@@ -495,7 +509,7 @@ mod tests {
 
     #[test]
     fn claude_path_is_absolute_trimmed_or_cleared() {
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         let set = |path: Option<&str>| {
             update(
                 &conn,
@@ -533,7 +547,7 @@ mod tests {
     #[test]
     fn default_agent_and_codex_path() {
         use crate::model::Agent;
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         let s = get(&conn).expect("get");
         assert_eq!(s.default_agent, Agent::Claude);
         assert_eq!(s.codex_path, None);
@@ -572,7 +586,7 @@ mod tests {
 
     #[test]
     fn an_unknown_default_agent_reads_as_claude() {
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         conn.execute(
             "INSERT INTO settings (key, value) VALUES ('default_agent', '\"cursor\"')",
             [],
@@ -594,7 +608,7 @@ mod tests {
 
     #[test]
     fn theme_and_colour_are_shared_while_the_switch_is_on() {
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         assert_eq!(shared(&conn), None);
         let s = set_theme(
             &conn,
@@ -624,7 +638,7 @@ mod tests {
 
     #[test]
     fn switch_off_keeps_the_theme_and_stops_sharing() {
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         synced_settings::set(
             &conn,
             sync_proto::SETTING_APPEARANCE,
@@ -679,7 +693,7 @@ mod tests {
 
     #[test]
     fn an_unreadable_shared_theme_is_ignored() {
-        let conn = open_in_memory().expect("db");
+        let conn = open_fresh();
         set_theme(
             &conn,
             SettingsPatch {

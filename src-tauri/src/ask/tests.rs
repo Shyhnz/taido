@@ -165,7 +165,7 @@ fn search_conversations_finds_sessions_and_questions() {
     let hits = search::search_conversations(&f.conn, &f.scope, "pilotes").expect("search");
     assert_eq!(hits.len(), 1);
     assert_eq!(hits[0].id, "s1");
-    assert!(hits[0].excerpt.starts_with("Claude : "), "{:?}", hits[0]);
+    assert!(hits[0].excerpt.starts_with("Claude: "), "{:?}", hits[0]);
     let q = questions::insert(
         &f.conn,
         &f.scope.subject_id,
@@ -300,7 +300,7 @@ fn tools_read_only_their_project() {
         "read_conversation",
         &json!({ "id": "s1" }),
     );
-    assert!(r.text.contains("Utilisateur : Quel prix"), "{}", r.text);
+    assert!(r.text.contains("User: Quel prix"), "{}", r.text);
     assert!(matches!(step, Some(AskStep::ReadConversation { .. })));
     let (r, _) = tools::run(
         &f.conn,
@@ -360,7 +360,7 @@ fn store_checks_and_keeps_the_answer() {
     let threads = questions::threads(&f.conn, &f.scope.subject_id).expect("threads");
     assert_eq!(threads.len(), 1);
     assert_eq!(threads[0].question, "Le prix ?");
-    let md = as_markdown(&entry);
+    let md = as_markdown(&entry, Language::Fr);
     assert!(md.contains(&format!("[[page:{}|Tarifs]]", f.page)), "{md}");
     assert!(!md.contains("inconnue"));
     // An empty answer is none.
@@ -384,22 +384,22 @@ fn follow_up_questions_carry_the_previous_exchanges() {
         sources: vec![],
         asked_at: String::new(),
     };
-    assert_eq!(user_message(&[], "Quoi ?"), "Question : Quoi ?");
+    assert_eq!(user_message(&[], "Quoi ?"), "Question: Quoi ?");
     let history: Vec<AskEntry> = (0..7).map(|i| entry(&format!("q{i}"))).collect();
     let m = user_message(&history, "Et ensuite ?");
     assert!(
         !m.contains("q1") && m.contains("q2") && m.contains("réponse q6"),
         "{m}"
     );
-    assert!(m.ends_with("Question : Et ensuite ?"));
+    assert!(m.ends_with("Question: Et ensuite ?"));
 }
 
 #[test]
 fn launch_arguments() {
     let f = fixture();
-    let system = system_prompt(&f.scope);
-    assert!(system.contains("« Taido »") && system.contains("dossier du projet"));
-    assert!(!system_prompt(&f.other).contains("dossier du projet"));
+    let system = system_prompt(&f.scope, Language::En);
+    assert!(system.contains("in Taido") && system.contains("project's folder"));
+    assert!(!system_prompt(&f.other, Language::En).contains("project's folder"));
     let args = claude_args(&system, Path::new("/d/ask-mcp.json"));
     for flag in [
         "-p",
@@ -617,7 +617,7 @@ fn real_agent_spike() {
     vars.insert("TAIDO_HOOK_TOKEN".into(), token);
     vars.insert(ASK_ID_VAR.into(), "spike".into());
     let cwd = scope.root.clone().expect("root");
-    let system = system_prompt(&scope);
+    let system = system_prompt(&scope, Language::Fr);
     let args = match agent {
         Agent::Claude => claude_args(&system, &mcp_file),
         Agent::Codex => codex_args(&system, port, &cwd, &schema_file),
@@ -692,11 +692,11 @@ fn project_terminal_args_allow_only_the_project_tools() {
 
 #[test]
 fn project_terminal_prompt_names_the_project_and_its_folder() {
-    let without = terminal::system_prompt(&plain_scope(None));
-    assert!(without.contains("« Taido »"));
-    assert!(!without.contains("dossier du projet"));
-    let with = terminal::system_prompt(&plain_scope(Some("/tmp".into())));
-    assert!(with.contains("dossier du projet"));
+    let without = terminal::system_prompt(&plain_scope(None), Language::En);
+    assert!(without.contains("\"Ask the project\" button of Taido"));
+    assert!(!without.contains("project's folder"));
+    let with = terminal::system_prompt(&plain_scope(Some("/tmp".into())), Language::En);
+    assert!(with.contains("project's folder"));
 }
 
 #[test]
@@ -719,4 +719,41 @@ fn ask_opens_without_plan() {
     let p = ts::subject(&conn, "Free");
     let scope = super::scope(&conn, &p).expect("scope without any plan");
     assert_eq!(scope.subject_id, p);
+}
+
+#[test]
+fn the_prompt_is_english_and_asks_for_the_users_language() {
+    let f = fixture();
+    let en = system_prompt(&f.scope, Language::En);
+    assert!(en.contains("Answer in English"), "{en}");
+    assert!(en.contains("I found nothing in the project about this."));
+    let fr = system_prompt(&f.scope, Language::Fr);
+    assert!(fr.contains("Answer in French"), "{fr}");
+    assert!(fr.contains("Je n'ai rien trouvé dans le projet à ce sujet."));
+    assert!(!fr.contains("Tu "), "the instructions stay English");
+}
+
+#[test]
+fn the_markdown_of_an_answer_follows_the_language() {
+    let entry = AskEntry {
+        id: "q".into(),
+        thread_id: "t".into(),
+        agent: Agent::Claude,
+        question: "?".into(),
+        answer: "Yes".into(),
+        sources: vec![Source {
+            kind: SourceKind::Conversation,
+            reference: "r".into(),
+            label: "Old question".into(),
+            quote: " the quote ".into(),
+            found: true,
+            at: None,
+            task_id: None,
+        }],
+        asked_at: String::new(),
+    };
+    assert!(as_markdown(&entry, Language::En).contains("- Question “Old question”: “the quote”"));
+    assert!(
+        as_markdown(&entry, Language::Fr).contains("- Question « Old question » : « the quote »")
+    );
 }

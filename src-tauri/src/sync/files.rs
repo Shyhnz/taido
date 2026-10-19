@@ -1220,12 +1220,12 @@ fn wanted(conn: &Connection, id: &str) -> AppResult<(FileRow, FileState, String)
 }
 
 /// Name of the copy in the Downloads folder: the attachment's name when it is a plain file
-/// name (it may come from another device), else `fichier`.
+/// name (it may come from another device), else `file`.
 fn download_name(file_name: &str) -> &str {
     let mut parts = Path::new(file_name).components();
     match (parts.next(), parts.next()) {
         (Some(Component::Normal(_)), None) if !file_name.contains('/') => file_name,
-        _ => "fichier",
+        _ => "file",
     }
 }
 
@@ -1529,7 +1529,7 @@ mod tests {
         assert!(!attachments::partial_path(&copy, "att").exists());
 
         for name in ["../../evil.sh", "a/b.txt", "..", ".", ""] {
-            assert_eq!(download_name(name), "fichier", "{name:?}");
+            assert_eq!(download_name(name), "file", "{name:?}");
         }
         assert_eq!(download_name("devis (final).pdf"), "devis (final).pdf");
     }

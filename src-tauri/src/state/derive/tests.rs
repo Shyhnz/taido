@@ -99,6 +99,7 @@ fn s(state: SessionState, open: bool, minute: u32) -> SessionFacts {
         state_changed_at: at.clone(),
         updated_at: at.clone(),
         started_at: at,
+        lang: crate::i18n::Language::Fr,
     }
 }
 

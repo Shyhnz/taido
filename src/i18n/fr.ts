@@ -1261,6 +1261,8 @@ export const fr = {
   /** Sync with the server: Réglages › Synchro, sidebar button, mobile settings. */
   sync: {
     tab: "Synchro",
+    /** Nom du téléphone dans la liste des appareils du serveur. */
+    phoneDeviceName: "Téléphone",
     /** Réglages › Synchro while `sync_status` loads, or when it failed. */
     loading: "Chargement…",
     loadError: "Impossible de lire l'état de la synchro.",

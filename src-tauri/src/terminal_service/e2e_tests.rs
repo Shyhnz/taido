@@ -109,8 +109,11 @@ impl Rig {
         ));
 
         let server = HookServer::bind().expect("bind");
-        let settings = serde_json::to_string_pretty(&claude::hooks_settings(server.port))
-            .expect("settings json");
+        let settings = serde_json::to_string_pretty(&claude::hooks_settings(
+            crate::i18n::Language::Fr,
+            server.port,
+        ))
+        .expect("settings json");
         claude::write_private(&data_dir.path().join(HOOKS_FILE), &settings).expect("settings");
         let mcp = serde_json::to_string_pretty(&claude::mcp_config(server.port)).expect("mcp json");
         claude::write_private(&data_dir.path().join(MCP_FILE), &mcp).expect("mcp file");

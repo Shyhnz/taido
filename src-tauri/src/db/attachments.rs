@@ -1,5 +1,5 @@
 //! Attachments (Taido V2.3). A file attached to a task is **copied** into
-//! `<app folder>/Pièces jointes/<project>/<task>/` (by design: never into a code folder), so that
+//! `<app folder>/Attachments/<project>/<task>/` (by design: never into a code folder), so that
 //! Claude can read it (`--add-dir`, and its path in the context file). The copy belongs to the
 //! app: removing the attachment removes the copy, never the original.
 //!
@@ -18,10 +18,21 @@ use sha2::{Digest, Sha256};
 
 use crate::db::{new_id, now_utc, subjects, tasks, workspace};
 use crate::error::{AppError, AppResult};
+use crate::i18n;
 use crate::model::{Attachment, AttachmentInfo, AttachmentRemote, NoteAttachment};
 
 /// Folder of every attachment, in the app's folder.
+#[cfg(test)]
 pub const FOLDER_NAME: &str = "Pièces jointes";
+
+/// `<app folder>/Attachments` (`Pièces jointes` in French, or whichever exists).
+fn attachments_dir(conn: &Connection, root: &Path) -> PathBuf {
+    root.join(i18n::folder_name(
+        root,
+        i18n::current_language(conn),
+        i18n::ATTACHMENTS,
+    ))
+}
 /// Largest image a preview is made of (bytes).
 const PREVIEW_MAX_BYTES: u64 = 8 * 1024 * 1024;
 
@@ -208,7 +219,7 @@ fn remote_view(id: &str, state: FileState, exists: bool, linked: bool) -> Attach
 }
 
 /// Folder of a task's attachments: the one its first attachment went to (a renamed task keeps
-/// it), else `<app folder>/Pièces jointes/<project>/<title> (<end of id>)`. `None` before the
+/// it), else `<app folder>/Attachments/<project>/<title> (<end of id>)`. `None` before the
 /// app folder exists.
 pub fn folder_of(conn: &Connection, task_id: &str) -> AppResult<Option<PathBuf>> {
     let existing: Option<String> = conn
@@ -227,7 +238,7 @@ pub fn folder_of(conn: &Connection, task_id: &str) -> AppResult<Option<PathBuf>>
     let task = tasks::load(conn, task_id)?;
     let project = match &task.subject_id {
         Some(s) => subjects::folder_name(&subjects::get(conn, s)?.name),
-        None => workspace::NO_PROJECT_FOLDER.to_string(),
+        None => workspace::no_project_name(conn, &root).to_string(),
     };
     let short: String = task
         .id
@@ -239,11 +250,11 @@ pub fn folder_of(conn: &Connection, task_id: &str) -> AppResult<Option<PathBuf>>
         .rev()
         .collect();
     let name = format!("{} ({short})", subjects::folder_name(&task.title));
-    Ok(Some(root.join(FOLDER_NAME).join(project).join(name)))
+    Ok(Some(attachments_dir(conn, &root).join(project).join(name)))
 }
 
 /// Folder of an owner's attachments: [`folder_of`] for a task; for a page, the one its first
-/// image went to, else `<app folder>/Pièces jointes/<project>/Notes`. `None` before the app
+/// image went to, else `<app folder>/Attachments/<project>/Notes`. `None` before the app
 /// folder exists.
 pub fn owner_folder(conn: &Connection, owner: AttachmentOwner<'_>) -> AppResult<Option<PathBuf>> {
     let page_id = match owner {
@@ -274,19 +285,21 @@ pub fn owner_folder(conn: &Connection, owner: AttachmentOwner<'_>) -> AppResult<
         .ok_or_else(|| AppError::NotFound(format!("note page {page_id}")))?;
     let project = subjects::folder_name(&subjects::get(conn, &subject_id)?.name);
     Ok(Some(
-        root.join(FOLDER_NAME).join(project).join(NOTES_FOLDER_NAME),
+        attachments_dir(conn, &root)
+            .join(project)
+            .join(NOTES_FOLDER_NAME),
     ))
 }
 
 /// Where a pulled attachment (V2.7 sync: metadata only, no file on this Mac) points: the
 /// owner's attachment folder when it can be resolved ([`owner_folder`]: the task's, or the
 /// page's `<project>/Notes`), else an absolute placeholder
-/// `<app folder>/Pièces jointes/<task or page id>/<file name>` (the owner or its project is
+/// `<app folder>/Attachments/<task or page id>/<file name>` (the owner or its project is
 /// deleted, or the app folder is not recorded yet: `~/Taido`). Never relative.
 ///
 /// The path is a free one (`free_name`): it never points at a local copy or at another
 /// attachment's path, so deleting one attachment cannot remove another's file. A name that is
-/// not a plain file name (`.`, `..`) becomes `fichier`.
+/// not a plain file name (`.`, `..`) becomes `file`.
 pub fn pulled_path(
     conn: &Connection,
     owner: AttachmentOwner<'_>,
@@ -298,7 +311,7 @@ pub fn pulled_path(
     let mut parts = Path::new(file_name).components();
     let name = match (parts.next(), parts.next()) {
         (Some(Component::Normal(_)), None) => file_name,
-        _ => "fichier",
+        _ => "file",
     };
     match owner_folder(conn, owner) {
         Ok(Some(folder)) => return free_name(conn, &folder, name),
@@ -313,7 +326,7 @@ pub fn pulled_path(
             .unwrap_or_else(std::env::temp_dir)
             .join(workspace::FOLDER_NAME),
     };
-    free_name(conn, &root.join(FOLDER_NAME).join(owner_id), name)
+    free_name(conn, &attachments_dir(conn, &root).join(owner_id), name)
 }
 
 /// Whether a live attachment other than `except` has the stored path `path`. Compared without
@@ -473,7 +486,7 @@ pub fn add_files(
         let name = source
             .file_name()
             .and_then(|n| n.to_str())
-            .unwrap_or("fichier")
+            .unwrap_or("file")
             .to_string();
         let target = free_name(conn, &dir, &name)?;
         fs::copy(source, &target)?;
@@ -1031,7 +1044,7 @@ mod tests {
         // Not a plain file name: no way out of the folder.
         let odd = pulled_path(&conn, AttachmentOwner::Task(&task), "..").expect("path");
         assert_eq!(odd.parent(), local.parent());
-        assert!(odd.ends_with("fichier"));
+        assert!(odd.ends_with("file"));
     }
 
     #[test]

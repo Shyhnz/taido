@@ -96,7 +96,7 @@ mod tests {
                 .iter()
                 .map(|c| c.name.as_str())
                 .collect::<Vec<_>>(),
-            board_columns::DEFAULT_COLUMNS
+            crate::i18n::default_columns(crate::model::Language::Fr)
         );
         assert_eq!(titles(&b, 0), ["Appel de recette", "Export PDF"]);
         // Claude on « Export PDF »: « En cours », and the card keeps its column while

@@ -130,12 +130,17 @@ fn migrate(conn: &mut Connection) -> AppResult<()> {
     Ok(result?)
 }
 
-/// In-memory database for tests, fully migrated.
+/// In-memory database for tests, fully migrated. The language is pinned to French, the one the
+/// existing tests assert; the others set `en` (or clear it) on purpose.
 #[cfg(test)]
 pub fn open_in_memory() -> AppResult<Connection> {
     let mut conn = Connection::open_in_memory()?;
     migrate(&mut conn)?;
     configure(&conn)?;
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('language', '\"fr\"')",
+        [],
+    )?;
     Ok(conn)
 }
 

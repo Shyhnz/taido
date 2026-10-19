@@ -5,6 +5,7 @@
 
 use std::cmp::Ordering;
 
+use crate::i18n::{self, Language};
 use crate::model::{LineKind, LineTone, Ring, SessionState, SubjectDot, TaskLine, WaitingKind};
 use crate::state::summary;
 
@@ -30,6 +31,8 @@ pub struct SessionFacts {
     pub state_changed_at: String,
     pub updated_at: String,
     pub started_at: String,
+    /// Language of the texts the line builds itself (the error label).
+    pub lang: Language,
 }
 
 /// Facts about a task the ring depends on.
@@ -136,7 +139,7 @@ pub fn session_line(s: &SessionFacts) -> TaskLine {
         },
         SessionState::Error => (
             LineKind::Error,
-            Some(summary::error_text(s.error_kind.as_deref())),
+            Some(i18n::error_text(s.lang, s.error_kind.as_deref())),
             None,
             LineTone::Primary,
         ),

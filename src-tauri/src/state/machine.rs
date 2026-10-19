@@ -12,6 +12,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::i18n::Language;
 use crate::model::{SessionState, WaitingKind};
 use crate::state::summary;
 
@@ -29,10 +30,16 @@ pub struct PendingPermission {
 impl PendingPermission {
     /// The tool run `tool_name(tool_input)` is the one this request asked for: same tool, and
     /// same input or, failing that, the same summary (tolerates extra fields).
-    pub fn matches(&self, tool_name: &str, tool_input: &Value, cwd: Option<&str>) -> bool {
+    pub fn matches(
+        &self,
+        lang: Language,
+        tool_name: &str,
+        tool_input: &Value,
+        cwd: Option<&str>,
+    ) -> bool {
         self.tool_name == tool_name
             && ((!self.tool_input.is_null() && self.tool_input == *tool_input)
-                || self.summary == summary::permission(tool_name, tool_input, cwd))
+                || self.summary == summary::permission(lang, tool_name, tool_input, cwd))
     }
 }
 
@@ -151,8 +158,13 @@ const INPUT_NOTIFICATIONS: &[&str] = &[
     "agent_needs_input",
 ];
 
-/// Applies `event` to `current` at instant `now` (ISO string). Every row of the state table; anything else leaves the session unchanged.
-pub fn transition(current: &Session, event: &Event, now: &str) -> (Session, Vec<Effect>) {
+/// Applies `event` to `current` at instant `now` (ISO string); `lang` words the texts it stores. Every row of the state table; anything else leaves the session unchanged.
+pub fn transition(
+    lang: Language,
+    current: &Session,
+    event: &Event,
+    now: &str,
+) -> (Session, Vec<Effect>) {
     use SessionState::{Crashed, Done, Error, Idle, Paused, Starting, Waiting, Working};
     let mut next = current.clone();
     let mut effects = Vec::new();
@@ -212,8 +224,13 @@ pub fn transition(current: &Session, event: &Event, now: &str) -> (Session, Vec<
             cwd,
         } => {
             if live {
-                next.activity = Some(summary::activity(tool_name, tool_input, cwd.as_deref()))
-                    .filter(|a| !a.is_empty());
+                next.activity = Some(summary::activity(
+                    lang,
+                    tool_name,
+                    tool_input,
+                    cwd.as_deref(),
+                ))
+                .filter(|a| !a.is_empty());
             }
             // A pending permission keeps the session waiting.
             (live && current.pending_permission.is_none()).then_some((Working, None))
@@ -233,7 +250,7 @@ pub fn transition(current: &Session, event: &Event, now: &str) -> (Session, Vec<
             let answered = current
                 .pending_permission
                 .as_ref()
-                .is_none_or(|p| p.matches(tool_name, tool_input, cwd.as_deref()));
+                .is_none_or(|p| p.matches(lang, tool_name, tool_input, cwd.as_deref()));
             (live && answered).then(|| {
                 release(&mut next, &mut effects);
                 (Working, None)
@@ -248,7 +265,7 @@ pub fn transition(current: &Session, event: &Event, now: &str) -> (Session, Vec<
             if next.pending_permission.is_none() {
                 next.pending_permission = Some(PendingPermission {
                     tool_name: tool_name.clone(),
-                    summary: summary::permission(tool_name, tool_input, cwd.as_deref()),
+                    summary: summary::permission(lang, tool_name, tool_input, cwd.as_deref()),
                     tool_input: tool_input.clone(),
                 });
             }

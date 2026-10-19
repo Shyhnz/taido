@@ -21,9 +21,6 @@ use crate::sync::{apply, rows, store};
 
 /// Requests of one run, at most (§ 2.7).
 const MAX_REQUESTS: usize = 1000;
-/// Name of this device on the server.
-pub const DEVICE_NAME: &str = "Mac";
-
 /// What the engine needs from the app around it.
 pub trait SyncHooks: Send + Sync {
     /// Called before an apply, without the DB lock: close the terminals of these tasks
@@ -234,13 +231,15 @@ async fn join(
 ) -> AppResult<()> {
     let url = normalize_url(server_url)?;
     let email = email.trim();
-    {
+    // Name of this device on the server, in the user's language.
+    let device = {
         let conn = db.lock()?;
         check_can_join(&conn, email, how)?;
-    }
+        crate::i18n::device_name(crate::i18n::current_language(&conn))
+    };
     let login = match how {
-        Join::Signup => client.signup(&url, email, password, DEVICE_NAME).await,
-        Join::Login => client.login(&url, email, password, DEVICE_NAME).await,
+        Join::Signup => client.signup(&url, email, password, device).await,
+        Join::Login => client.login(&url, email, password, device).await,
     }
     .map_err(account_error)?;
     {

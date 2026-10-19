@@ -22,6 +22,7 @@ use crate::db::{self, journal, settings, terminals as term_rows};
 use crate::error::{AppError, AppResult};
 use crate::events::TaskStateChanged;
 use crate::hooks::payload;
+use crate::i18n;
 use crate::model::{
     Agent, ContextUsage, Counts, JournalKind, SessionState, TerminalInfo, WaitingKind,
 };
@@ -261,7 +262,8 @@ impl Inner {
             return Ok(false);
         };
         let now = db::now_utc();
-        let (next, effects) = transition(&row.session, event, &now);
+        let lang = i18n::current_language(&tx);
+        let (next, effects) = transition(lang, &row.session, event, &now);
         let mut notifies = false;
         for effect in effects {
             match effect {
@@ -280,7 +282,7 @@ impl Inner {
             self.queue_notice(PendingNotice {
                 task_id: row.task_id.clone(),
                 terminal_id: row.current_terminal_id.clone(),
-                body: notify::body(row.agent, &next),
+                body: notify::body(lang, row.agent, &next),
             });
         }
         self.mark(&row.task_id, &now);

@@ -3,7 +3,7 @@
 //! that macOS asks no permission (a workspace recorded before, such as `~/Todo` or
 //! `~/Documents/Todo`, is kept). Every project without folder gets `<workspace>/<name>`, every
 //! sub-project `<its parent's folder>/<name>` (see `subjects::ensure_own_folder`), and tasks
-//! without project work in `<workspace>/Sans projet`. Projects linked to a folder of their
+//! without project work in `<workspace>/Inbox` (`Sans projet` in French, or whichever exists). Projects linked to a folder of their
 //! own keep it. Only folders are created, never a file in them.
 
 use std::path::{Path, PathBuf};
@@ -12,11 +12,19 @@ use rusqlite::{params, Connection};
 
 use crate::db::{now_utc, settings, subjects};
 use crate::error::AppResult;
+use crate::i18n;
 
 /// Name of the app's folder in the home folder (the product's name, to rename with it).
 pub const FOLDER_NAME: &str = "Taido";
-/// Folder of the tasks without project.
+/// Folder of the tasks without project, as the French tests see it (their language is pinned).
+#[cfg(test)]
 pub const NO_PROJECT_FOLDER: &str = "Sans projet";
+
+/// Name of the folder of the tasks without project under `root`: the one already there, else
+/// the current language's (« Inbox », « Sans projet »).
+pub fn no_project_name(conn: &Connection, root: &Path) -> &'static str {
+    i18n::folder_name(root, i18n::current_language(conn), i18n::NO_PROJECT)
+}
 
 /// The workspace folder recorded in the settings.
 pub fn root(conn: &Connection) -> AppResult<Option<PathBuf>> {
@@ -25,7 +33,15 @@ pub fn root(conn: &Connection) -> AppResult<Option<PathBuf>> {
 
 /// Folder of the tasks without project (`None` before the first launch).
 pub fn no_project_folder(conn: &Connection) -> AppResult<Option<String>> {
-    Ok(root(conn)?.map(|r| r.join(NO_PROJECT_FOLDER).to_string_lossy().into_owned()))
+    let Some(root) = root(conn)? else {
+        return Ok(None);
+    };
+    let folder = root.join(no_project_name(conn, &root));
+    // Made on first use, not at startup: the language is chosen after the first launch.
+    if let Err(e) = std::fs::create_dir_all(&folder) {
+        log::warn!("cannot create {}: {e}", folder.display());
+    }
+    Ok(Some(folder.to_string_lossy().into_owned()))
 }
 
 /// At startup: records `<home>/Taido` the first time (a folder recorded before is kept),
@@ -40,7 +56,10 @@ pub fn ensure(conn: &Connection, home: &Path) -> AppResult<usize> {
             r
         }
     };
-    std::fs::create_dir_all(root.join(NO_PROJECT_FOLDER))?;
+    // Before the language is chosen (first launch) the folder waits for its first use.
+    if settings::language(conn).is_some() {
+        std::fs::create_dir_all(root.join(no_project_name(conn, &root)))?;
+    }
     let mut stmt = conn.prepare(
         "SELECT id FROM subjects WHERE root_path IS NULL AND deleted_at IS NULL \
          AND is_group = 0 ORDER BY parent_id IS NOT NULL, position",

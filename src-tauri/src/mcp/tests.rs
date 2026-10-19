@@ -39,7 +39,7 @@ fn initialize_answers_the_asked_legacy_version_with_tools_and_instructions() {
     assert!(r["instructions"]
         .as_str()
         .expect("instructions")
-        .contains("range ça dans les notes du projet"));
+        .contains("put that in the project notes"));
 }
 
 #[test]
@@ -125,4 +125,34 @@ fn garbage_and_batches_are_bad_requests() {
         panic!("expected 400")
     };
     assert_eq!(v["error"]["code"], -32600);
+}
+
+/// Words and characters of French that must not reach the agent: it reads English only.
+fn french_marks(text: &str) -> Vec<String> {
+    let mut found: Vec<String> = text
+        .chars()
+        .filter(|c| "éèàêçùôîâ«»".contains(*c))
+        .map(String::from)
+        .collect();
+    for word in [
+        " le ",
+        " la ",
+        " les ",
+        " des ",
+        " une ",
+        "Sans projet",
+        "projet",
+    ] {
+        if text.contains(word) {
+            found.push(word.trim().to_string());
+        }
+    }
+    found
+}
+
+#[test]
+fn mcp_tool_descriptions_are_english() {
+    let definitions = tools::definitions().to_string();
+    assert_eq!(french_marks(&definitions), Vec::<String>::new());
+    assert_eq!(french_marks(INSTRUCTIONS), Vec::<String>::new());
 }

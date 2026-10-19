@@ -25,7 +25,7 @@
 //! | `sync_signups_closed` | Signup: the server does not accept new accounts.           |
 //! | `sync_offline` | Account: the sync server cannot be reached.                       |
 //! | `sync_server` | Account: the sync server answered with an unexpected error.        |
-//! | `file_not_here` | « Télécharger »: the attachment's file is not on this Mac and there |
+//! | `file_not_here` | « Télécharger »: the attachment's file is not on this device and there |
 //! |             | is no account to fetch it from.                                      |
 //! | `file_not_on_server` | « Télécharger »: the server does not have the file (yet).   |
 //! | `downloads_denied` | « Télécharger »: macOS refused access to the Downloads folder  |
@@ -80,15 +80,15 @@ pub enum AppError {
     SyncOffline(String),
     #[error("sync server error: {0}")]
     SyncServer(String),
-    #[error("the file of attachment {0} is not on this Mac and there is no account")]
+    #[error("the file of attachment {0} is not on this device and there is no account")]
     FileNotHere(String),
     #[error("the server does not have the file of attachment {0}")]
     FileNotOnServer(String),
     #[error("access to the downloads folder refused: {0}")]
     DownloadsDenied(String),
-    #[error("no space left on this Mac: {0}")]
+    #[error("no space left on this device: {0}")]
     DiskFull(String),
-    #[error("cannot write the file on this Mac: {0}")]
+    #[error("cannot write the file on this device: {0}")]
     FileWriteFailed(String),
     /// Dictation: macOS refused the microphone (Réglages Système › Confidentialité).
     #[error("microphone access refused")]

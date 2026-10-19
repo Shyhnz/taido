@@ -1087,6 +1087,8 @@ const en: Strings = {
 
   sync: {
     tab: "Sync",
+    /** Name of the phone in the server's device list. */
+    phoneDeviceName: "Phone",
     loading: "Loading…",
     loadError: "Couldn't read the sync status.",
     intro: "Sync your projects and tasks with your phone, through your server.",

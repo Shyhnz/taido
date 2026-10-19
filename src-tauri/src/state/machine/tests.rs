@@ -7,6 +7,7 @@
 use serde_json::json;
 
 use super::*;
+use crate::i18n::Language;
 use crate::model::SessionState::{Crashed, Done, Error, Idle, Paused, Starting, Waiting, Working};
 use crate::model::WaitingKind::{Input, Permission, Question};
 
@@ -538,7 +539,7 @@ fn rows() -> Vec<Row> {
 #[test]
 fn every_transition_row() {
     for row in rows() {
-        let (next, effects) = transition(&row.from, &row.event, NOW);
+        let (next, effects) = transition(Language::Fr, &row.from, &row.event, NOW);
         assert_eq!(
             (next.state, next.waiting_kind),
             row.to,
@@ -599,7 +600,7 @@ fn permission_turn_sequence() {
     ];
     let mut seen = Vec::new();
     for e in &events {
-        s = transition(&s, e, NOW).0;
+        s = transition(Language::Fr, &s, e, NOW).0;
         seen.push((s.state, s.waiting_kind));
     }
     assert_eq!(
@@ -624,9 +625,9 @@ fn legacy_pending_permission_matches_on_summary() {
         serde_json::from_str(r#"{"tool_name":"Bash","summary":"Commande : rm -rf dist"}"#)
             .expect("legacy json");
     assert_eq!(pending.tool_input, Value::Null);
-    assert!(pending.matches("Bash", &bash("rm -rf dist"), None));
-    assert!(!pending.matches("Bash", &bash("ls"), None));
-    assert!(!pending.matches("Read", &bash("rm -rf dist"), None));
+    assert!(pending.matches(Language::Fr, "Bash", &bash("rm -rf dist"), None));
+    assert!(!pending.matches(Language::Fr, "Bash", &bash("ls"), None));
+    assert!(!pending.matches(Language::Fr, "Read", &bash("rm -rf dist"), None));
 }
 
 /// Two sub-agents: B's auto-allowed tools run while A's Bash request is
@@ -646,7 +647,7 @@ fn parallel_tool_does_not_leave_the_permission() {
             notification_type: some("permission_prompt"),
         },
     ] {
-        s = transition(&s, &e, NOW).0;
+        s = transition(Language::Fr, &s, &e, NOW).0;
         assert_eq!(
             (s.state, s.waiting_kind),
             (Waiting, Some(Permission)),
@@ -654,7 +655,7 @@ fn parallel_tool_does_not_leave_the_permission() {
         );
         assert!(s.pending_permission.is_some(), "{e:?}");
     }
-    let (s, effects) = transition(&s, &post("Bash", bash("rm -rf dist")), NOW);
+    let (s, effects) = transition(Language::Fr, &s, &post("Bash", bash("rm -rf dist")), NOW);
     assert_eq!((s.state, s.pending_permission), (Working, None));
     assert_eq!(effects, vec![Effect::ReleasePermissions]);
 }

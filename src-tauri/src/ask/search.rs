@@ -218,7 +218,7 @@ pub fn session_exchanges(
             continue;
         }
         let who = if kind == "prompt" {
-            "Utilisateur".to_string()
+            "User".to_string()
         } else {
             crate::model::Agent::parse(&agent)
                 .unwrap_or_default()
@@ -265,9 +265,9 @@ pub fn search_conversations(conn: &Connection, scope: &Scope, query: &str) -> Ap
         let at = exchanges.last().map(|x| x.at.clone()).unwrap_or_default();
         hits.push(Hit {
             kind: "conversation",
-            excerpt: format!("{} : {}", e.who, excerpt(&e.text, &words)),
+            excerpt: format!("{}: {}", e.who, excerpt(&e.text, &words)),
             id,
-            title: format!("Conversation de la tâche « {title} »"),
+            title: format!("Conversation of the task \"{title}\""),
             at,
             score: total,
         });
@@ -278,7 +278,7 @@ pub fn search_conversations(conn: &Connection, scope: &Scope, query: &str) -> Ap
             hits.push(Hit {
                 kind: "conversation",
                 excerpt: excerpt(&text, &words),
-                title: format!("Question déjà posée : {}", q.question),
+                title: format!("Question already asked: {}", q.question),
                 id: q.id,
                 at: q.asked_at,
                 score,

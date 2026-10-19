@@ -1,4 +1,5 @@
 use super::*;
+use crate::i18n::Language;
 use crate::model::Agent;
 
 /// Records what the notifier shows and withdraws.
@@ -133,23 +134,65 @@ fn without_banner_nothing_breaks() {
 }
 
 #[test]
+fn notification_texts_follow_the_language() {
+    let waiting = session(SessionState::Waiting, None);
+    assert_eq!(
+        body(Language::En, Agent::Claude, &waiting),
+        "Claude is waiting for you"
+    );
+    assert_eq!(
+        body(Language::Fr, Agent::Claude, &waiting),
+        "Claude attend ta réponse"
+    );
+    assert_eq!(
+        body(
+            Language::En,
+            Agent::Codex,
+            &session(SessionState::Done, None)
+        ),
+        "Codex is done"
+    );
+    assert_eq!(
+        body(
+            Language::En,
+            Agent::Claude,
+            &session(SessionState::Error, Some("billing_error"))
+        ),
+        "Billing problem"
+    );
+}
+
+#[test]
 fn title_and_body() {
     assert_eq!(title(Some("Globex"), "Export CSV"), "Globex · Export CSV");
     assert_eq!(title(None, "Export CSV"), "Export CSV");
     assert_eq!(
-        body(Agent::Claude, &session(SessionState::Waiting, None)),
+        body(
+            Language::Fr,
+            Agent::Claude,
+            &session(SessionState::Waiting, None)
+        ),
         "Claude attend ta réponse"
     );
     assert_eq!(
-        body(Agent::Claude, &session(SessionState::Done, None)),
+        body(
+            Language::Fr,
+            Agent::Claude,
+            &session(SessionState::Done, None)
+        ),
         "Claude a fini"
     );
     assert_eq!(
-        body(Agent::Claude, &session(SessionState::Crashed, None)),
+        body(
+            Language::Fr,
+            Agent::Claude,
+            &session(SessionState::Crashed, None)
+        ),
         "Session arrêtée"
     );
     assert_eq!(
         body(
+            Language::Fr,
             Agent::Claude,
             &session(SessionState::Error, Some("rate_limit"))
         ),
@@ -157,17 +200,26 @@ fn title_and_body() {
     );
     assert_eq!(
         body(
+            Language::Fr,
             Agent::Claude,
             &session(SessionState::Error, Some("account_on_hold"))
         ),
         "Erreur : account_on_hold"
     );
     assert_eq!(
-        body(Agent::Codex, &session(SessionState::Waiting, None)),
+        body(
+            Language::Fr,
+            Agent::Codex,
+            &session(SessionState::Waiting, None)
+        ),
         "Codex attend ta réponse"
     );
     assert_eq!(
-        body(Agent::Codex, &session(SessionState::Done, None)),
+        body(
+            Language::Fr,
+            Agent::Codex,
+            &session(SessionState::Done, None)
+        ),
         "Codex a fini"
     );
 }

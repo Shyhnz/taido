@@ -84,7 +84,7 @@ pub async fn ask_project(app: AppHandle, input: AskInput) -> AppResult<AskStarte
         }
         let installed = state.terminals.installed_agents(&state.db)?;
         let env_vars = state.terminals.env().vars.clone();
-        let (scope, history, agent, program) = {
+        let (scope, history, agent, program, lang) = {
             let conn = state.db.lock()?;
             let scope = ask::scope(&conn, &input.subject_id)?;
             let history = match &input.thread_id {
@@ -97,7 +97,13 @@ pub async fn ask_project(app: AppHandle, input: AskInput) -> AppResult<AskStarte
                 Agent::Codex => AppError::CodexMissing,
             })?;
             let program = state.terminals.agent_binary(&conn, &env_vars, agent)?;
-            (scope, history, agent, program)
+            (
+                scope,
+                history,
+                agent,
+                program,
+                crate::i18n::current_language(&conn),
+            )
         };
         if state.asks.busy(&scope.subject_id) {
             return Err(AppError::Invalid(
@@ -121,7 +127,7 @@ pub async fn ask_project(app: AppHandle, input: AskInput) -> AppResult<AskStarte
                 empty
             }
         };
-        let system = ask::system_prompt(&scope);
+        let system = ask::system_prompt(&scope, lang);
         let args = match agent {
             Agent::Claude => ask::claude_args(&system, &data_dir.join(ask::MCP_FILE)),
             Agent::Codex => ask::codex_args(
@@ -201,7 +207,7 @@ pub async fn ask_save_note(
             subject_id: questions::subject_of(&conn, &question_id)?,
             group_id: None,
             title: title_of(&entry.question),
-            body: ask::as_markdown(&entry),
+            body: ask::as_markdown(&entry, crate::i18n::current_language(&conn)),
             kind: NoteKind::Page,
             source_task_id: None,
         },
@@ -225,7 +231,10 @@ pub async fn ask_make_task(
         &conn,
         &CreateTaskInput {
             title: title_of(&entry.question),
-            description: Some(ask::as_markdown(&entry)),
+            description: Some(ask::as_markdown(
+                &entry,
+                crate::i18n::current_language(&conn),
+            )),
             subject_id: Some(questions::subject_of(&conn, &question_id)?),
             section_id: None,
             due_date: None,

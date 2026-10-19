@@ -7,6 +7,7 @@ mod env;
 mod error;
 mod events;
 mod hooks;
+mod i18n;
 mod mcp;
 mod model;
 mod notify;
@@ -277,11 +278,13 @@ pub fn run() {
         });
     // The macOS menu bar. Windows gets none: a menu would sit inside the window.
     #[cfg(target_os = "macos")]
-    let app_builder = app_builder.menu(app_menu).on_menu_event(|app, event| {
-        if event.id() == QUIT_MENU_ID {
-            request_quit(app);
-        }
-    });
+    let app_builder = app_builder
+        .menu(|app| app_menu(app, i18n::Language::En))
+        .on_menu_event(|app, event| {
+            if event.id() == QUIT_MENU_ID {
+                request_quit(app);
+            }
+        });
     app_builder
         .on_window_event(|window, event| match event {
             // Closing the window keeps the app and its sessions running; the Dock
@@ -371,6 +374,13 @@ pub fn run() {
             }
             let backups = data_dir.join("backups");
             backup_now(&conn, &backups);
+            // The language the core words its texts in; a change applies at the next launch
+            // (hook settings) or at once (menu bar, see `update_settings`).
+            let lang = i18n::current_language(&conn);
+            #[cfg(target_os = "macos")]
+            if let Err(e) = app_menu(app.handle(), lang).and_then(|m| app.set_menu(m)) {
+                log::warn!("cannot set the menu bar: {e}");
+            }
             let db = Arc::new(Mutex::new(conn));
             start_heartbeat(Arc::downgrade(&db));
             let notifier = Arc::new(start_notifier(app.handle()));
@@ -380,7 +390,7 @@ pub fn run() {
                 Timing::default(),
             ));
             let (terminals, hooks_port) =
-                start_terminals(app.handle(), &data_dir, Arc::clone(&sessions))?;
+                start_terminals(app.handle(), &data_dir, lang, Arc::clone(&sessions))?;
             let summarizer = Arc::new(start_summarizer(
                 app.handle(),
                 Arc::clone(&db),
@@ -458,8 +468,11 @@ pub fn run() {
 
 /// macOS menu bar: the predefined items, except « Quitter » which asks the UI first.
 #[cfg(target_os = "macos")]
-fn app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
-    let quit = MenuItemBuilder::with_id(QUIT_MENU_ID, "Quitter Taido")
+pub(crate) fn app_menu(
+    app: &AppHandle,
+    lang: i18n::Language,
+) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+    let quit = MenuItemBuilder::with_id(QUIT_MENU_ID, i18n::menu::quit(lang))
         .accelerator("CmdOrCtrl+Q")
         .build(app)?;
     let app_submenu = SubmenuBuilder::new(app, "Taido")
@@ -473,7 +486,7 @@ fn app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
         .separator()
         .item(&quit)
         .build()?;
-    let edit = SubmenuBuilder::new(app, "Édition")
+    let edit = SubmenuBuilder::new(app, i18n::menu::edit(lang))
         .undo()
         .redo()
         .separator()
@@ -482,7 +495,7 @@ fn app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
         .paste()
         .select_all()
         .build()?;
-    let window = SubmenuBuilder::new(app, "Fenêtre")
+    let window = SubmenuBuilder::new(app, i18n::menu::window(lang))
         .minimize()
         .maximize()
         .separator()
@@ -585,13 +598,14 @@ fn notification_clicked(app: &AppHandle, task_id: String) {
 fn start_terminals(
     app: &AppHandle,
     data_dir: &Path,
+    lang: i18n::Language,
     sessions: Arc<SessionService>,
 ) -> Result<(TerminalService, u16), Box<dyn std::error::Error>> {
     let server = hooks::HookServer::bind()?;
     let port = server.port;
     let hooks_file = data_dir.join(terminal_service::HOOKS_FILE);
     let settings =
-        serde_json::to_string_pretty(&crate::agents::claude::hooks_settings(server.port))?;
+        serde_json::to_string_pretty(&crate::agents::claude::hooks_settings(lang, server.port))?;
     crate::agents::claude::write_private(&hooks_file, &settings)?;
     let mcp_file = data_dir.join(terminal_service::MCP_FILE);
     let mcp_config = serde_json::to_string_pretty(&crate::agents::claude::mcp_config(server.port))?;

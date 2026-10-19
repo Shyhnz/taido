@@ -13,6 +13,7 @@ use crate::db::positions::{self, Scope};
 use crate::db::top_level::{self, TopItem};
 use crate::db::{new_id, non_empty, now_utc, sections};
 use crate::error::{AppError, AppResult};
+use crate::i18n;
 use crate::model::{CreateSubjectInput, ReorderInput, Subject, SubjectColor, UpdateSubjectInput};
 use crate::views;
 
@@ -24,7 +25,8 @@ const COLUMNS: &str = concat!(
     "), parent_id, is_group"
 );
 
-/// Name of a group created without one.
+/// Name of a group created without one, as the French tests see it (their language is pinned).
+#[cfg(test)]
 pub const NEW_GROUP_NAME: &str = "Nouveau groupe";
 
 pub fn create(conn: &Connection, input: &CreateSubjectInput) -> AppResult<Subject> {
@@ -256,7 +258,7 @@ pub fn folder_name(name: &str) -> String {
     }
     let cleaned = cleaned[..end].trim_end().to_string();
     if cleaned.is_empty() {
-        "sous-projet".to_string()
+        "project".to_string()
     } else {
         cleaned
     }
@@ -526,7 +528,7 @@ pub fn group_projects(
                 .as_deref()
                 .map(str::trim)
                 .filter(|n| !n.is_empty())
-                .unwrap_or(NEW_GROUP_NAME);
+                .unwrap_or(i18n::new_group(i18n::current_language(&tx)));
             // The group takes the first project's place in the sidebar.
             let position = match &first.parent_id {
                 Some(g) => get(&tx, g)?.position,

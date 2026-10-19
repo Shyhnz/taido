@@ -155,3 +155,41 @@ fn a_long_project_name_gives_a_short_folder() {
     assert_eq!(folder, "é".repeat(100));
     assert_eq!(subjects::folder_name(&"a".repeat(300)).len(), 200);
 }
+
+fn set_language(conn: &Connection, value: Option<&str>) {
+    conn.execute("DELETE FROM settings WHERE key = 'language'", [])
+        .expect("clear");
+    if let Some(v) = value {
+        conn.execute(
+            "INSERT INTO settings (key, value) VALUES ('language', ?1)",
+            [format!("\"{v}\"")],
+        )
+        .expect("set");
+    }
+}
+
+#[test]
+fn the_inbox_folder_is_named_in_the_language_of_its_creation_and_then_kept() {
+    let conn = open_in_memory().expect("db");
+    let docs = tempfile::tempdir().expect("documents");
+    // First launch: no language yet, so the folder waits for its first use.
+    set_language(&conn, None);
+    ensure(&conn, docs.path()).expect("startup");
+    let root = docs.path().join(FOLDER_NAME);
+    assert!(!root.join("Inbox").exists() && !root.join(NO_PROJECT_FOLDER).exists());
+    // The language is chosen, then the folder is made in it.
+    set_language(&conn, Some("fr"));
+    let folder = no_project_folder(&conn).expect("folder").expect("root");
+    assert_eq!(Path::new(&folder), root.join("Sans projet"));
+    assert!(Path::new(&folder).is_dir());
+    // Switching language never renames or duplicates it.
+    set_language(&conn, Some("en"));
+    assert_eq!(no_project_folder(&conn).expect("folder"), Some(folder));
+    assert!(!root.join("Inbox").exists());
+    // A new install in English gets « Inbox ».
+    let fresh = open_in_memory().expect("db");
+    set_language(&fresh, Some("en"));
+    let other = tempfile::tempdir().expect("documents");
+    ensure(&fresh, other.path()).expect("startup");
+    assert!(other.path().join(FOLDER_NAME).join("Inbox").is_dir());
+}
