@@ -126,12 +126,14 @@ pub fn link_fallback(intro: &str, url: &str) -> String {
     )
 }
 
-/// The host of a public URL (`https://sync.example.com/` gives `sync.example.com`).
+/// The `host[:port]` of a public URL (`https://sync.example.com/taido/` gives
+/// `sync.example.com`): no scheme, path, query or fragment.
 fn host_of(public_url: &str) -> &str {
-    public_url
+    let rest = public_url
+        .trim()
         .trim_start_matches("https://")
-        .trim_start_matches("http://")
-        .trim_end_matches('/')
+        .trim_start_matches("http://");
+    rest.split(['/', '?', '#']).next().unwrap_or("")
 }
 
 /// The whole HTML document. `preheader`, `title` and `footer` are escaped; `body` is HTML
@@ -203,6 +205,25 @@ pub fn page(title: &str, body: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn footer_host_drops_path() {
+        assert_eq!(
+            host_of("https://sync.example.com/taido/"),
+            "sync.example.com"
+        );
+        assert_eq!(
+            host_of("https://sync.example.com/a?x=1#top"),
+            "sync.example.com"
+        );
+        assert_eq!(host_of("sync.example.com/"), "sync.example.com");
+    }
+
+    #[test]
+    fn footer_host_keeps_port() {
+        assert_eq!(host_of("http://127.0.0.1:3020"), "127.0.0.1:3020");
+        assert_eq!(host_of("http://127.0.0.1:3020/x"), "127.0.0.1:3020");
+    }
 
     #[test]
     fn text_is_escaped() {

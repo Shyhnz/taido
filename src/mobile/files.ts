@@ -30,7 +30,7 @@
 
 import type { Attachment, AttachmentRemote } from "../bindings";
 import { type AttachmentRec, isPageImage, mimeOf } from "../lib/mock-links";
-import { DEFAULT_MAX_FILE_BYTES, MAX_CHUNK_BYTES } from "../lib/sync-proto";
+import { MAX_CHUNK_BYTES } from "../lib/sync-proto";
 import {
   type AddedFiles,
   type AddedPageFiles,
@@ -344,10 +344,6 @@ export class PhoneFiles implements WebAttachmentFiles {
     let added = 0;
     try {
       for (const file of files) {
-        if (file.size > DEFAULT_MAX_FILE_BYTES) {
-          tooLarge.push(file.name);
-          continue;
-        }
         await this.keep({ taskId }, file.name, file.type, file, false);
         added += 1;
       }
@@ -365,18 +361,7 @@ export class PhoneFiles implements WebAttachmentFiles {
 
   /** Bytes pasted as base64 (`addAttachmentData`), through the same path. */
   async addData(taskId: string, name: string, blob: Blob): Promise<void> {
-    await this.checkPasted(blob);
     await this.keep({ taskId }, name, blob.type, blob, true);
-  }
-
-  /** Never more than the hard limit. */
-  private async checkPasted(blob: Blob): Promise<void> {
-    if (blob.size > DEFAULT_MAX_FILE_BYTES) {
-      throw new WebFileError(
-        "too_large",
-        `pasted data over ${DEFAULT_MAX_FILE_BYTES} bytes`,
-      );
-    }
   }
 
   /**
@@ -395,10 +380,6 @@ export class PhoneFiles implements WebAttachmentFiles {
       throw { kind: "invalid", message: `not an image: ${other.name}` };
     try {
       for (const file of files) {
-        if (file.size > DEFAULT_MAX_FILE_BYTES) {
-          tooLarge.push(file.name);
-          continue;
-        }
         ids.push(
           await this.keep({ pageId }, file.name, file.type, file, false),
         );
@@ -418,7 +399,6 @@ export class PhoneFiles implements WebAttachmentFiles {
     if (!isPageImage(name, blob.type)) {
       throw { kind: "invalid", message: `not an image: ${name}` };
     }
-    await this.checkPasted(blob);
     return this.keep({ pageId }, name, blob.type, blob, true);
   }
 

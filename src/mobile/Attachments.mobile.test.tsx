@@ -20,7 +20,6 @@ import {
   vi,
 } from "vitest";
 import { fr } from "../i18n/fr";
-import { DEFAULT_MAX_FILE_BYTES } from "../lib/sync-proto";
 import { openFold } from "../test/panelFolds";
 import type { MemoryFileStore } from "./files";
 import type { Phone } from "./test/helpers";
@@ -347,7 +346,7 @@ describe("« Pièces jointes » on the web", () => {
       expect(mac).not.toHaveTextContent(fr.attachments.remote.downloading),
     );
   });
-  it("says when the device is full, and when a pasted file is too large", async () => {
+  it("says when the device is full", async () => {
     const t = await newTask("Appareil plein");
     const { user, section } = await openTask(t.id);
     const toast = () => toasts.useToasts.getState().toasts[0]?.message;
@@ -356,17 +355,6 @@ describe("« Pièces jointes » on the web", () => {
     await user.upload(input as HTMLInputElement, [new File(["abc"], "a.txt")]);
     await waitFor(() => expect(toast()).toBe(fr.attachments.web.error.storage));
     expect(within(section).queryByText("a.txt")).toBeNull();
-
-    const huge = {
-      name: "video.mp4",
-      type: "video/mp4",
-      size: DEFAULT_MAX_FILE_BYTES + 1,
-    } as unknown as File;
-    fireEvent.paste(section, { clipboardData: { files: [huge] } });
-    // Over the 100 MB limit: said plainly.
-    await waitFor(() =>
-      expect(toast()).toBe(fr.attachments.web.tooLarge("video.mp4")),
-    );
   });
 
   it("says « Ajout… » while files are kept, and a pick meanwhile adds nothing twice", async () => {

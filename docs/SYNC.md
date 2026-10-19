@@ -5,9 +5,8 @@ phone web app (PWA) works against the same server: the wire protocol (`crates/sy
 server (`sync-server/`), the desktop core (`src-tauri/src/sync/`), the desktop UI and the phone
 app. Sync is optional: the desktop app is fully usable without an account.
 
-**Read § 0 first: it wins over §§ 1–11 where they disagree.** Version labels such as "V2.7",
-"V2.7 bis" and "V2.8" name successive revisions of the protocol and of the apps; the protocol
-version on the wire is `PROTOCOL_VERSION = 3`.
+**Read § 0 first: it wins over §§ 1–11 where they disagree.** The protocol version on the wire
+is `PROTOCOL_VERSION = 3`.
 
 | Part | Where |
 | --- | --- |
@@ -21,30 +20,30 @@ version on the wire is `PROTOCOL_VERSION = 3`.
 
 ---
 
-## 0. Protocol 3 (Taido V2.7)
+## 0. Protocol 3
 
-> **« Protocole 3 ».** This section is the single description of what Taido V2.7 changes
-> (`PROTOCOL_VERSION = 3`); § 0.13 adds the files of attachments (V2.7 bis). §§ 1–11 below are
-> the original contract: where one of them disagrees with this section, **this section wins**. Short
-> contradictions were fixed in place; the long ones carry a pointer here.
+> This section is the single description of protocol 3 (`PROTOCOL_VERSION = 3`): accounts, the
+> entities beyond projects, sections and tasks, and the files of attachments (§ 0.13). §§ 1–11
+> below are the base contract: where one of them disagrees with this section, **this section
+> wins**. Short contradictions are fixed in place; the long ones carry a pointer here.
 
 ### 0.1 Scope and compatibility
 
 - Many accounts on one server (e-mail + password), an optional server that you run
-  yourself.
+  yourself. Account creation can be closed with `TAIDO_SIGNUPS=closed` (§ 0.2).
 - Four new synced entities (§ 0.5), `SubjectData.is_group`, `TaskData.board_column_id`, account
   messages and error codes (§ 0.2).
-- **No compatibility layer.** A protocol 2 client gets `unsupported_protocol`; a protocol 3 server
-  starts on a **new, empty data directory** and refuses (exit 1, clear message) to start on a
-  legacy single-account database that holds a password or records (an empty one is upgraded). A
-  Mac sends all its rows to a new account (§ 0.10 rule 4).
-- Clients that do not know an entity ignore its rows (the phone did until V2.8, § 0.9).
-- **Declared entities (project notebook, 2026-10-14).** A sync request may carry
+- **No compatibility layer.** A client of another protocol version gets `unsupported_protocol`.
+  The server refuses to start (exit 1, clear message) on a database of the former
+  single-account schema that holds a password or records (an empty one is upgraded): start it
+  on a new, empty data directory. A device sends all its rows to a new account (§ 0.10 rule 4).
+- Clients that do not know an entity ignore its rows.
+- **Declared entities (notebook).** A sync request may carry
   `known_entities`, the wire names of the entities the client reads (additive, optional, the
   protocol stays 3). The server's pull (and its answer to a refused push) holds back every row of
   an entity outside `known_entity_set(known_entities)` = the eight historical entities
   (`LEGACY_ENTITIES`: `subject` … `attachment`) plus the listed names it knows. A request without
-  the field (a Mac or web app made before the notebook) gets exactly what it got before:
+  the field (a Mac or web app that predates the notebook) gets only the historical entities:
   `note_group`, `note_page`, `note_attachment` never reach it. Filtered rows take no room in a
   page; `has_more` and the cursor are computed over the rows actually sent. Pushes are not
   filtered (a new client's notebook rows are stored). The Mac declares `Entity::ALL`.
@@ -53,11 +52,11 @@ version on the wire is `PROTOCOL_VERSION = 3`.
   whole response unreadable.
 - **Cursor reset when the set grows.** The Mac stores the list it declared
   (`sync_known_entities` in `settings`). When the list of this build has a name the stored one
-  lacks — or nothing is stored (a build made before the declaration) — the cursor goes back to 0
-  once, before the run: rows the server held back from the older build (e.g. notebook pages made
-  on another device) are then pulled. The phone does the same.
-- **Deploy order:** the **server first**, then the clients. An old server ignores
-  `known_entities` and sends every row (as before); a new server protects old clients.
+  lacks — or nothing is stored (a build that predates the declaration) — the cursor goes back
+  to 0 once, before the run: rows the server held back from the older build (e.g. notebook pages
+  made on another device) are then pulled. The phone does the same.
+- **Update order:** the **server first**, then the clients. A server that does not know
+  `known_entities` sends every row; one that does protects older clients.
 - Sync stays **fully off** until an account is linked. Without an account the app works locally.
 
 ### 0.2 Accounts
@@ -65,20 +64,34 @@ version on the wire is `PROTOCOL_VERSION = 3`.
 An account = `id` (UUID), `email` (trimmed, lowercase, at most 254 characters, `local@a.b…` with
 no space or control character), `password_hash` (argon2id PHC), `created_at`. A device (`devices`) belongs to one account; every login creates a new device with
 its own revocable bearer token (43 characters, base64url of 32 random bytes, stored as hex
-SHA-256, shown once). Passwords have at least **10 characters**. The address is **not verified**
-at signup.
+SHA-256, shown once). Passwords have at least **10 characters**.
+
+**Address confirmation.** When the server can send mail (`TAIDO_SMTP_HOST` and
+`TAIDO_PUBLIC_URL` both set), signup e-mails a link `TAIDO_PUBLIC_URL/confirmer?t=<token>` (valid
+24 hours; the token is stored as a SHA-256 hash). The link opens a page with one button
+(`GET /confirmer?t=…` only shows the page, because mail scanners open links on their own;
+`POST /confirmer` with the form field `t` confirms and sends a welcome mail). The account works
+before it is confirmed; `AccountResponse.email_verified` tells the apps, which offer « Renvoyer
+le mail » (`POST /api/email/resend`, Bearer, 204; 503 `mail_unavailable` when the server cannot
+send; 3 per account per hour). Without a mailer, accounts are confirmed at signup. A password
+reset by e-mail confirms the address too. Unknown or expired links count on a per-client limiter
+(20 per hour, 1000 for the server).
+
+**Closed signups.** `TAIDO_SIGNUPS=closed` makes `POST /api/signup` answer 403 `signups_closed`
+before it reads anything; login, password reset, sync and existing accounts are unaffected
+(to create accounts, start the server with `open`, then restart it with `closed`).
 
 | Route | Auth | Request (body ≤ 4 KiB) | Response | Errors |
 | --- | --- | --- | --- | --- |
-| `POST /api/signup` | — | `SignupRequest {protocol, email, password, device_name}` | `LoginResponse` (200) | 400 `bad_email` / `weak_password` / `bad_request` / `unsupported_protocol`, 409 `email_taken`, 413, 429 |
+| `POST /api/signup` | — | `SignupRequest {protocol, email, password, device_name}` | `LoginResponse` (200) | 400 `bad_email` / `weak_password` / `bad_request` / `unsupported_protocol`, 403 `signups_closed`, 409 `email_taken`, 413, 429 |
 | `POST /api/login` | — | `LoginRequest {protocol, email, password, device_name}` | `LoginResponse {protocol, token, device_id, server_epoch}` | 400, 401, 413, 429 |
-| `GET /api/account` | Bearer | — | `AccountResponse {protocol, email, created_at}` | 401 |
+| `GET /api/account` | Bearer | — | `AccountResponse {protocol, email, created_at, email_verified}` | 401 |
 | `POST /api/logout` | Bearer | — | `204` (this device's token revoked) | 401 |
 | `POST /api/password/forgot` | — | `ForgotRequest {protocol, email}` | `204` | 400 `bad_email`, 400 `unsupported_protocol`, 413, 429, 503 `mail_unavailable` |
 | `POST /api/password/reset` | — | `ResetRequest {protocol, email, code, password}` | `204` | 400 `weak_password` / `invalid_code` / `unsupported_protocol`, 413, 429 |
 
-New `ErrorCode`s: `email_taken` (409), `weak_password`, `bad_email`, `invalid_code` (400),
-`mail_unavailable` (503). `message` stays English, for logs.
+Account `ErrorCode`s: `email_taken` (409), `weak_password`, `bad_email`, `invalid_code` (400),
+`signups_closed` (403), `mail_unavailable` (503). `message` stays English, for logs.
 
 - **Login.** A wrong password and an unknown or malformed address give the **same** 401 (the
   unknown address is checked against a dummy argon2 hash of the same cost, warmed up at start, so
@@ -115,8 +128,10 @@ Code, not link: nothing to open in a browser, nothing to host.
   The reset does not log in: the app chains `login` with the new password.
 - **Mail transport.** SMTP only (the server knows nothing of the service behind it): `lettre` 0.11.23, `TAIDO_SMTP_HOST` / `_PORT` (465 = implicit TLS
   through `relay()`, any other port = STARTTLS) / `_USER` + `_PASSWORD` (together or not at all)
-  / `TAIDO_MAIL_FROM`; no host = no e-mail (503). The key lives only in the server's
-  environment file on the server, never in the repository nor the logs.
+  / `TAIDO_MAIL_FROM`; no host = no e-mail (503). The SMTP password lives only in the server's
+  environment, never in the repository nor the logs. The last line of each mail names the
+  server by the `host[:port]` of `TAIDO_PUBLIC_URL` (scheme, path and query dropped); without
+  `TAIDO_PUBLIC_URL` it only says « Taido ».
 
 ### 0.4 Records per account
 
@@ -146,9 +161,8 @@ Wire names `board_column`, `time_segment`, `relation`, `attachment` (Rust struct
 | `relation` | `task_relations` | `from_task_id`, `to_task_id`, `kind` (`blocks` \| `relates_to`), `created_at`, `deleted_at` | not to itself | `deleted_at`, tombstone on purge |
 | `attachment` | `attachments` | `task_id`, `file_name`, `mime_type`, `size`, `sha256` (optional), `created_at`, `deleted_at` | `file_name` 1–255 bytes, no `/` nor `\`, not blank; `sha256`, when present, exactly 64 characters `[0-9a-f]` | `deleted_at`, tombstone on purge |
 
-**Project notebook:** three more entities, additive
-(the protocol stays 3, § 0.1: a client that does not know them ignores their rows — see the
-caveat about older Macs below).
+**Project notebook:** three more entities, additive (a client that does not know them ignores
+their rows — see « Older clients » below).
 
 | Entity | Mac table | `data` | Validation | Deleted by |
 | --- | --- | --- | --- | --- |
@@ -159,29 +173,27 @@ caveat about older Macs below).
 An `attachments` row is an `attachment` on the wire when `task_id` is set and a
 `note_attachment` when `note_page_id` is set (migration `0021_notes.sql`: exactly one of them).
 Local-only columns of a page image: the same as an attachment's (`stored_path`, `remote`,
-`shared`). Pages and groups have none. Migration `0021_notes.sql` brings the triggers to 30
-(`sync::TRIGGER_COUNT`).
+`shared`). Pages and groups have none. Migration `0021_notes.sql` adds the notebook triggers.
 
-**Older clients.** A Mac built before the notebook parses every pulled row with the strict
+**Older clients.** A Mac that predates the notebook parses every pulled row with the strict
 `sync_proto::Change` enum: a `note_*` row would make the whole response unreadable there. The
 server therefore sends notebook rows only to clients that declare them (§ 0.1), so an older Mac
 or web app keeps syncing everything else; once updated, its cursor goes back to 0 once and the
 notebook arrives.
 
 Added fields of existing entities (absent = default): `SubjectData.is_group` (`false`),
-`TaskData.board_column_id` (`null`), `AttachmentData.sha256` (absent = unknown; V2.7 bis,
-additive, the protocol stays 3; an absent hash is not written to the JSON).
+`TaskData.board_column_id` (`null`), `AttachmentData.sha256` (absent = unknown; additive, an
+absent hash is not written to the JSON).
 
 **Local-only columns**, never sent, never overwritten by an apply: `time_segments.agent_session_id`
 and `attachments.stored_path` (plus the earlier ones: `subjects.root_path`,
-`sections.subpath`, `tasks.workdir_override`), plus V2.7 bis's `attachments.remote` and
-`attachments.shared` (§ 0.13). The
-**files** of attachments do not travel in sync rows: since V2.7 bis they go through their own
-routes (§ 0.13); the state of Claude sessions, terminals and the journal is never synced.
-Migration
-`0016_sync_v2.sql` adds the triggers (24 in all, `sync::TRIGGER_COUNT`) on the four tables and on
+`sections.subpath`, `tasks.workdir_override`), plus `attachments.remote` and
+`attachments.shared` (§ 0.13). The **files** of attachments do not travel in sync rows: they go
+through their own routes (§ 0.13); the state of agent sessions, terminals and the journal is
+never synced. Migration `0016_sync_v2.sql` adds the triggers on the four tables and on
 `subjects.is_group` / `tasks.board_column_id`; they watch the synced columns only (a change of
-`agent_session_id`, `stored_path` or `updated_at` alone records nothing).
+`agent_session_id`, `stored_path` or `updated_at` alone records nothing). All migrations
+together define 30 triggers (`sync::TRIGGER_COUNT`).
 
 ### 0.6 Apply on the Mac (extends § 2.5)
 
@@ -256,7 +268,7 @@ end with one relation.
 **Attachments.** A new pulled attachment gets `stored_path` = the task's attachment folder on this
 Mac + `file_name`, else `<app folder>/Pièces jointes/<task id>/<file_name>` (the app folder is
 `$HOME/Taido` when none is recorded): always absolute, **the row does not create the file**
-(since V2.7 bis the background job downloads it, § 0.13; its state starts at `missing`). A known attachment
+(the background job downloads it, § 0.13; its state starts at `missing`). A known attachment
 keeps its own path. The name is a free one, like a local copy's (`name (2).ext`…): never a file
 on disk nor another live attachment's path (ASCII case ignored); `.` or `..` becomes `fichier`.
 A local copy skips the paths of pulled attachments the same way, and removing an attachment
@@ -271,8 +283,9 @@ The four default columns of a project (À faire · En cours · À valider · Ter
 (like a re-enqueue, § 2.6). Result: two devices that create the same board before syncing make
 one set of four; defaults created late never undo a rename made elsewhere (any real edit has a
 later stamp); a stored tombstone stays final (a default column deleted elsewhere stays deleted).
-Accepted residual: a Mac whose columns already had random ids (made before V2.7) and another
-device creating the defaults before pulling them can end with 8 columns (manual cleanup).
+Accepted residual: a Mac whose columns have random ids (made by a build that predates the fixed
+ids) and another device creating the defaults before pulling them can end with 8 columns (manual
+cleanup).
 
 ### 0.8 Running segments belong to the Mac that runs them
 
@@ -288,12 +301,11 @@ A running time segment (`ended_at = null`) is **this Mac's** only when it has a 
 - The views count every running segment up to now (`running_since` = the earliest start); while
   two Macs run the same task only the earliest is counted live, the final sum is right once both
   stopped.
-- **« Arrêter » (V2 follow-up, 2026-10-11)**: every device (Mac, site, phone) can stop **any**
-  running segment by hand (`stop_time_segment` / `stopTimeSegment`): `ended_at` = now (never
-  before `started_at`), `stop_reason = null`, synced like any edit (no protocol change). It is
-  then an ordinary stopped segment, removable with « Retirer ce temps ». This fixes the former
-  residual (the running segment of a lost or restored Mac, or one whose session row was
-  deleted, ran forever everywhere). The Mac that ran it accepts the pulled stop (its local
+- **« Arrêter »**: every device (Mac, site, phone) can stop **any** running segment by hand
+  (`stop_time_segment` / `stopTimeSegment`): `ended_at` = now (never before `started_at`),
+  `stop_reason = null`, synced like any edit. It is then an ordinary stopped segment, removable
+  with « Retirer ce temps ». This is how the running segment of a lost or restored Mac, or one
+  whose session row was deleted, is ended. The Mac that ran it accepts the pulled stop (its local
   session id stays, the row is no longer running so no chrono path touches it) and its next
   reconcile in which a session counts opens a **new** segment. Safety net: a pulled version that
   runs again a segment this Mac had stopped drops its local session id, so it can never violate
@@ -303,10 +315,10 @@ A running time segment (`ended_at = null`) is **this Mac's** only when it has a 
 
 Protocol 3 and login by e-mail (details in § 6.3). It keeps `is_group` and `board_column_id` and
 sends them back unchanged (a renamed task stays in « À valider », a renamed group stays a group).
-Since V2.7 bis it **applies the `attachment` rows** (shown on the task, parked while the task is
-missing) and carries their files (§ 0.13). Since **V2.8** it also applies, keeps and pushes the
-rows of `board_column`, `time_segment` and `relation`, with the order, parking, tombstone ranks
-and cascades of § 0.6 (`src/mobile/apply.ts`):
+It **applies the `attachment` rows** (shown on the task, parked while the task is missing) and
+carries their files (§ 0.13). It also applies, keeps and pushes the rows of `board_column`,
+`time_segment` and `relation`, with the order, parking, tombstone ranks and cascades of § 0.6
+(`src/mobile/apply.ts`):
 
 - **Default columns** (§ 0.7) have the Mac's fixed ids and are queued at `EPOCH_STAMP`; when the
   phone is linked they are made only **after its first complete pull** (`sync.pulledOnce`, set
@@ -326,14 +338,13 @@ and cascades of § 0.6 (`src/mobile/apply.ts`):
   attachments; a page with a missing group or task is applied without it and parked; N11 takes a
   page out of a group of another project). Deletion guard: pages and groups are a class of their
   own, images count with the attachments. Purge: pages deleted more than 24 h ago, a purged
-  project's notebook; a summary whose task is purged is unlinked. The store key is `sync.4`, so a
-  `sync.3` build refuses the set and cannot send a deletion of the rows it does not know.
-- **Older web app:** the store key was `sync.3` in V2.8; a `sync.2` set is migrated once (its
-  `board_column:` / `time_segment:` / `relation:` snapshot, outbox and held entries dropped, cursor
-  back to 0 when linked); a V2.7 bis tab refuses a `sync.3` set, so it can delete nothing. It cannot sign up nor reset a password:
-`signup`, `forgot` and `reset` reject `invalid` (`NOT_ON_THE_PHONE`), the UI says « Crée ton
-compte ou change ton mot de passe depuis le Mac ». It follows the Mac for account switching
-(§ 0.10) and reads `GET /api/account` after login and after every successful run.
+  project's notebook; a summary whose task is purged is unlinked. The sync part of the saved set
+  is stored under the key `sync.4` (§ 6.2): a build that does not know a row type reads another
+  key, refuses the set and so cannot send a deletion of the rows it does not know.
+- **Accounts.** The phone cannot sign up nor reset a password: `signup`, `forgot` and `reset`
+  reject `invalid` (`NOT_ON_THE_PHONE`), the UI says « Crée ton compte ou change ton mot de passe
+  depuis le Mac ». It follows the Mac for account switching (§ 0.10) and reads `GET /api/account`
+  after login and after every successful run.
 
 ### 0.10 Account switching rules (every device)
 
@@ -354,17 +365,17 @@ compte ou change ton mot de passe depuis le Mac ». It follows the Mac for accou
    a device that holds data asks first** « Fusionner avec ce compte ? » (« Fusionner » is the
    default, « Annuler »). « Holds data » = at least one project or task, « Sans projet »
    included; unknown counts as holding. After a password reset, the question comes after the
-   reset succeeded, just before the chained login. A « replace this device's data with the
-   account's » option was considered and **deferred**: wiping the local data would also cascade
-   the Claude sessions and the journal.
+   reset succeeded, just before the chained login. There is no « replace this device's data with
+   the account's » option: wiping the local data would also cascade the agent sessions and the
+   journal.
 4. **Every join forgets what a previous link learnt from its server and re-sends everything.** In
    one transaction: cursor, epoch, `sync_known` and `sync_parked` (phone: `parked` emptied, every
    snapshot stamp back to `EPOCH_STAMP`) are forgotten, **the outbox is kept** (real edits keep
    their own stamps), then every live or soft-deleted row without an outbox entry is enqueued at
    `EPOCH_STAMP` (§ 2.6): a stale copy loses to any real server version, which comes back with the
-   first pull. A V1 Mac (its cursor, epoch and known versions come from the V1 server) therefore
-   logs in to a new account and sends exactly its rows, none lost, none doubled; its parked V1
-   rows never reach the account. This also applies to « Se reconnecter ».
+   first pull. A Mac whose cursor, epoch and known versions come from another server therefore
+   logs in to a new account and sends exactly its rows, none lost, none doubled; the rows it had
+   parked for the other server never reach the account. This also applies to « Se reconnecter ».
 5. **A reset logs every device out**, this one included: the next sync is `unauthorized`; the app
    chains `login` after `reset`.
 6. **Welcome.** On the Mac only, the welcome screen (« Créer un compte » / « J'ai déjà un compte »
@@ -375,7 +386,7 @@ compte ou change ton mot de passe depuis le Mac ». It follows the Mac for accou
 ### 0.11 Rate limits (as implemented)
 
 In memory (a restart resets them). The client is `X-Real-IP` (trimmed, at most 64 characters; set
-by nginx from `CF-Connecting-IP`, never taken from the caller; absent = one shared key). Every
+by the reverse proxy, never taken from the caller; absent = one shared key). Every
 well-formed attempt counts unless stated; a request needs a free slot in **each** of its limiters
 or gets 429, and slots already taken are released when a later one is refused. The keyed slots
 are taken while the map of limiters is locked (lock order: map, then limiter), so a parallel
@@ -401,26 +412,25 @@ clean-up of idle keys can never make two limiters for one key.
 - The per-client keys exist so that one anonymous client cannot lock an account out or exhaust the
   global budget alone (exhausting 1000 login failures takes at least 20 addresses); the global
   caps bound the argon2 work (about 30–60 ms a check).
-- nginx (a reverse-proxy example with request-rate zones): `/api/login` 10 r/min burst 5,
-  `/api/signup` 3 r/min burst 3, `/api/password/` 3 r/min burst 3, all answered 429.
+- The reverse proxy should add its own request-rate limits (for example in nginx: `/api/login`
+  10 r/min burst 5, `/api/signup` 3 r/min burst 3, `/api/password/` 3 r/min burst 3, all
+  answered 429).
 - Accepted residuals: the per-address forgot limit (3 per hour) and the login pair limit let a
   third party block *that address's* resets / logins for an hour / 15 minutes (the global signup
   cap likewise limits signups); reset timing differs slightly between a known account with an
   active code and an unknown one.
 
-### 0.12 Not synced in V2.7
+### 0.12 Not synced
 
-Claude session state, terminals, hook events, the journal, local settings; and the local-only
-columns of § 0.5. Nothing shows them before V2.8. (The content of attachments was in this list
-until V2.7 bis; it now travels by § 0.13.)
+Agent session state, terminals, hook events, the journal, local settings; and the local-only
+columns of § 0.5. The content of attachments travels by § 0.13.
 
-### 0.13 Files (V2.7 bis)
+### 0.13 Files
 
-> Design choices: files are **always** sent (like Todoist
-> and Notion), **100 MB per file** for everybody, **2 GB per account**, both set on the server.
-> The change is additive: the protocol stays 3 and a client that does not know `sha256` still
-> reads the row (update the Macs and the web app together with the server). Without an account
-> nothing leaves the Mac.
+> Files are **always** sent once an account is linked, **100 MB per file** and **2 GB per
+> account** by default, both set on the server (`TAIDO_MAX_FILE_BYTES`,
+> `TAIDO_ACCOUNT_QUOTA_BYTES`). A client that does not know `sha256` still reads the row.
+> Without an account nothing leaves the device. Files are stored on the server's disk only.
 
 **Hash in the metadata.** `AttachmentData.sha256` is the SHA-256 of the file content, 64
 lowercase hexadecimal characters (§ 0.5), **optional**: an unknown hash is omitted from the JSON
@@ -429,8 +439,8 @@ it knows none, because the phone compares serialized rows). It tells which file 
 hold, checks every download and avoids sending the same content twice. Rows are last-writer-wins
 as a whole, so a device that pulls a hash **stores it and sends it back**; a version without a
 hash never erases the one it knows (`COALESCE`, Mac and phone). A device that adds a file computes the hash before
-the row leaves; older rows (made before V2.7 bis) are hashed once by the Mac's background job and
-pushed as a normal change.
+the row leaves; rows without a hash (made by an older build) are hashed once by the Mac's
+background job and pushed as a normal change.
 
 **Routes** (all need `Authorization: Bearer <token>`; no token = 401 `unauthorized` before any
 body is read). `{id}` is the attachment id, percent-encoded as one path segment.
@@ -506,10 +516,11 @@ process, minus `size`) is refused with 507 `quota_exceeded` (no new code: device
 full disk while writing, see step 8: the database never runs out of space because of files.
 507 answers and refused files are logged as warnings, not errors. The test server starts
 without a floor (`TestServer::set_free_space` sets one and a pretend free space). The quota is the sum of `size` over the account's `files`
-rows (complete and in progress); deleting a file frees it. The web app refuses a file over 100 MB
-before reading it.
+rows (complete and in progress); deleting a file frees it. The apps do not judge the size
+themselves: a file the server refuses (413, 507) shows the tile states described below and is
+tried again at each sync, so a server with a higher limit takes it.
 
-**Error codes** added by V2.7 bis: `file_too_large` (413), `quota_exceeded` (507), `not_found`
+**File error codes:** `file_too_large` (413), `quota_exceeded` (507), `not_found`
 (404), `hash_mismatch` (400), `chunk_offset` (409). `payload_too_large` (413: chunk over 8 MiB),
 `bad_request` and `unauthorized` keep their meaning. `message` stays English, for logs.
 
@@ -521,8 +532,8 @@ no-store`, `Accept-Ranges: bytes`. One `Range` (`a-b`, `a-`, `-n`) answers 206 w
 several ranges answer the whole file; an unsatisfiable or malformed one answers 416 with
 `Content-Range: bytes */total`. After any resumed download the client **must check the SHA-256**.
 The web app's own `Content-Security-Policy` (sent by the server that serves it, from the same
-Docker image) gains `blob:` in `img-src` only (§ 4.4; unused since « Télécharger » saves every
-file, harmless).
+Docker image) gains `blob:` in `img-src` only (§ 4.4; unused, since every file is saved,
+harmless).
 
 **Storage and deletion (server).** A file lives at `<data_dir>/files/<account id>/<hex SHA-256 of
 account id, a zero byte and attachment id>` (partial: the same name plus `.part`): a name or id
@@ -598,8 +609,7 @@ names another file, whose state is left alone).
   carries the row's `sha256` and is hashed first (after the sync's commit or the purge, outside
   the database lock and the async workers, at startup off the setup thread); a copy edited in place, or whose row never had a hash, stays on disk as the user's own
   file (the `.part` always goes). The purge does so even without an account.
-- **« Télécharger »** (2026-10-10, command `download_attachment`, core `files::save_copy`; it
-  replaces « Ouvrir », which is gone with `open_attachment`): a **copy** of the file goes into
+- **« Télécharger »** (command `download_attachment`, core `files::save_copy`): a **copy** of the file goes into
   the user's Downloads folder (Tauri 2 `PathResolver::download_dir`, `$HOME/Downloads` on macOS)
   under a **free name** (`devis (2).pdf` when `devis.pdf` is there; checked on disk only), never
   over a file: copied to a hidden `.<attachment id>.part` in that folder, then put in place like
@@ -620,11 +630,11 @@ names another file, whose state is left alone).
   `sync_server`; the `.part` cannot be written in the task's folder → `disk_full` (`ENOSPC`,
   `EDQUOT`) or `file_write_failed`; any other failure (wrong hash, deleted meanwhile) →
   `internal`; the row stays `missing`. **macOS protects the Downloads folder**: the first copy
-  makes macOS ask whether Taido V2 may access the Downloads folder, with the sentence of
+  makes macOS ask whether Taido may access the Downloads folder, with the sentence of
   `NSDownloadsFolderUsageDescription` (`src-tauri/Info.plist`, merged by the Tauri
   CLI into the bundle's Info.plist), again after each update of an app signed ad hoc; a refusal
   (`EPERM`/`EACCES` in that folder) → `downloads_denied`, whose message points to Réglages
-  Système › Confidentialité et sécurité › Fichiers et dossiers › Taido V2 › Téléchargements; a
+  Système › Confidentialité et sécurité › Fichiers et dossiers › Taido › Téléchargements; a
   full disk there → `disk_full`, anything else → `file_write_failed`. **One download
   per attachment at a time**: the job and « Télécharger » take the attachment's slot (an async
   lock per id, in memory) for the whole download, and the job then fetches a row only while it
@@ -638,13 +648,12 @@ names another file, whose state is left alone).
   (`uploading` / `downloading`); `file_too_large` → `too_large`; `quota_exceeded` → `quota_full`;
   no file on disk → `to_download`; `missing` with a different file at the place → `to_download`;
   `local` → `local_only`; `sent` or `missing` with its file → `none`. Labels: « Sur ce Mac
-  seulement », « Envoi… », « À télécharger », « Téléchargement… », « Trop gros (100 Mo max) »,
+  seulement », « Envoi… », « À télécharger », « Téléchargement… », « Trop gros »,
   « Espace du compte plein ».
 
-**Web app (site and phone).** Since V2.7 bis its saved set keeps `sync` under the IndexedDB key
-**`sync.2`** (§ 6.2): the first load moves it from `sync` in the same transaction and every save
-removes `sync`, so a build before V2.7 bis finds four parts of five, refuses the set
-(`InconsistentStoreError`) and never saves nor syncs (below, « Rollback »). The same
+**Web app (site and phone).** The saved set keeps its sync part under the IndexedDB key
+**`sync.4`** (§ 6.2), so that a build that predates it finds four parts of five, refuses the set
+(`InconsistentStoreError`) and never saves nor syncs (see « Downgrades » below). The same
 `attachment` rows are applied (§ 0.9) and the same
 routes are used from the browser, with the file kept in **IndexedDB** (database `todo-files`
 v1, store `files`, value `{blob, sha256, size}`; a separate database from `todo`, so that
@@ -660,9 +669,9 @@ each sync) and **`unsendable`** (the kept copy no longer matches its recorded ha
 device storage: never sent again, but **kept** and still openable). Rules: a kept copy whose
 attachment is gone, `sent` or `missing` is swept (never one being kept or sent, never one whose
 deletion is held until « Les remettre » / « Supprimer partout » is chosen); a failed read leaves
-the file `local`; a set without `state.attachments` (saved before V2.7 bis, or written by such a
-build) drops its `attachment:` snapshot, outbox and held entries; linked, it resets its pull
-cursor to 0 **once**, so that the attachment rows it used to ignore arrive, and sets
+the file `local`; a set without `state.attachments` (written by a build that predates
+attachments) drops its `attachment:` snapshot, outbox and held entries; linked, it resets its
+pull cursor to 0 **once**, so that the attachment rows it used to ignore arrive, and sets
 `sync.filesRecovery`: **no kept file is swept** until the first successful sync, which then
 gives back to the job the copies that are still the only ones (a pulled row `missing` whose kept
 copy matches becomes `local`). The deletion guard (§ 6.2) counts the attachments that vanish while
@@ -673,63 +682,61 @@ their task stays, with their own ratio (one purged with its task is not counted)
 | added here, not sent yet (`local`, `unsendable`) | « Sur cet appareil seulement » |
 | chunk in flight | « Envoi… » |
 | being fetched to download it (or read from this device) | « Téléchargement… » |
-| refused: too large / account full | « Trop gros (100 Mo max) » / « Espace du compte plein » (retried at each sync) |
+| refused: too large / account full | « Trop gros » / « Espace du compte plein » (retried at each sync) |
 | on the server, not on this device | nothing (normal on the web: files are fetched when downloaded) |
 | sent | nothing |
 
-**« Télécharger »** (2026-10-10, the tile's first item and its double-click; « Ouvrir » is gone)
-takes the copy kept on the device, else fetches the file whole (no `Range` on the web, a cut
+**« Télécharger »** (the tile's first item and its double-click) takes the copy kept on the device, else fetches the file whole (no `Range` on the web, a cut
 download fails with a message), checks size and SHA-256, then **saves** it — every file,
 images included. A file the server does not have yet says « Ce fichier n'est pas encore arrivé
 sur ton compte. Réessaie plus tard. »; unlinked and not on the device: « Connecte-toi à ton
 compte pour télécharger ce fichier. ». Hashing keeps the file in memory: expect a
-peak of 2–3 times its size on a phone (residual: test a 100 MB video on a real phone; a streaming
-hash can come later).
+peak of 2–3 times its size on a phone, so very large files can fail on low-memory devices (a
+streaming hash is a possible improvement).
 
 **Security of the web app** (same origin as the API: a script running there could read the
-token). Since « Télécharger » (2026-10-10) **nothing of a file is ever shown** in the app: every
-file is **saved**, never opened in a tab, rendered or put in a frame — an HTML page, an SVG, a
-PDF, a photo alike (the inline image viewer of V2.7 bis, reachable only through « Ouvrir », is
-gone, with its signature sniffing). The server's content type is never read. Saving re-wraps
+token). **Nothing of a file is ever shown** in the app: every file is **saved**, never opened in
+a tab, rendered or put in a frame — an HTML page, an SVG, a PDF, a photo alike. The server's
+content type is never read. Saving re-wraps
 the bytes as `application/octet-stream`, clicks a hidden `<a download>` removed at once, and
 revokes the URL 5 minutes later. (An HTML page opened from a `blob:` URL would run on the app's
 origin.) The app also cancels any file drag released outside a drop zone, so a stray drop
 never navigates to the file. The server adds its own layer: `Content-Disposition: attachment`,
 `nosniff`, `Content-Security-Policy: sandbox`.
 
-**Rollback.** Never put the web app or the server back below V2.7 bis once phones are linked. The
-cause: a web app before V2.7 bis does not know attachments; its `diff` sees every `attachment:`
-key of the saved snapshot as a vanished row and queues a tombstone for each (its deletion guard
-counts only projects and tasks), and its saves drop `state.attachments`; the server then deletes
-the files. Its window: the service worker keeps the previous build in its cache until the new
-worker is active, and serves it for navigations that are offline, slower than 3 s or answered
-with an error. Since the final V2.7 bis fixes: (1) data saved by V2.7 bis is refused by older
-builds (`sync.2`, above), (2) a set they wrote anyway is recovered as described above, (3) a
-waiting worker that is the running page's build activates at once (the page asks it with
-`{type: "SKIP_WAITING_IF_SAME_BUILD", path}`, `path` = one of the page's scripts; the worker
-skips waiting only when it pre-caches that path and answers `{skipping}`), so the window closes
-at the first opening online. Putting an older image back on the server stays forbidden.
+**Downgrades.** Never put the web app or the server back to an older build once phones are
+linked. A web app that does not know attachments sees every `attachment:` key of the saved
+snapshot as a vanished row and queues a tombstone for each (its deletion guard counts only
+projects and tasks), and its saves drop `state.attachments`; the server then deletes the files.
+The service worker keeps the previous build in its cache until the new worker is active, and
+serves it for navigations that are offline, slower than 3 s or answered with an error. Three
+protections narrow that window: (1) data saved by the current build is refused by older builds
+(the key `sync.4`, above), (2) a set that an older build wrote anyway is recovered as described
+above, (3) a waiting worker that is the running page's build activates at once (the page asks
+it with `{type: "SKIP_WAITING_IF_SAME_BUILD", path}`, `path` = one of the page's scripts; the
+worker skips waiting only when it pre-caches that path and answers `{skipping}`), so the window
+closes at the first opening online. Putting an older image back on the server stays forbidden.
 
 ---
 
 ## 1. Principles
 
-- One person's few devices (a Mac, a phone) per account — many accounts on the V2 server since
-  V2.7 (§ 0.2). Conflicts are rare: **last writer wins per whole row**, decided by the server
+- One person's few devices (a Mac, a phone) per account — many accounts on one server
+  (§ 0.2). Conflicts are rare: **last writer wins per whole row**, decided by the server
   only. Each device makes **monotonic** stamps (§ 2.6), so a slow clock or a clock stepping back
   never makes a newer edit lose to an older one the device has already seen.
 - The server is a dumb, durable log of the latest version of every row, with a monotonic
   revision and an **epoch** (identity of its database). Clients push their changed rows and
   pull every row newer than their cursor with `POST /api/sync`, in chunks (§ 2.7).
-- Synced: projects (`subjects`, incl. sub-projects and, since protocol 3, groups), `sections`,
+- Synced: projects (`subjects`, incl. sub-projects and groups), `sections`,
   tasks and sub-tasks (`tasks`, `parent_id`), with their notes (`description`), due date/time,
   priority, completion, positions, soft deletes (`deleted_at`) and hard deletes (tombstones);
-  since protocol 3 also Kanban columns, time segments, task relations and attachment
-  rows (§ 0.5), and since V2.7 bis the **attachment files** themselves (their content, through
+  also Kanban columns, time segments, task relations and attachment
+  rows (§ 0.5), and the **attachment files** themselves (their content, through
   `/api/files/…`, § 0.13).
 - **Never synced as rows**: `subjects.root_path`, `sections.subpath`, `tasks.workdir_override`,
   `time_segments.agent_session_id`, `attachments.stored_path`, `attachments.remote` and
-  `attachments.shared` (the files themselves travel apart since V2.7 bis, § 0.13), `terminals`, `agent_sessions`, `journal_entries`, `hook_events`, `settings`.
+  `attachments.shared` (the files themselves travel apart, § 0.13), `terminals`, `agent_sessions`, `journal_entries`, `hook_events`, `settings`.
 - Sync is **fully off** until an account is linked (an explicit network exception). No other network access is added.
 - After applying remote changes the Mac creates missing project folders with
   `db::workspace::ensure`; sync never deletes nor renames a folder.
@@ -738,26 +745,26 @@ at the first opening online. Putting an older image back on the server stays for
 
 ## 2. Protocol (`crates/sync-proto`, version 3)
 
-> **Protocol 3 (V2.7).** The four new entities, `is_group`, `board_column_id`, the account
-> messages and error codes, the Mac's apply rules (order, parking, cascades, N9/N10), the
-> default columns, running segments and account switching are all described in **§ 0**; the
-> sections below keep the original text and say where § 0 extends them.
+> **Protocol 3.** The four entities beyond projects, sections and tasks, `is_group`,
+> `board_column_id`, the account messages and error codes, the Mac's apply rules (order,
+> parking, cascades, N9/N10), the default columns, running segments and account switching are
+> all described in **§ 0**; the sections below keep the base text and say where § 0 extends
+> them.
 
 Rust: `sync_proto::*` (path dependency `sync-proto = { path = "../crates/sync-proto" }` from
 `src-tauri/` and `sync-server/`; no Cargo workspace, each crate keeps its own `target/`).
 TypeScript mirror: `src/lib/sync-proto.ts`. **Any change to one changes the other and the
 fixtures in the same commit**; a protocol change is a deliberate, reviewed commit.
 
-JSON is snake_case. `PROTOCOL_VERSION = 3` travels in every request and response (history:
-version 2 added the `setting` entity; version 3, V2.7, added accounts and the four V2 entities, § 0). A client or server of
-another version is refused with `unsupported_protocol` (no compatibility layer: update the
-server and the Mac app together, the PWA updates with the server).
+JSON is snake_case. `PROTOCOL_VERSION = 3` travels in every request and response. A client or
+server of another version is refused with `unsupported_protocol` (no compatibility layer:
+update the server and the Mac app together, the PWA updates with the server).
 
 Constants (both languages): `MAX_SYNC_BODY_BYTES` 16 MiB, `MAX_LOGIN_BODY_BYTES` 4 KiB,
 `MAX_ID_LEN` 128, `MAX_STAMP_LEN` 64, `MAX_PUSH_CHANGES` 500, `MAX_PUSH_BYTES` 4 MiB,
 `MAX_PULL_CHANGES` 2000, `MAX_PULL_BYTES` 8 MiB, `EPOCH_STAMP` `"1970-01-01T00:00:00.000Z"`,
 `MAX_SETTING_KEY_LEN` 64, `MAX_SETTING_VALUE_BYTES` 4096, `SETTING_INBOX_POSITION` `"inbox_position"`,
-`MAX_FILE_NAME_BYTES` 255 (protocol 3); file transfer (V2.7 bis):
+`MAX_FILE_NAME_BYTES` 255; file transfer:
 `MAX_CHUNK_BYTES` 8 MiB, `DEFAULT_MAX_FILE_BYTES` 104 857 600, `DEFAULT_ACCOUNT_QUOTA_BYTES`
 2 147 483 648; the file status answer is `FileStatus {protocol, received, size, complete}`.
 
@@ -765,7 +772,7 @@ Constants (both languages): `MAX_SYNC_BODY_BYTES` 16 MiB, `MAX_LOGIN_BODY_BYTES`
 
 ```jsonc
 // Change = one version of one row, tagged by "entity"
-// (protocol 3 adds "board_column" | "time_segment" | "relation" | "attachment": § 0.5)
+// (more entities: "board_column" | "time_segment" | "relation" | "attachment", notebook: § 0.5)
 { "entity": "subject" | "section" | "task" | "setting",
   "id": "uuid",                       // 1..128 bytes; a setting's id is its key
   "updated_at": "2026-10-04T09:15:02.120Z", // canonical UTC, 24 chars: the conflict stamp
@@ -785,10 +792,10 @@ Constants (both languages): `MAX_SYNC_BODY_BYTES` 16 MiB, `MAX_LOGIN_BODY_BYTES`
                                                                   "position": 1.0,
                                                                   "created_at": "…",
                                                                   "deleted_at": "…" | null }
-// setting data (protocol 2): one shared setting, id = key, never deleted
+// setting data: one shared setting, id = key, never deleted
 { "value": <any JSON value> }        // e.g. id "inbox_position", { "value": 2.5 }
-// protocol 3: subject data also has "is_group": bool (absent = false), task data
-// "board_column_id": "…" | null (absent = null); data of the four new entities: § 0.5
+// subject data also has "is_group": bool (absent = false), task data
+// "board_column_id": "…" | null (absent = null); data of the other entities: § 0.5
 // ChangeKey
 { "entity": "task", "id": "…" }
 ```
@@ -810,7 +817,7 @@ Settings (`Change::Setting`, `SettingData { value: serde_json::Value }`; TS
 `MAX_SETTING_VALUE_BYTES` (4 KiB); `inbox_position` must be a finite JSON number (the
 position of « Sans projet » among the top-level projects); **a setting tombstone is
 refused** (`"a setting is never deleted"`: a tombstone is final and would forbid any later
-value); unknown keys are accepted as is (forward compatible within version 2). The conflict
+value); unknown keys are accepted as is (forward compatible). The conflict
 rule is the same as for rows (last writer wins, § 2.3). Wire example:
 `{"entity":"setting","id":"inbox_position","updated_at":"…","device_id":"…","data":{"value":2.5}}`.
 
@@ -830,17 +837,17 @@ account's synced row data above `TAIDO_RECORDS_QUOTA_BYTES` (default 50 MiB) or 
 is below its free-space floor (the whole push is refused, nothing applied; a push that does not
 grow the data always passes).
 
-Protocol 3 adds `POST /api/signup`, `GET /api/account`, `POST /api/password/forgot` and
-`POST /api/password/reset` (table in § 0.2); `POST /api/sync` reads and writes only the rows of
-the token's account (§ 0.4).
+The account routes (`POST /api/signup`, `GET /api/account`, `POST /api/password/forgot`,
+`POST /api/password/reset`, `POST /api/email/resend`) are in § 0.2; `POST /api/sync` reads and
+writes only the rows of the token's account (§ 0.4).
 
 - Auth header: `Authorization: Bearer <token>`.
 - Errors: status + `ErrorBody {error: ErrorCode, message}`; `ErrorCode` ∈ `bad_request`
   (400: malformed JSON, bad `device_name`), `unsupported_protocol` (400), `unauthorized`
-  (401), `payload_too_large` (413), `rate_limited` (429), `internal` (500); protocol 3 adds
-  `email_taken` (409), `weak_password`, `bad_email`, `invalid_code` (400), `mail_unavailable`
-  (503); V2.7 bis adds `file_too_large` (413), `quota_exceeded` (507), `not_found` (404),
-  `hash_mismatch` (400), `chunk_offset` (409: an upload chunk does not start at the bytes
+  (401), `payload_too_large` (413), `rate_limited` (429), `internal` (500); accounts:
+  `email_taken` (409), `weak_password`, `bad_email`, `invalid_code` (400), `signups_closed`
+  (403), `mail_unavailable` (503); files: `file_too_large` (413), `quota_exceeded` (507),
+  `not_found` (404), `hash_mismatch` (400), `chunk_offset` (409: an upload chunk does not start at the bytes
   already received; read the file status again). `message` is English, for logs only. **An invalid change never fails the request** (§ 2.4).
 - `device_name`: 1–64 characters (the Mac sends `"Mac"`, the PWA `"Téléphone"`).
 - `token`: 43 characters, base64url (no padding) of 32 random bytes; returned once.
@@ -882,13 +889,13 @@ have to push (§ 2.7), which they push next.
 
 ### 2.5 Client apply (both clients, one local transaction per response)
 
-> Protocol 3 extends the order, the parking table, the tombstone cascades and the
-> normalisation below with the four V2 entities (columns, segments, relations, attachments)
-> and rules N9–N10: **§ 0.6**. The phone does not apply those rows (§ 0.9).
+> The order, the parking table, the tombstone cascades and the normalisation below are
+> extended with the entities of § 0.5 (columns, segments, relations, attachments, notebook) and
+> rules N9–N11: **§ 0.6**. The phone applies them too (§ 0.9).
 
 **Order.** Apply the response rows in this order (stable within a group):
 
-0. setting data (protocol 2: settings reference nothing; a setting tombstone, refused by
+0. setting data (settings reference nothing; a setting tombstone, refused by
    `validate`, is ignored);
 1. subject data with `parent_id = null`; 2. subject data with a parent;
 3. section data; 4. task data with `parent_id = null`; 5. task data with a parent;
@@ -951,8 +958,8 @@ device converges). Rules, applied in this order until nothing changes:
 | N8 | a live task whose project (or parent task) is soft-deleted | `deleted_at` = that `deleted_at` |
 
 N7/N8 = « la suppression gagne » (delete wins; « Annuler » / restore brings the row back
-with its project because it shares the stamp). **Product choice, open to change:** the alternative « la modification gagne »
-would instead clear the parent's `deleted_at`. N1–N8 are idempotent: a normalised database
+with its project because it shares the stamp). This is a product choice: the alternative
+« la modification gagne » would instead clear the parent's `deleted_at`. N1–N8 are idempotent: a normalised database
 produces no correction.
 
 ### 2.6 Stamps, known versions, re-enqueue, epoch
@@ -970,7 +977,7 @@ produces no correction.
   removed with the row on a tombstone.
 - **Re-enqueue** (at link, and on an epoch change): every live or soft-deleted row **without
   an outbox entry** is enqueued with its known stamp, or `EPOCH_STAMP` when none is known.
-  Shared settings are included (protocol 2: Mac rows of `synced_settings`, PWA
+  Shared settings are included (Mac rows of `synced_settings`, PWA
   `state.syncedSettings`); a device that never set a setting has no row for it and sends
   nothing.
   **Existing outbox entries are kept as they are** (`ON CONFLICT DO NOTHING`): they hold real
@@ -1054,7 +1061,7 @@ Then, for each `(table, entity, synced columns)`:
 | `sections` | `section` | `subject_id, name, position` |
 | `tasks` | `task` | `subject_id, section_id, parent_id, title, description, due_date, due_time, priority, completed_at, position, deleted_at` |
 
-three triggers — **nine in all** (example for `tasks`; same shape for the others):
+three triggers each, nine in all (example for `tasks`; same shape for the others):
 
 ```sql
 CREATE TRIGGER sync_tasks_ai AFTER INSERT ON tasks
@@ -1092,7 +1099,7 @@ BEGIN
 END;
 ```
 
-Verified on SQLite 3.51 (2026-10-04): UPSERT is accepted in a trigger body
+On SQLite 3.51: UPSERT is accepted in a trigger body
 (`INSERT … SELECT … WHERE … ON CONFLICT` — the `WHERE` avoids the parsing ambiguity);
 `AFTER DELETE` / `AFTER UPDATE` triggers fire for `ON DELETE CASCADE` / `SET NULL` actions;
 `strftime` accepts the trailing `Z` and `'+0.001 seconds'`; the multi-argument `max()`
@@ -1105,18 +1112,20 @@ conflict stamp. **The conflict stamp of a pushed row is `sync_outbox.changed_at`
 Changes to local-only columns (`root_path` set by `workspace::ensure`, `subpath`,
 `workdir_override`) and to `updated_at` alone record nothing. A future migration that
 rewrites synced columns enqueues those rows (intended). **A migration that rebuilds a synced
-table drops its triggers**: B adds a test that, after all migrations, the nine `sync_%`
-triggers exist, and a startup check that logs an error (`log::error!`) when they do not.
+table drops its triggers**: a test checks that, after all migrations, the expected `sync_%`
+triggers exist (`sync::TRIGGER_COUNT`), and a startup check logs an error (`log::error!`) when
+they do not.
 
-**Migration `0011_synced_settings.sql` (protocol 2).**
+**Migration `0011_synced_settings.sql`.**
 New table `synced_settings(key TEXT PRIMARY KEY, value TEXT NOT NULL /* JSON */,
 updated_at TEXT NOT NULL)`, kept apart from the local-only `settings` (the sync token is
 there). `sync_outbox` is rebuilt so its `CHECK` accepts `'setting'` (a `CHECK` cannot be
 altered): the nine triggers above are dropped first, the rows are copied into the new table,
 `idx_sync_outbox_seq` is recreated, then the nine triggers come back verbatim, plus three on
 `synced_settings` (`sync_synced_settings_ai` / `_au` / `_ad`, entity `'setting'`, id
-`key`; the UPDATE trigger compares `value`). Twelve triggers at protocol 2; **24 in all** since
-`0016_sync_v2.sql` (§ 0.5, `sync::TRIGGER_COUNT`), checked by the test and the startup check. The app never deletes a
+`key`; the UPDATE trigger compares `value`). The later migrations add more
+(`0016_sync_v2.sql`, `0021_notes.sql`; § 0.5, `sync::TRIGGER_COUNT`), checked by the test and
+the startup check. The app never deletes a
 setting; the DELETE trigger only keeps a manual delete from desyncing silently (its
 tombstone is refused by `validate` and dropped from the push). Accessors:
 `db::synced_settings::{get, set, inbox_position, set_inbox_position}`; `set` writes nothing
@@ -1142,7 +1151,7 @@ then pokes itself so the resulting tombstones go out. Network work never blocks 
 | `sync_interval_minutes` | `1 \| 5 \| 15 \| 30 \| 60` | default 5 |
 | `sync_last_success_at` | `string` | canonical UTC |
 | `sync_last_error` | `SyncErrorKind \| null` | last failure, cleared by a success |
-| `sync_account` | `{ email }` | V2.7: the account of the link, read from `GET /api/account` after a login and each successful run; removed on unlink; `sync_account()` returns it |
+| `sync_account` | `{ email }` | the account of the link, read from `GET /api/account` after a login and each successful run; removed on unlink; `sync_account()` returns it |
 
 The token stays in SQLite (file private to the user, like the rest of the data; the daily
 backups contain it). Keychain storage: later, if needed.
@@ -1193,7 +1202,7 @@ parked, corrected, closed_task_ids, epoch_reset: bool }`.
 
 ### 3.5 Link and unlink
 
-- **Accounts (V2.7)**: `sync_signup(AccountInput)` / `sync_login(AccountInput)`
+- **Accounts**: `sync_signup(AccountInput)` / `sync_login(AccountInput)`
   (`{ server_url, email, password }`; the UI passes `DEFAULT_SERVER_URL` =
   `https://sync.example.com` unless changed under « Avancé »). Normalise the URL
   (trim, drop trailing `/`); accept `https://host[...]`, or `http://127.0.0.1[:port]` /
@@ -1205,9 +1214,10 @@ lowercased: a re-login after a refused token): logging in to another account wou
 this Mac's rows into it. Server codes → kinds: `unauthorized` → `sync_auth`, `rate_limited` →
   `sync_rate_limited`, `email_taken` → `sync_email_taken`, `weak_password` →
   `sync_weak_password`, `bad_email` → `sync_bad_email`, `invalid_code` → `sync_invalid_code`,
-  `mail_unavailable` → `sync_mail_unavailable`; network/timeout → `sync_offline`; other →
+  `signups_closed` → `sync_signups_closed`, `mail_unavailable` → `sync_mail_unavailable`;
+  network/timeout → `sync_offline`; other →
   `sync_server`. Success, in one transaction: **forget what a previous link learnt from its
-  server** (cursor, epoch, `sync_known`, `sync_parked`: a V1 server or another account;
+  server** (cursor, epoch, `sync_known`, `sync_parked`: another server or another account;
   the outbox is kept, it holds real edits), store url, token, device id, epoch, cursor 0,
   clear `sync_last_error`, `sync_last_success_at` and the cached account; **re-enqueue**
   (§ 2.6: `INSERT … ON CONFLICT (entity, id) DO NOTHING`, every row at `EPOCH_STAMP` since no
@@ -1238,15 +1248,14 @@ one tokio task (`tauri::async_runtime::spawn`), single-flight (one run at a time
 - `sync_set_interval` re-arms the timer.
 
 HTTP client: **reqwest 0.13** `default-features = false, features = ["rustls", "json"]`
-(rustls with aws-lc-rs and the platform verifier; **no OpenSSL** — check
-`cargo tree -i openssl-sys` is empty), one `Client` with `connect_timeout(10 s)`,
-`timeout(60 s)` (a large first pull over a slow link), user agent `Taido/<version>`. Verify
-the 0.13 builder API on docs.rs before use. Only the sync module talks to the network.
+(rustls with aws-lc-rs and the platform verifier; **no OpenSSL** — `cargo tree -i openssl-sys`
+is empty), one `Client` with `connect_timeout(10 s)`, `timeout(60 s)` (a large first pull over a
+slow link), user agent `Taido/<version>`. Only the sync module talks to the network.
 
 ### 3.7 Commands, event and types (exact)
 
-`src-tauri/src/commands/sync.rs`, registered **at the end** of `collect_commands!` in this
-order; event `events::SyncChanged` added to `collect_events!`. Types in
+`src-tauri/src/commands/sync.rs`, registered in `collect_commands!`; event
+`events::SyncChanged` in `collect_events!`. Types in
 `src-tauri/src/sync/model.rs` (re-exported), all `specta::Type`:
 
 ```rust
@@ -1271,7 +1280,6 @@ pub struct SyncStatus {
     pub pending: u32,
 }
 
-// V2.7 (replaces `SyncLinkInput`)
 pub struct AccountInput { pub server_url: String, pub email: String, pub password: String }
 pub struct ForgotInput { pub server_url: String, pub email: String }
 pub struct ResetInput { pub server_url: String, pub email: String, pub code: String,
@@ -1283,7 +1291,7 @@ pub struct AccountInfo { pub email: String }
 #[serde(rename_all = "camelCase")]
 pub struct SyncChanged { pub status: SyncStatus }
 
-// commands/sync.rs — every command async (bug #4)
+// commands/sync.rs — every command is async
 pub async fn sync_status(state: State<'_, AppState>) -> AppResult<SyncStatus>;
 pub async fn sync_now(app: AppHandle, state: State<'_, AppState>) -> AppResult<SyncStatus>;
 pub async fn sync_signup(state: State<'_, AppState>, input: AccountInput) -> AppResult<SyncStatus>;
@@ -1296,20 +1304,19 @@ pub async fn sync_set_interval(app: AppHandle, state: State<'_, AppState>, minut
     -> AppResult<SyncStatus>;
 ```
 
-Doc comments: copy those of `src/bindings.ts` (tauri-specta emits them; keep them identical
-so the regenerated file matches).
+Doc comments on the Rust types are emitted into `src/bindings.ts` by tauri-specta.
 
 `state` semantics: `unlinked` (no token); `syncing` (a run is in flight); otherwise the
 outcome of the last run: `idle` (success, or linked and never failed), `offline`, `error`
 (+ `error_kind`). `pending` = rows in `sync_outbox`.
 
-New `AppError` variants and `ErrorKind`s (append **after** `Internal`, in this order):
+`AppError` variants and `ErrorKind`s of the sync (documented in the table of `error.rs`):
 `SyncAuth` → `sync_auth`, `SyncOffline(String)` → `sync_offline`, `SyncServer(String)` →
-`sync_server` (document them in the table of `error.rs`). V2.7 adds, after `SyncAuth`:
-`sync_rate_limited`, `sync_email_taken`, `sync_weak_password`, `sync_bad_email`,
-`sync_invalid_code`, `sync_mail_unavailable`. Only the account commands throw them.
+`sync_server`, and, for the account commands only, `sync_rate_limited`, `sync_email_taken`,
+`sync_weak_password`, `sync_bad_email`, `sync_invalid_code`, `sync_signups_closed`,
+`sync_mail_unavailable`.
 
-TypeScript (already in `src/bindings.ts`; B's regenerated file must type-check identically):
+TypeScript (in `src/bindings.ts`, generated by tauri-specta):
 
 ```ts
 syncStatus: () => Promise<SyncStatus>
@@ -1329,8 +1336,8 @@ type SyncStatus = { state; serverUrl: string | null; intervalMinutes: number;
 type AccountInput = { serverUrl: string; email: string; password: string }
 type SyncChanged = { status: SyncStatus }
 ErrorKind += "sync_auth" | "sync_rate_limited" | "sync_email_taken" | "sync_weak_password"
-           | "sync_bad_email" | "sync_invalid_code" | "sync_mail_unavailable"
-           | "sync_offline" | "sync_server"
+           | "sync_bad_email" | "sync_invalid_code" | "sync_signups_closed"
+           | "sync_mail_unavailable" | "sync_offline" | "sync_server"
 const DEFAULT_SERVER_URL = "https://sync.example.com"
 ```
 
@@ -1351,13 +1358,14 @@ events, timers, terminals and `notify`.
   **`rusqlite = { version = "0.40", features = ["bundled"] }` and
   `rusqlite_migration = "2.6"` in both crates**, same majors.
 
-### 3.9 Mock backend (TypeScript, already written)
+### 3.9 Mock backend (TypeScript)
 
 `src/lib/mock-sync.ts`: starts `unlinked`; `syncLogin` / `syncSignup` refuse a non-https URL
 (`invalid`, same rule as § 3.5), a URL containing `"injoignable"` (`sync_offline`); login
 refuses the password `"mauvais"` (`sync_auth`) and `bloque@exemple.fr` (`sync_rate_limited`);
 signup refuses a malformed address (`sync_bad_email`), fewer than 10 characters
-(`sync_weak_password`) and `pris@exemple.fr` (`sync_email_taken`); else both link at once
+(`sync_weak_password`), `pris@exemple.fr` (`sync_email_taken`) and a URL containing
+`"inscriptions-fermees"` (`sync_signups_closed`); else both link at once
 (`idle`, `lastSyncAt = now`, account `{ email }`). `syncForgotPassword` refuses a
 URL containing `"sans-mail"` (`sync_mail_unavailable`); `syncResetPassword` accepts only the
 code `123456` (`sync_invalid_code`);
@@ -1366,7 +1374,7 @@ code `123456` (`sync_invalid_code`);
 `MockBackend.emitDataChanged(scopes, taskIds?)` emits `data-changed` + `counts-changed`
 (used by the PWA after applying pulled rows).
 
-Placement in `mock-backend.ts` now follows `db/positions.rs`: a move writes **one row**
+Placement in `mock-backend.ts` follows `db/positions.rs`: a move writes **one row**
 (append = max + 1 over the scope, first = first − 1, else midpoint; renumber 1..n only when
 the gap is under 1e-6); new projects/sections/tasks at max + 1; `byPosition` breaks ties on
 `id` like `ORDER BY position, id`; moving a project to another level does not renumber the
@@ -1376,36 +1384,39 @@ level it left. Test: `src/lib/mock-positions.test.ts`.
 
 ## 4. Server — `sync-server/`
 
-> **V2.7:** the server has **many accounts** and sends e-mail (§ 0). Sections 4.1–4.3 below are
-> rewritten for it; the earlier text they replace (one account, `set-password`, one login
-> limit per address of the caller only) is gone.
+The server has **many accounts** and sends e-mail (§ 0).
 
 Crate `taido-sync-server` (lib + bin), dependencies: `sync-proto` (path), axum 0.8, tokio,
 rusqlite 0.40 (`bundled`) + rusqlite_migration 2.6 (same as `src-tauri`, § 3.8), tower-http
-0.7 (`fs`, `limit`, `set-header`, `trace`), argon2 0.6, sha2 0.11, base64 0.23, rand 0.10
-(or `getrandom`), uuid (v4, for ids and the epoch), serde_json, clap 4 (derive), tracing +
-tracing-subscriber, and since V2.7 **lettre 0.11.23** (`default-features = false`, features
-`builder`, `hostname`, `smtp-transport`, `tokio1-rustls-tls`: rustls, no OpenSSL, no native-tls,
-no connection pool). **Verify every API on docs.rs at those versions** (rand 0.10, sha2 0.11,
-argon2 0.6 changed APIs recently) and record the versions in your report. No `unwrap()`
+0.7 (`fs`, `trace`), argon2 0.6, sha2 0.11, base64 0.23, getrandom 0.4, uuid (v4, for ids and the epoch),
+serde_json, clap 4 (derive), tracing + tracing-subscriber, and **lettre 0.11.23**
+(`default-features = false`, features `builder`, `hostname`, `smtp-transport`,
+`tokio1-rustls-tls`: rustls, no OpenSSL, no native-tls, no connection pool). No `unwrap()`
 outside tests.
 
 ### 4.1 Config (env) and CLI
 
 | env | default | Docker image |
 | --- | --- | --- |
-| `TAIDO_SYNC_BIND` | `127.0.0.1:3020` | `0.0.0.0:3020` (published as `127.0.0.1:3020:3020`) |
-| `TAIDO_SYNC_DATA_DIR` | `./data` | `/data` (volume) |
+| `TAIDO_SYNC_BIND` | `127.0.0.1:3020` | `0.0.0.0:3020` (publish it as `127.0.0.1:3020:3020`) |
+| `TAIDO_SYNC_DATA_DIR` | `./data` (SQLite database `sync.sqlite3` and the `files/` folder) | `/data` (volume) |
 | `TAIDO_SYNC_STATIC_DIR` | unset = no static files | `/app/public` (built PWA) |
-| `RUST_LOG` | `info` | `info` |
-| `TAIDO_SMTP_HOST` | unset = no e-mail (`forgot` answers 503) | unset |
+| `TAIDO_PUBLIC_URL` | unset = no address-confirmation e-mail and no host in mail footers; read only when `TAIDO_SMTP_HOST` is set; must start with `https://` or `http://` | unset (for example `https://sync.example.com`) |
+| `TAIDO_SIGNUPS` | `open` (also when unset or empty); `closed` refuses `POST /api/signup` with 403 `signups_closed`; case-insensitive; any other value stops `serve` naming the variable | unset (`open`) |
+| `TAIDO_SMTP_HOST` | unset = no e-mail (`forgot` answers 503, accounts are confirmed at signup) | unset |
 | `TAIDO_SMTP_PORT` | `465` (implicit TLS; any other port = STARTTLS) | `465` |
 | `TAIDO_SMTP_USER` / `TAIDO_SMTP_PASSWORD` | none; given together or not at all | none |
 | `TAIDO_MAIL_FROM` | required when the host is set | none (for example `Taido <noreply@sync.example.com>`) |
-| `TAIDO_MAX_FILE_BYTES` | `104857600` (100 MB per file; V2.7 bis, § 0.13) | unset (default) |
-| `TAIDO_ACCOUNT_QUOTA_BYTES` | `2147483648` (2 GB per account; V2.7 bis) | unset (default) |
-| `TAIDO_MIN_FREE_BYTES` | `2147483648` (2 GB left free on the disk; V2.7 bis final fixes) | unset (default) |
-| `TAIDO_RECORDS_QUOTA_BYTES` | `52428800` (50 MiB of synced row data per account; security review 2026-10-12) | unset (default) |
+| `TAIDO_MAX_FILE_BYTES` | `104857600` (100 MB per file, § 0.13) | unset (default) |
+| `TAIDO_ACCOUNT_QUOTA_BYTES` | `2147483648` (2 GB of files per account) | unset (default) |
+| `TAIDO_MIN_FREE_BYTES` | `2147483648` (2 GB kept free on the disk of `files/`) | unset (default) |
+| `TAIDO_RECORDS_QUOTA_BYTES` | `52428800` (50 MiB of synced row data per account) | unset (default) |
+| `RUST_LOG` | `info` | `info` |
+
+The four `*_BYTES` variables are whole numbers of bytes, no unit (at most `i64::MAX`); a
+malformed value stops `serve`. The limits and the signup mode are logged at start. Files are
+always stored on the disk (§ 0.13); variables starting with `TAIDO_R2_` (a former remote
+storage) are ignored with one warning at start.
 
 An incomplete mail configuration (user without password or the reverse, missing or malformed
 sender, bad port) stops `serve` with a clear message; the password is hidden from `Debug`.
@@ -1414,19 +1425,19 @@ Subcommands: `serve` (default); **`accounts`** (e-mail, creation, number of live
 revoked); `revoke <device_id>`; `reset-epoch` (new random `server_epoch`; run after restoring a
 backup); `healthcheck` (GET `http://<TAIDO_SYNC_BIND>/api/health` with a 3 s timeout over a plain
 `tokio::net::TcpStream` and a minimal HTTP/1.1 request — no HTTP client dependency; exit 0 when
-`ok`, else 1; used by the Docker `HEALTHCHECK`, the slim image has no curl). **`set-password`
-no longer exists** (the earlier single-account command): each person creates an account from the app.
-`serve` prints exactly one line `LISTENING <addr>` on stdout once bound (tests use
+`ok`, else 1; used by the Docker `HEALTHCHECK`, the slim image has no curl). Each person creates an
+account from the app (unless signups are closed). `serve` prints exactly one line `LISTENING <addr>` on stdout once bound (tests use
 `TAIDO_SYNC_BIND=127.0.0.1:0`), logs with tracing to stderr, shuts down gracefully on
 SIGTERM/Ctrl-C.
 
 ### 4.2 Storage (`<data_dir>/sync.sqlite3`, WAL, foreign keys on, one connection behind a mutex)
 
-Migrations `0001` (single account), `0002_accounts.sql` (V2.7) and `0003_files.sql` (V2.7 bis, the
-`files` table of § 0.13) with `rusqlite_migration`. A
-legacy single-account database holding a password or records is refused **before** the migrations run
-(`store::refuse_legacy`, § 0.1); an empty one is upgraded (`devices` and `records` are
-recreated, not converted).
+Migrations with `rusqlite_migration`: `0001_init.sql` (the base schema), `0002_accounts.sql`
+(accounts), `0003_files.sql` (the `files` table of § 0.13), `0004_records_bytes.sql` (the size of
+each record, for the records quota), `0005_email_verification.sql` (address confirmation,
+§ 0.2). A database of the former single-account schema holding a password or records is refused
+**before** the migrations run (`store::refuse_legacy`, § 0.1); an empty one is upgraded
+(`devices` and `records` are recreated, not converted).
 
 ```sql
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -1463,7 +1474,7 @@ between records (clients do, § 2.5).
   **inside `tokio::task::spawn_blocking`**, behind a `tokio::sync::Semaphore` with **1
   permit**: if a permit is not acquired within **1 s** → 429 `rate_limited`. An unknown or
   malformed address is checked against a dummy hash of the same cost (§ 0.2).
-- Rate limits: the table of **§ 0.11**. Mechanism (unchanged since the first version): each limiter
+- Rate limits: the table of **§ 0.11**. Mechanism: each limiter
   keeps `{ failures: VecDeque<Instant>, in_flight: u32 }` behind a mutex; **before** verifying,
   drop failures older than the window; if `failures.len() + in_flight >= max` → 429; else
   `in_flight += 1` (the slot is reserved, released by a guard also on error/panic); a failure
@@ -1511,8 +1522,8 @@ between records (clients do, § 2.5).
     gets `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'
     'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self';
     worker-src 'self'; base-uri 'none'; frame-ancestors 'none'` (`'unsafe-inline'` styles:
-    the toast library injects a `<style>`; `img-src blob:`: an attached raster image is shown
-    through `<img src="blob:…">`, V2.7 bis).
+    the toast library injects a `<style>`; `img-src blob:` is allowed but unused, since every
+    file is saved, never shown, § 0.13).
 - TLS is the reverse proxy's job; the app listens on loopback (or a private network) only.
 
 ### 4.5 Docker and deployment
@@ -1528,21 +1539,20 @@ between records (clients do, § 2.5).
   reverse proxy (nginx, Caddy, Traefik…) with HTTPS in front of it. The proxy should pass the
   real client address in `X-Real-IP` (the rate limiters of § 0.11 key on it), accept bodies of
   at least 16 MiB and rate-limit `/api/login`, `/api/signup` and `/api/password/`.
-- `sync-server/README.md`: build, configuration (including the mail and storage variables),
-  an example `docker compose` file, backups and the **restore procedure**: stop, copy the
-  backup, `taido-sync-server reset-epoch`, start (clients then rebuild the union, § 2.6).
+- `sync-server/README.md`: build, configuration (the table of § 4.1), an example
+  `docker compose` file, backups and the **restore procedure**: stop, copy the backup (database
+  and `files/`), `taido-sync-server reset-epoch`, start (clients then rebuild the union, § 2.6).
 
 ---
 
 ## 5. Desktop UI
 
-> **V2.7:** on the Mac this UI is replaced by `src/features/account` (welcome, account forms,
-> Réglages › Compte), the phone keeps `SyncSettings` (§ 6).
+> On the Mac the account UI is `src/features/account` (welcome, account forms,
+> Réglages › Compte); the phone uses `SyncSettings` (§ 6). The description below is the shared
+> sync UI.
 
-Code against `src/bindings.ts` as it is now, `commands.sync*` / `events.syncChanged` through
-`src/lib/ipc.ts`, strings `fr.sync.*`. Folder `src/features/sync/`, public API in
-`src/features/sync/index.ts` (D imports **only** these; until C merges, D uses its own stubs
-with the same signatures):
+`commands.sync*` / `events.syncChanged` go through `src/lib/ipc.ts`, strings are `fr.sync.*`.
+Folder `src/features/sync/`, public API in `src/features/sync/index.ts`:
 
 ```ts
 export function useSyncStatus(): UseQueryResult<SyncStatus>;
@@ -1570,8 +1580,8 @@ export function SyncSettings(props: { defaultServerUrl?: string }): JSX.Element;
   button, interval select (`intervalOption` for 1, 5, 15, 30, 60; `intervalHelp`), `unlink`
   button with confirmation dialog (`unlinkConfirmTitle`, `unlinkConfirmText`) → toast
   `unlinkedToast`.
-- Réglages (`SettingsDialog.tsx`): new tab `"sync"` (already in `SettingsTab` and
-  `fr.settings.tabs.sync`) right after « Général », rendering `<SyncSettings />`. **Also**:
+- Réglages (`SettingsDialog.tsx`): tab `"sync"` (`SettingsTab`, `fr.settings.tabs.sync`)
+  right after « Général », rendering `<SyncSettings />`. **Also**:
   the tabs `editor`, `claude` and `diagnostic` are listed only when `features.terminals`
   (desktop unchanged; on the phone only Général + Synchro remain), and the shortcut hints in
   Réglages only when `features.shortcuts`.
@@ -1605,11 +1615,12 @@ export function SyncSettings(props: { defaultServerUrl?: string }): JSX.Element;
 
 - IndexedDB database `todo`, version 1, object store `kv`. One persisted set
   `Persisted = { state, snapshot, outbox, parked, sync }`, each part under its own key, except
-  `sync`, stored under **`sync.2`** since V2.7 bis (moved from `sync` by the first load, in the
-  same transaction; every save deletes `sync`): an older build then refuses the set (§ 0.13,
-  « Rollback ») — the database version stays 1, so pages of another build are never blocked: `state` (subjects, sections,
-  tasks incl. soft-deleted, settings.theme, and since protocol 2 `syncedSettings?` — shared
-  settings by key, optional so a set saved by the previous version still loads as `{}`); `snapshot` (key `entity:id` →
+  `sync`, stored under **`sync.4`** (an older build reads another key, finds four parts of five
+  and refuses the set, § 0.13 « Downgrades »; a set saved under an older key is moved by the
+  first load, in one transaction) — the database version stays 1, so pages of another build
+  are never blocked: `state` (subjects, sections,
+  tasks incl. soft-deleted, settings.theme, and `syncedSettings?` — shared
+  settings by key, optional so a set saved without it still loads as `{}`); `snapshot` (key `entity:id` →
   `{ json: string /* wire data */, stamp: string /* known version, § 2.6 */ }`); `outbox`
   (key → `{ changed_at, purged }`); `parked` (key → `Change`); `sync` (`serverUrl, token,
   deviceId, serverEpoch, cursor, intervalMinutes, lastSyncAt, errorKind, lastStamp,
@@ -1634,7 +1645,7 @@ export function SyncSettings(props: { defaultServerUrl?: string }): JSX.Element;
 - **Deletion guard.** In one diff, count the vanished subjects/tasks whose snapshot data was
   **live** (`deleted_at: null`) — the phone never hard-deletes a live row itself (purges
   remove soft-deleted rows; sections and settings are not counted, neither in the vanished
-  rows nor in the snapshot total). Since V2.7 bis attachments are a second class with its own
+  rows nor in the snapshot total). Attachments are a second class with its own
   ratio: a live one counts when it vanishes while its task is still here and live (one purged
   with its task is that task's deletion). Held when **more than 25 live rows vanish in all, or,
   in either class, ≥ 5 vanish and > 20 % of that class in the snapshot** (subjects + tasks;
@@ -1659,7 +1670,7 @@ event, 3 s after a local change (debounced), the sync button. `navigator.onLine 
 or a `TypeError` from fetch → `offline`. Error mapping identical to § 3.4/3.5 (a non-JSON
 body → `server`). Link re-enqueue and epoch handling of § 2.6.
 
-> **Protocol 3 (V2.7 task 9).** `syncLogin({ serverUrl, email, password })` follows § 3.5:
+> **Accounts.** `syncLogin({ serverUrl, email, password })` follows § 3.5:
 > `POST /api/login` with the e-mail; `unauthorized` → `sync_auth`, `rate_limited` →
 > `sync_rate_limited`, network → `sync_offline`, other → `sync_server`; while linked, only
 > the cached account's address (trimmed, lowercased) is accepted, else `invalid`
@@ -1669,10 +1680,10 @@ body → `server`). Link re-enqueue and epoch handling of § 2.6.
 > into `sync.account` (persisted; also read after every successful run, an answer for an older
 > token dropped; cleared at unlink). `syncAccount()` returns it (`null` when unlinked).
 > `syncSignup`, `syncForgotPassword`, `syncResetPassword` reject `invalid` with
-> `NOT_ON_THE_PHONE` (accounts are created and reset from the Mac in V2.7). The phone keeps
+> `NOT_ON_THE_PHONE` (accounts are created and reset from the Mac). The phone keeps
 > `is_group` (`SubjectRec.isGroup`) and `board_column_id` (`TaskRec.boardColumnId`) and sends
-> them back unchanged; since V2.7 bis `attachment` rows are applied and their files travel, and
-> since V2.8 `board_column`, `time_segment` and `relation` rows are applied, kept and pushed
+> them back unchanged; `attachment` rows are applied and their files travel, and
+> `board_column`, `time_segment` and `relation` rows are applied, kept and pushed
 > (§ 0.9, § 0.13). The phone's
 > Réglages › Synchro follows the Mac's account flows (`SyncParts.tsx`): « Fusionner » /
 > « Annuler » before a login when it holds projects or tasks, and « Se déconnecter » syncs
@@ -1682,14 +1693,14 @@ body → `server`). Link re-enqueue and epoch handling of § 2.6.
 
 - Shows: Aujourd'hui, Prochainement, À faire, Sans projet, projects and sub-projects with
   their sections; task panel: title, note (description), due date, priority, completion,
-  sub-tasks, **attachments** (since V2.7 bis: add from the picker, a paste or a drop;
+  sub-tasks, **attachments** (add from the picker, a paste or a drop;
   « Télécharger » = the file saved, images too; remove; § 0.13), move to project/section, delete
   (with « Annuler »); quick add (§ 7 handles the
   mobile behaviour); create/rename/delete projects, sub-projects and sections; ⌘K search as
-  a « Recherche » screen; Réglages = `SettingsDialog` (C hides the Mac-only tabs) with the
+  a « Recherche » screen; Réglages = `SettingsDialog` (the Mac-only tabs are hidden) with the
   Synchro tab rendering `<SyncSettings defaultServerUrl={location.origin} />`;
   `<SyncButton variant="topbar" />` in the top bar.
-- Since **V2.8**: the « Liste | Kanban | Dashboard » tabs and the figures strip; the Kanban
+- The « Liste | Kanban | Dashboard » tabs and the figures strip; the Kanban
   (under 1024 px: one column per screen with scroll snapping, column names and card counts on
   top, a card moved by « Déplacer vers… » or a long press then a drag; from 1024 px: columns side
   by side as on the Mac; column management as on the Mac; no column until the first complete
@@ -1730,9 +1741,8 @@ body → `server`). Link re-enqueue and epoch handling of § 2.6.
 - `mobile/public/manifest.webmanifest`: `name` « Taido », `short_name` « Taido », `lang`
   `fr`, `start_url` `/`, `scope` `/`, `display` `standalone`, `background_color` and
   `theme_color`, icons 192 and 512 PNG (+ `maskable` 512) in `mobile/public/icons/`
-  Chrome criteria verified on
-  web.dev (2026-10-04): HTTPS, `name`/`short_name`, 192 and 512 icons, `start_url`,
-  `display` standalone; no `prefer_related_applications`.
+  Chrome's installability criteria (web.dev): HTTPS, `name`/`short_name`, 192 and 512 icons,
+  `start_url`, `display` standalone; no `prefer_related_applications`.
 - **Service worker** `mobile/sw.js` (source, not in `public/`), emitted by a small Vite
   plugin in `vite.mobile.config.ts` (`generateBundle`: read the bundle's file names) as
   `dist/sw.js` with a header `const BUILD = "<hash of the emitted file names>"; const
@@ -1742,7 +1752,7 @@ body → `server`). Link re-enqueue and epoch handling of § 2.6.
   and calls `clients.claim()`; navigations network-first with a **3 s timeout**, falling
   back to the cached `/index.html`; `/assets/*` cache-first, caching a response only when
   `response.ok` and its `Content-Type` is not `text/html`; `/api/*` never cached;
-  `message` `{type: "SKIP_WAITING"}` → `skipWaiting()`; since V2.7 bis `message`
+  `message` `{type: "SKIP_WAITING"}` → `skipWaiting()`; `message`
   `{type: "SKIP_WAITING_IF_SAME_BUILD", path}` → `skipWaiting()` only when `PRECACHE` holds
   `path`, answering `{skipping}` on the message port. Registered by `main.tsx` in
   production only; when a worker waits (`registration.waiting`, or `updatefound` → installed
@@ -1752,7 +1762,7 @@ body → `server`). Link re-enqueue and epoch handling of § 2.6.
   and reloads on `controllerchange`. The built `index.html` must contain no inline script
   (CSP, § 4.4).
 
-## 7. Quick add `!2`…`!4` and quick add without terminals 
+## 7. Quick add `!2`…`!4` and quick add without terminals
 
 - `src/features/quick-add/parse.ts`: new token kind `"priority"` with `value: 2 | 3 | 4`
   (`QuickToken`, `TokenKind`), `ParseResult.priority?: 2 | 3 | 4`. `!2`, `!3`, `!4` start a
@@ -1767,11 +1777,11 @@ body → `server`). Link re-enqueue and epoch handling of § 2.6.
   `fr.quickAdd.helpMobile`; the `>claude` / `>shell` tokens are not recognised (they stay
   text, no chip, no launch); « Ajouter et lancer » and its shortcut are not shown. Desktop
   unchanged. Test it by mocking `features` (`vi.mock("../../lib/features", …)`).
-- Tests in `parse.test.ts` and `QuickAddDialog.test.tsx`. Record the rule in your report.
+- Tests in `parse.test.ts` and `QuickAddDialog.test.tsx`.
 
 ## 8. UI strings
 
-All new French strings are already in `src/i18n/fr.ts` (`fr.sync.*` incl.
+The French strings are in `src/i18n/fr.ts` (`fr.sync.*` incl.
 `error.deletions_held`, `fr.mobile.*` incl. `deletionsHeld*`, `fr.settings.tabs.sync`,
 `fr.quickAdd.helpMobile`, `fr.quickAdd.priority`, `fr.errors.kind.sync_*`).
 
@@ -1787,8 +1797,7 @@ All new French strings are already in `src/i18n/fr.ts` (`fr.sync.*` incl.
   (`has_more`), `unsupported_protocol`, 401/429/413, 11 parallel bad logins → at most 10
   verified, static: unknown `/assets/x.js` → 404, unknown navigation → index.html 200 with
   `no-cache` and CSP, `healthcheck` subcommand exit codes. Library API for others:
-  `pub async fn start_for_tests(data_dir: &Path) -> Result<TestServer, ServerError>` (V2.7: no
-  password any more) with `TestServer { pub base_url: String }` (stops on drop; an in-memory
+  `pub async fn start_for_tests(data_dir: &Path) -> Result<TestServer, ServerError>` with `TestServer { pub base_url: String }` (stops on drop; an in-memory
   mailer; `create_account(email, password)`, `set_password`, `mailer()`, `wait_for_code(email,
   nth, timeout)`, `state()`) and `pub fn reset_epoch(data_dir: &Path) -> Result<String,
   ServerError>` (for the e2e). Tests never use a real SMTP server.
@@ -1830,31 +1839,31 @@ All new French strings are already in `src/i18n/fr.ts` (`fr.sync.*` incl.
   emits `mobile/dist/{index.html,sw.js,manifest.webmanifest,icons/*}`; `sw.js` lists every
   emitted asset; the built CSS contains a class used only in `src/features/`.
 - **Quick add**: parser and dialog tests above, including the `features.terminals` off case.
-- **Protocol 2**: `sync-proto` (Rust and TS, same
+- **Settings**: `sync-proto` (Rust and TS, same
   cases) — fixtures round trip with the setting change, `setting` parse, `inbox_position`
   number ok / string refused, setting tombstone refused, bad keys (`Inbox`, `a-b`, 65 bytes)
   refused, unknown key accepted, value > 4 KiB refused; server — a setting is stored and
-  pulled by another device, its tombstone is rejected; core — the 24 triggers (§ 0.5), a v10
+  pulled by another device, its tombstone is rejected; core — the triggers (§ 0.5), a v10
   database migrated keeps its outbox, `synced_settings` writes queue `'setting'` (an equal
   write does not, `applying = 1` does not), apply writes a pulled setting without queuing it,
   `re_enqueue` and an epoch reset include settings, two Macs converge on `inbox_position`
   (`e2e_tests`); phone — `reorderInbox` queues `setting:inbox_position`, persistence round
   trip with and without `syncedSettings`, the deletion guard ignores settings, two phones
   converge through the real server (`sync-e2e.test.ts`).
-- **Protocol 3 (V2.7)**: `sync-proto` (Rust and TS,
+- **Accounts and entities**: `sync-proto` (Rust and TS,
   same cases, `fixtures/v3_entities.json`); server — signup / login / `account`,
   wrong password and unknown address answer alike (dummy check counted), two accounts with the
   same ids never see nor overwrite each other (filter removal makes 6 of 7 tests fail), paging
   with another account writing between pages, forgot always 204 with identical response bytes,
   6th try fails with the right code, a new code replaces the old, expired code, reset logs every
   device out, all limits of § 0.11, no address / password / code / token in the logs at TRACE, a
-  legacy database refused; core (real test server) — the four entities round trip,
+  legacy database refused, signups open and closed (`TAIDO_SIGNUPS`), address confirmation; core (real test server) — the four entities round trip,
   default columns made on two Macs make one set, a late default never undoes a rename, a
-  running segment of another Mac is never stopped here, duplicate relations converge, a V1 Mac
-  logs in to a new account and sends exactly its rows, a linked Mac never joins another
-  account, every account error has its kind; UI — welcome, forms with errors under their field,
+  running segment of another Mac is never stopped here, duplicate relations converge, a Mac
+  linked to another server logs in to a new account and sends exactly its rows, a linked Mac
+  never joins another account, every account error has its kind; UI — welcome, forms with errors under their field,
   forgotten-password flow, merge question (also over the welcome), logout warning; phone — a
-  task in « À valider » and a group survive an edit, the four entities round trip (V2.8), login by
+  task in « À valider » and a group survive an edit, the four entities round trip, login by
   e-mail and the account reads, an old store still loads, the merge question and the logout
   flow of the Mac.
 - **End to end**:
@@ -1872,14 +1881,14 @@ All new French strings are already in `src/i18n/fr.ts` (`fr.sync.*` incl.
      `TAIDO_SYNC_BIND=127.0.0.1:0`, temp data dir, account made by `POST /api/signup`, reads the
      `LISTENING` line, and runs the PWA sync client + `MobileBackend` against it (create
      project + sub-project + tasks, note, complete, delete; second client sees them).
-  3. `pnpm check` green; `pnpm build:mobile`; `docker build` is **not** run by agents.
+  3. `pnpm check` green; `pnpm build:mobile`.
 
-## 10. Versions (crates.io, 2026-10-04)
+## 10. Main dependencies
 
-reqwest 0.13.5 (`default-tls` = `rustls` with aws-lc-rs + platform verifier), axum 0.8.9,
-tower-http 0.7.1, tower 0.5.3, tokio 1.53.2, rusqlite 0.40.2, rusqlite_migration 2.6 (as in
-`src-tauri`), argon2 0.6.0 (Rust ≥ 1.85), sha2 0.11.0, base64 0.23.1, rand 0.10.3,
-clap 4.6.7, serde 1.0.229, serde_json 1.0.151, tracing-subscriber 0.3.23 (uuid as locked in `Cargo.lock`). V2.7 (2026-10-10): lettre 0.11.23 with
-`default-features = false` and features `builder`, `hostname`, `smtp-transport`,
-`tokio1-rustls-tls` (rustls 0.23, ring, webpki-roots; implicit TLS on port 465 through
-`relay()`).
+Version requirements of the sync-related crates (exact versions are in the `Cargo.lock` files):
+reqwest 0.13 (`rustls` with aws-lc-rs and the platform verifier; desktop client only),
+axum 0.8, tower-http 0.7, tower 0.5 (tests), tokio 1, rusqlite 0.40 with rusqlite_migration 2.6
+(identical in `src-tauri` and `sync-server`), argon2 0.6, sha2 0.11, base64 0.23, clap 4,
+serde 1, serde_json 1, tracing-subscriber 0.3, and lettre 0.11.23 with `default-features =
+false` and features `builder`, `hostname`, `smtp-transport`, `tokio1-rustls-tls` (rustls 0.23,
+implicit TLS on port 465 through `relay()`).

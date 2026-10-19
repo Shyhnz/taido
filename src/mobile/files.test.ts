@@ -113,28 +113,28 @@ describe("adding files on the phone or the site", () => {
     expect(await bytesOf(opened.blob)).toEqual(numbers(text("abc")));
   });
 
-  it("refuses a file over 100 MB before reading it, and adds the others", async () => {
-    const phone = makePhone();
+  it("uploads a file larger than 100 MB when the server allows it", async () => {
+    const server = new FakeServer();
+    server.maxFileBytes = 200_000_000;
+    const phone = makePhone(server);
+    await link(phone);
     const t = await newTask(phone);
-    const read = vi.fn();
-    const huge = {
-      name: "film.mov",
-      type: "video/quicktime",
-      size: DEFAULT_MAX_FILE_BYTES + 1,
-      arrayBuffer: read,
-      slice: read,
-      stream: read,
-      text: read,
-    } as unknown as File;
+    // Declared size only: the phone no longer judges the size itself.
+    const big = new File(["abc"], "film.mov", { type: "video/quicktime" });
+    Object.defineProperty(big, "size", { value: 150_000_000 });
     const result = await phone.backend.files.add(t.id, [
-      huge,
+      big,
       new File(["abc"], "a.txt"),
     ]);
-    expect(result).toEqual({ added: 1, tooLarge: ["film.mov"] });
-    expect(read).not.toHaveBeenCalled();
-    expect((await tiles(phone, t.id)).map((x) => x.fileName)).toEqual([
-      "a.txt",
-    ]);
+    expect(result).toEqual({ added: 2, tooLarge: [] });
+    await syncAndSend(phone);
+    const names = (await tiles(phone, t.id)).map((x) => x.fileName).sort();
+    expect(names).toEqual(["a.txt", "film.mov"]);
+    const film = (await tiles(phone, t.id)).find(
+      (x) => x.fileName === "film.mov",
+    );
+    expect(film?.remote).toBe("none");
+    expect(server.files.get(film?.id ?? "")?.complete).toBe(true);
   });
 
   it("names a second file like the Mac, and a pasted screenshot through the same path", async () => {
@@ -719,20 +719,15 @@ describe("fix round 1", () => {
     expect(await files.ids()).toEqual([]);
   });
 
-  it("pasted data over 100 MB is refused as too large, before reading it", async () => {
+  it("pasted data is not judged by the phone: the server decides", async () => {
     const phone = makePhone();
     const t = await newTask(phone);
-    const read = vi.fn();
-    const huge = {
-      size: DEFAULT_MAX_FILE_BYTES + 1,
-      type: "image/png",
-      arrayBuffer: read,
-      slice: read,
-    } as unknown as Blob;
-    await expect(
-      phone.backend.files.addData(t.id, "capture.png", huge),
-    ).rejects.toMatchObject({ kind: "too_large" });
-    expect(read).not.toHaveBeenCalled();
+    const pasted = new Blob(["abc"], { type: "image/png" });
+    Object.defineProperty(pasted, "size", { value: 150_000_000 });
+    await phone.backend.files.addData(t.id, "capture.png", pasted);
+    expect((await tiles(phone, t.id)).map((x) => x.fileName)).toEqual([
+      "capture.png",
+    ]);
   });
 
   it("keeps the very bytes it hashed, not the picked file", async () => {
