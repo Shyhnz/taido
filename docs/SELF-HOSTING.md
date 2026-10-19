@@ -170,7 +170,7 @@ Update the server first, then the apps on your computers. Reload the phone web a
   ```
 
   `docker compose ps` shows the same check as `healthy`.
-- **Account creation says signups are closed.** That is `TAIDO_SIGNUPS: closed` working as
+- **Account creation says signups are closed.** That is `TAIDO_SIGNUPS=closed` working as
   intended; see "Close signups" above.
 - **See accounts and devices, or sign out a lost device:**
 
