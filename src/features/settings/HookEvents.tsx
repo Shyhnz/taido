@@ -9,7 +9,7 @@ import { RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import type { HookEventLog } from "../../bindings";
 import { Button } from "../../components/Button";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queries";
 
@@ -52,13 +52,13 @@ function EventItem({ event }: { event: HookEventLog }) {
           </span>
           <span className="shrink-0 truncate font-mono text-[12px] text-text-3">
             {event.terminalId
-              ? fr.diagnostic.terminal(event.terminalId)
-              : fr.diagnostic.noTerminal}
+              ? t.diagnostic.terminal(event.terminalId)
+              : t.diagnostic.noTerminal}
           </span>
         </summary>
         <pre
           data-payload
-          title={fr.diagnostic.payload}
+          title={t.diagnostic.payload}
           className="mt-1 mb-1 max-h-[280px] overflow-auto rounded-md bg-aside p-2.5 font-mono text-[12px] leading-[18px] whitespace-pre-wrap break-all text-text"
         >
           {prettyPayload(event.payload)}
@@ -82,7 +82,7 @@ export function HookEvents() {
   if (query.isPending) {
     body = (
       <p role="status" className="py-6 text-center text-[13px] text-text-2">
-        {fr.diagnostic.loading}
+        {t.diagnostic.loading}
       </p>
     );
   } else if (query.isError) {
@@ -91,21 +91,21 @@ export function HookEvents() {
         role="alert"
         className="flex items-center justify-between gap-3 py-4"
       >
-        <p className="text-[13px] text-text">{fr.diagnostic.error}</p>
+        <p className="text-[13px] text-text">{t.diagnostic.error}</p>
         <Button size="sm" onClick={() => void query.refetch()}>
-          {fr.common.retry}
+          {t.common.retry}
         </Button>
       </div>
     );
   } else if (events.length === 0) {
     body = (
       <p className="py-6 text-center text-[13px] text-text-2">
-        {fr.diagnostic.empty}
+        {t.diagnostic.empty}
       </p>
     );
   } else {
     body = (
-      <ul aria-label={fr.diagnostic.title} className="flex flex-col">
+      <ul aria-label={t.diagnostic.title} className="flex flex-col">
         {events.map((event) => (
           <EventItem key={event.id} event={event} />
         ))}
@@ -118,12 +118,12 @@ export function HookEvents() {
       <div className="flex items-center gap-3 pb-1">
         <div className="min-w-0 flex-1">
           <h3 id="hook-events-title" className="text-[13.5px] font-semibold">
-            {fr.diagnostic.title}
+            {t.diagnostic.title}
           </h3>
           <p className="text-[12.5px] text-text-2">
-            {fr.diagnostic.subtitle}
+            {t.diagnostic.subtitle}
             {query.isSuccess && events.length > 0 && (
-              <> · {fr.diagnostic.count(events.length)}</>
+              <> · {t.diagnostic.count(events.length)}</>
             )}
           </p>
         </div>
@@ -138,7 +138,7 @@ export function HookEvents() {
             aria-hidden
             className={query.isFetching ? "motion-safe:animate-spin" : ""}
           />
-          {fr.diagnostic.refresh}
+          {t.diagnostic.refresh}
         </Button>
       </div>
       {body}

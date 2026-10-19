@@ -25,7 +25,7 @@ import {
 } from "react";
 import type { NoteAttachment } from "../../../bindings";
 import { showToast } from "../../../components/Toast";
-import { fr } from "../../../i18n/fr";
+import { t } from "../../../i18n";
 import { commands, errorMessage, webFiles } from "../../../lib/ipc";
 import { run } from "../../../lib/run";
 import { hasPreview, saveBlob } from "../../../lib/web-files";
@@ -330,7 +330,7 @@ function ImageView({
     >
       <button
         type="button"
-        aria-label={fr.notes.image.label(name, now)}
+        aria-label={t.notes.image.label(name, now)}
         aria-expanded={editable ? open : undefined}
         disabled={!editable}
         onClick={() => setOpen((o) => !o)}
@@ -342,13 +342,13 @@ function ImageView({
         {shown.kind === "pending" && (
           <span className="note-image-frame">
             <ImageIcon size={20} aria-hidden />
-            <span>{fr.notes.image.downloading}</span>
+            <span>{t.notes.image.downloading}</span>
           </span>
         )}
         {shown.kind === "missing" && (
           <span className="note-image-frame">
             <ImageOff size={20} aria-hidden />
-            <span>{fr.notes.image.missing}</span>
+            <span>{t.notes.image.missing}</span>
           </span>
         )}
         {shown.kind === "loading" && (
@@ -367,14 +367,14 @@ function ImageView({
           onClick={() => void openFile(shown.attachment)}
           className={`note-image-open ${phone ? "min-h-11 px-3" : "px-2 py-1"}`}
         >
-          {fr.notes.image.open}
+          {t.notes.image.open}
         </button>
       )}
       {editable && !phone && (
         <button
           type="button"
-          aria-label={fr.notes.image.resize}
-          title={fr.notes.image.resize}
+          aria-label={t.notes.image.resize}
+          title={t.notes.image.resize}
           className="note-image-handle"
           onPointerDown={onHandleDown}
           onPointerMove={onHandleMove}
@@ -396,7 +396,7 @@ function ImageView({
         <span
           ref={sizes}
           role="toolbar"
-          aria-label={fr.notes.image.sizes}
+          aria-label={t.notes.image.sizes}
           className="note-image-sizes"
           style={shift !== 0 ? { left: `${shift}px` } : undefined}
         >
@@ -412,7 +412,7 @@ function ImageView({
                   : "text-text-2 hover:bg-hover hover:text-text"
               }`}
             >
-              {fr.notes.image.size(w)}
+              {t.notes.image.size(w)}
             </button>
           ))}
           <span aria-hidden className="mx-0.5 h-5 w-px self-center bg-border" />
@@ -425,9 +425,9 @@ function ImageView({
               // « Annuler ») takes its place.
               let putBack: () => void = () => undefined;
               showToast({
-                message: fr.notes.image.removed,
+                message: t.notes.image.removed,
                 action: {
-                  label: fr.toast.undo,
+                  label: t.toast.undo,
                   onAction: () => putBack(),
                 },
               });
@@ -435,7 +435,7 @@ function ImageView({
             }}
             className={`${button} rounded-md text-[var(--due-overdue)] hover:bg-hover`}
           >
-            {fr.notes.image.remove}
+            {t.notes.image.remove}
           </button>
         </span>
       )}

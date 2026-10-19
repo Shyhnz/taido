@@ -7,7 +7,7 @@
 import { X } from "lucide-react";
 import { useState } from "react";
 import type { RelatedTask, TaskDetail } from "../../bindings";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands } from "../../lib/ipc";
 import { run } from "../../lib/run";
 import { useUi } from "../../stores/ui";
@@ -32,14 +32,14 @@ function Linked({ item }: { item: RelatedTask }) {
         {item.title}
       </button>
       <span className="shrink-0 text-[12px] text-text-3">
-        {item.completed ? fr.relations.done : fr.relations.open}
+        {item.completed ? t.relations.done : t.relations.open}
         {" · "}
-        {item.project ?? fr.relations.noProject}
+        {item.project ?? t.relations.noProject}
       </span>
       <button
         type="button"
-        aria-label={fr.relations.remove(item.title)}
-        title={fr.relations.remove(item.title)}
+        aria-label={t.relations.remove(item.title)}
+        title={t.relations.remove(item.title)}
         onClick={() => void run(commands.deleteRelation(item.relationId))}
         className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-3 opacity-0 hover:bg-hover hover:text-text group-hover/linked:opacity-100 focus-visible:opacity-100"
       >
@@ -57,7 +57,7 @@ function Line({ label, items }: { label: string; items: RelatedTask[] }) {
       </span>
       <div className="min-w-0 flex-1">
         {items.length === 0 ? (
-          <span className="text-[13px] text-text-3">{fr.relations.none}</span>
+          <span className="text-[13px] text-text-3">{t.relations.none}</span>
         ) : (
           <ul className="flex flex-col gap-0.5">
             {items.map((item) => (
@@ -86,13 +86,13 @@ export function RelationsSection({
   const pendingBlockers = blockedBy.filter((r) => !r.completed).length;
   // « bloquée par 2 · bloque 1 · liée à 3 », the blockers first and orange while pending.
   const others = [
-    blocks.length > 0 && fr.folds.blocks(blocks.length),
-    related.length > 0 && fr.folds.related(related.length),
+    blocks.length > 0 && t.folds.blocks(blocks.length),
+    related.length > 0 && t.folds.related(related.length),
   ].filter((part): part is string => typeof part === "string");
   return (
     <Fold
       id="relations"
-      title={fr.relations.title}
+      title={t.relations.title}
       summary={
         (blockedBy.length > 0 || others.length > 0) && (
           <span className="truncate">
@@ -100,7 +100,7 @@ export function RelationsSection({
               <span
                 className={pendingBlockers > 0 ? "text-due-overdue" : undefined}
               >
-                {fr.folds.blockedBy(blockedBy.length)}
+                {t.folds.blockedBy(blockedBy.length)}
               </span>
             )}
             {blockedBy.length > 0 && others.length > 0 && " · "}
@@ -109,9 +109,9 @@ export function RelationsSection({
         )
       }
     >
-      <Line label={fr.relations.blocks} items={blocks} />
-      <Line label={fr.relations.blockedBy} items={blockedBy} />
-      <Line label={fr.relations.related} items={related} />
+      <Line label={t.relations.blocks} items={blocks} />
+      <Line label={t.relations.blockedBy} items={blockedBy} />
+      <Line label={t.relations.related} items={related} />
       {adding ? (
         <LinkMenu
           task={task}
@@ -124,7 +124,7 @@ export function RelationsSection({
           onClick={() => setAdding(true)}
           className="mt-0.5 mb-1 inline-flex items-center gap-1 rounded-md py-1 text-[13px] font-medium text-accent hover:underline"
         >
-          {fr.relations.add}
+          {t.relations.add}
         </button>
       )}
     </Fold>

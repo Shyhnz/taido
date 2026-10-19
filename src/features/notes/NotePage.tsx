@@ -11,7 +11,7 @@ import type { NotebookView, NoteLinkRef, NotePage } from "../../bindings";
 import { Button } from "../../components/Button";
 import { openMenuAt } from "../../components/Menu";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { formatShortDate } from "../../lib/dates";
 import { commands, isNotFound } from "../../lib/ipc";
 import { useSubjects } from "../../lib/queries";
@@ -34,7 +34,7 @@ function placeName(
       nb?.groups.find((g) => g.group.id === page.groupId)?.group.name ?? null
     );
   }
-  return page.kind === "summary" ? fr.notes.summaries : null;
+  return page.kind === "summary" ? t.notes.summaries : null;
 }
 
 /** Longest title (bytes of UTF-8, like the core and the sync). */
@@ -95,15 +95,15 @@ function TitleField({ page, sheet }: { page: NotePage; sheet: boolean }) {
     if (title === page.title) return;
     void run(
       commands.updateNotePage({ id: page.id, title, body: null }),
-      fr.notes.errors.updatePage,
+      t.notes.errors.updatePage,
     );
   };
 
   return (
     <input
       ref={ref}
-      aria-label={fr.notes.titleLabel}
-      placeholder={fr.notes.untitled}
+      aria-label={t.notes.titleLabel}
+      placeholder={t.notes.untitled}
       value={value}
       onChange={(e) => setValue(fitTitle(e.target.value))}
       onBlur={save}
@@ -159,7 +159,7 @@ export function NotePagePane({
     if (!gone) return;
     // The large screen's list says it itself (`NotesView`); the sheet says it here.
     if (onGone && !wasDeletedHere(pageId)) {
-      showToast({ message: fr.notes.deletedElsewhere });
+      showToast({ message: t.notes.deletedElsewhere });
     }
     onGone?.();
   }, [gone, pageId, onGone]);
@@ -167,12 +167,12 @@ export function NotePagePane({
   if (error && !gone) {
     return (
       <div role="alert" className="flex flex-col items-start gap-3 py-6">
-        <p className="text-[14px] text-text-2">{fr.notes.pageError}</p>
+        <p className="text-[14px] text-text-2">{t.notes.pageError}</p>
         <Button
           className={sheet ? "min-h-11" : undefined}
           onClick={() => void refetch()}
         >
-          {fr.list.retry}
+          {t.list.retry}
         </Button>
       </div>
     );
@@ -183,7 +183,7 @@ export function NotePagePane({
 
   return (
     <section
-      aria-label={fr.notes.pageLabel}
+      aria-label={t.notes.pageLabel}
       className={`flex min-w-0 flex-col ${sheet ? "pt-4" : "max-w-[680px]"}`}
     >
       {!sheet && (
@@ -198,15 +198,13 @@ export function NotePagePane({
       <p
         className={`mt-1 text-text-3 ${sheet ? "text-[14px]" : "text-[12.5px]"}`}
       >
-        {sheet && where
-          ? `${where} · ${modified}`
-          : fr.notes.modified(modified)}
+        {sheet && where ? `${where} · ${modified}` : t.notes.modified(modified)}
       </p>
       <div className="mt-4">
         {/* A kept draft is compared with the stored text: wait for the latest one. */}
         {readFor !== pageId && isFetching && noteDraft(page.id) !== null ? (
           <p role="status" className="text-[14px] text-text-3">
-            {fr.common.loading}
+            {t.common.loading}
           </p>
         ) : (
           <NoteEditor
@@ -227,7 +225,7 @@ function PageSkeleton({ sheet }: { sheet: boolean }) {
   return (
     <div
       role="status"
-      aria-label={fr.common.loading}
+      aria-label={t.common.loading}
       className={`flex flex-col gap-3 ${sheet ? "pt-5" : "max-w-[680px] pt-5"}`}
     >
       <div className="h-7 w-2/3 rounded-md bg-hover" />
@@ -249,8 +247,7 @@ export function MentionLink({
   onOpen?: () => void;
 }) {
   const Icon = item.kind === "page" ? FileText : CircleCheck;
-  const kind =
-    item.kind === "page" ? fr.notes.mentionPage : fr.notes.mentionTask;
+  const kind = item.kind === "page" ? t.notes.mentionPage : t.notes.mentionTask;
   return (
     <li>
       <button
@@ -284,7 +281,7 @@ function MentionedIn({ pageId }: { pageId: string }) {
         id={`mentions-${pageId}`}
         className="mb-1 text-[12px] font-semibold tracking-wide text-text-3 uppercase"
       >
-        {fr.notes.mentionedIn}
+        {t.notes.mentionedIn}
       </h2>
       <ul className="flex flex-col">
         {items.map((item) => (
@@ -321,7 +318,7 @@ export function NotePageSheet({
     };
   }, [pageId]);
   const title = page?.title ?? "";
-  const menuLabel = fr.notes.pageMenu(title);
+  const menuLabel = t.notes.pageMenu(title);
   return (
     <div
       role="dialog"
@@ -333,12 +330,12 @@ export function NotePageSheet({
         <button
           ref={back}
           type="button"
-          aria-label={fr.notes.backLabel}
+          aria-label={t.notes.backLabel}
           onClick={close}
           className="inline-flex h-11 items-center gap-0.5 rounded-md pr-3 pl-1 text-[16px] font-medium text-accent"
         >
           <ChevronLeft size={22} aria-hidden />
-          {fr.notes.back}
+          {t.notes.back}
         </button>
         <span className="flex-1" />
         {page && (

@@ -5,7 +5,7 @@
 
 import { create } from "zustand";
 import type { TerminalInfo } from "../../bindings";
-import { fr } from "../../i18n/fr";
+import { t as strings } from "../../i18n";
 
 export const useTerminalList = create<{ list: TerminalInfo[] }>(() => ({
   list: [],
@@ -27,7 +27,7 @@ export function terminalLabel(
   t: Pick<TerminalInfo, "kind" | "command"> &
     Partial<Pick<TerminalInfo, "agent">>,
 ) {
-  if (t.kind === "agent") return fr.terminals.agent(t.agent ?? "claude");
-  if (t.kind === "shell") return fr.terminals.shell;
-  return t.command?.trim() || fr.terminals.shell;
+  if (t.kind === "agent") return strings.terminals.agent(t.agent ?? "claude");
+  if (t.kind === "shell") return strings.terminals.shell;
+  return t.command?.trim() || strings.terminals.shell;
 }

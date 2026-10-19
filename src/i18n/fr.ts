@@ -712,6 +712,9 @@ export const fr = {
       diagnostic: "Diagnostic",
     },
     tabsLabel: "Sections des réglages",
+    /** The language select (shown in both languages so it can be found from either). */
+    language: "Langue / Language",
+    languageHelp: "Taido redémarre pour changer de langue.",
     theme: "Apparence",
     themeHelp: "« Système » suit le réglage clair ou sombre de macOS.",
     /** The phone's Réglages › Général. */
@@ -2018,3 +2021,13 @@ export const tutorialTexts = (agent: Agent): typeof fr.tutorial =>
     : fr.tutorial;
 
 export type Fr = typeof fr;
+
+/** The per-language helpers of this file, for the switch in `index.ts`. */
+export const frHelpers = {
+  agentName,
+  agentProduct,
+  agentInstallCommand,
+  agentLoginCommand,
+  agentErrorLabel,
+  tutorialTexts,
+};

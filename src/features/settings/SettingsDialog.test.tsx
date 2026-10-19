@@ -569,3 +569,34 @@ describe("Réglages › Compte", () => {
     await user.keyboard("{Escape}");
   });
 });
+
+describe("Réglages › Langue", () => {
+  beforeEach(() => {
+    backend().reset({ seed: false });
+    resetUi();
+    useToasts.setState({ toasts: [] });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    window.localStorage.setItem("taido.language", "fr");
+  });
+
+  it("shows a select with English and Français, and saves the choice", async () => {
+    const reload = vi.fn();
+    vi.stubGlobal("location", { ...window.location, reload });
+    const { user, dialog } = await openSettings();
+    const select = within(dialog).getByRole("combobox", {
+      name: "Langue / Language",
+    });
+    expect(
+      within(select)
+        .getAllByRole("option")
+        .map((o) => o.textContent),
+    ).toEqual(["English", "Français"]);
+    expect(select).toHaveValue("fr");
+    await user.selectOptions(select, "English");
+    await waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
+    expect(window.localStorage.getItem("taido.language")).toBe("en");
+    expect((await commands.getSettings()).language).toBe("en");
+  });
+});

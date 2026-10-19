@@ -13,7 +13,7 @@ import type { AccountInfo, SyncStatus } from "../../bindings";
 import { Button } from "../../components/Button";
 import { confirmDialog } from "../../components/Dialog";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands, errorKind, errorMessage } from "../../lib/ipc";
 import {
   ALREADY_LINKED,
@@ -36,18 +36,16 @@ interface DeviceTexts {
 }
 
 /** « cet appareil », or « ce téléphone » on the phone. */
-export const deviceTexts: DeviceTexts = IS_MOBILE
-  ? fr.account.phone
-  : fr.account;
+export const deviceTexts: DeviceTexts = IS_MOBILE ? t.account.phone : t.account;
 
 /** French text of a failed account command (`sync_login`, `sync_signup`…). */
 export function linkErrorText(error: unknown): string {
   const kind = errorKind(error);
   if (kind === "invalid" && errorMessage(error).includes(ALREADY_LINKED)) {
-    return fr.sync.accountError.alreadyLinked;
+    return t.sync.accountError.alreadyLinked;
   }
   if (kind === "invalid" && errorMessage(error).includes(NOT_ON_THE_PHONE)) {
-    return fr.sync.accountError.notOnPhone;
+    return t.sync.accountError.notOnPhone;
   }
   switch (kind) {
     case "sync_auth":
@@ -61,7 +59,7 @@ export function linkErrorText(error: unknown): string {
     case "sync_offline":
     case "sync_server":
     case "invalid":
-      return fr.sync.accountError[kind];
+      return t.sync.accountError[kind];
     default:
       return readableError(error);
   }
@@ -91,13 +89,13 @@ export function UnconfirmedLine({
     const done = await run(commands.syncResendConfirmation());
     setSending(false);
     if (done !== undefined) {
-      showToast({ message: fr.account.resentToast(account.email) });
+      showToast({ message: t.account.resentToast(account.email) });
     }
   };
   return (
     <div className="flex flex-col gap-0.5 text-[13px]">
       <p className="flex flex-wrap items-center gap-x-2 text-text-2">
-        <span className="font-medium text-text">{fr.account.unconfirmed}</span>
+        <span className="font-medium text-text">{t.account.unconfirmed}</span>
         <button
           type="button"
           onClick={() => void resend()}
@@ -105,10 +103,10 @@ export function UnconfirmedLine({
           aria-busy={sending || undefined}
           className="text-accent underline-offset-2 hover:underline disabled:opacity-60"
         >
-          {fr.account.resend}
+          {t.account.resend}
         </button>
       </p>
-      <p className="text-[12.5px] text-text-3">{fr.account.unconfirmedHelp}</p>
+      <p className="text-[12.5px] text-text-3">{t.account.unconfirmedHelp}</p>
     </div>
   );
 }
@@ -132,9 +130,9 @@ export function confirmMerge(
 ): Promise<boolean> {
   if (!holdsData) return Promise.resolve(true);
   return confirmDialog({
-    title: fr.account.mergeTitle,
+    title: t.account.mergeTitle,
     message: deviceTexts.mergeText(email.trim().toLowerCase()),
-    confirmLabel: fr.account.merge,
+    confirmLabel: t.account.merge,
     danger: false,
   });
 }
@@ -167,17 +165,17 @@ export function useLogout(status: SyncStatus): {
     const ok = await confirmDialog(
       pending > 0 || failed
         ? {
-            title: fr.account.logoutPendingTitle,
+            title: t.account.logoutPendingTitle,
             message:
               pending > 0
                 ? deviceTexts.logoutPending(pending)
                 : deviceTexts.logoutFailed,
-            confirmLabel: fr.account.logoutAnyway,
+            confirmLabel: t.account.logoutAnyway,
           }
         : {
-            title: fr.account.logoutTitle,
+            title: t.account.logoutTitle,
             message: deviceTexts.logoutText,
-            confirmLabel: fr.account.logout,
+            confirmLabel: t.account.logout,
           },
     );
     if (!ok) return;
@@ -216,18 +214,18 @@ export function StateLine({ status }: { status: SyncStatus }) {
           }
         />
         <span>
-          <span className="font-medium">{fr.sync.state[status.state]}</span>{" "}
+          <span className="font-medium">{t.sync.state[status.state]}</span>{" "}
           <span className="text-text-2">· {lastSyncText(status, now)}</span>
         </span>
       </p>
       {status.state === "error" && (
         <p className="pl-[23px] text-text">
-          {fr.sync.error[status.errorKind ?? "internal"]}
+          {t.sync.error[status.errorKind ?? "internal"]}
         </p>
       )}
       {status.pending > 0 && (
         <p className="pl-[23px] text-text-2">
-          {fr.sync.pending(status.pending)}
+          {t.sync.pending(status.pending)}
         </p>
       )}
     </div>
@@ -276,7 +274,7 @@ export function ReconnectForm({ serverUrl }: { serverUrl: string }) {
       });
       setPassword("");
       setSyncStatus(client, next);
-      showToast({ message: fr.sync.reconnectedToast });
+      showToast({ message: t.sync.reconnectedToast });
     } catch (err) {
       console.error(errorMessage(err), err);
       setError(linkErrorText(err));
@@ -292,10 +290,10 @@ export function ReconnectForm({ serverUrl }: { serverUrl: string }) {
       className="flex max-w-[420px] flex-col gap-1.5 pl-[23px]"
     >
       <p id={helpId} className="text-[12.5px] text-text-2">
-        {fr.sync.reconnectHelp}
+        {t.sync.reconnectHelp}
       </p>
       <label htmlFor={emailId} className="text-[13.5px] font-medium">
-        {fr.sync.email}
+        {t.sync.email}
       </label>
       <input
         id={emailId}
@@ -314,7 +312,7 @@ export function ReconnectForm({ serverUrl }: { serverUrl: string }) {
         className={inputClass}
       />
       <label htmlFor={passwordId} className="pt-1 text-[13.5px] font-medium">
-        {fr.sync.password}
+        {t.sync.password}
       </label>
       <input
         id={passwordId}
@@ -347,7 +345,7 @@ export function ReconnectForm({ serverUrl }: { serverUrl: string }) {
           disabled={!ready || busy}
           aria-busy={busy || undefined}
         >
-          {busy ? fr.sync.linking : fr.sync.reconnect}
+          {busy ? t.sync.linking : t.sync.reconnect}
         </Button>
       </div>
     </form>
@@ -363,7 +361,7 @@ export function IntervalSetting({ status }: { status: SyncStatus }) {
   const changeInterval = async (minutes: number) => {
     const next = await run(
       commands.syncSetInterval(minutes),
-      fr.errors.action.settings,
+      t.errors.action.settings,
     );
     if (next) setSyncStatus(client, next);
   };
@@ -371,10 +369,10 @@ export function IntervalSetting({ status }: { status: SyncStatus }) {
   return (
     <div className="border-b border-border-row py-4">
       <label htmlFor={intervalId} className="text-[13.5px] font-medium">
-        {fr.sync.interval}
+        {t.sync.interval}
       </label>
       <p id={helpId} className="pt-0.5 text-[12.5px] text-text-2">
-        {fr.sync.intervalHelp}
+        {t.sync.intervalHelp}
       </p>
       <select
         id={intervalId}
@@ -385,7 +383,7 @@ export function IntervalSetting({ status }: { status: SyncStatus }) {
       >
         {SYNC_INTERVALS.map((m) => (
           <option key={m} value={m}>
-            {fr.sync.intervalOption(m)}
+            {t.sync.intervalOption(m)}
           </option>
         ))}
       </select>

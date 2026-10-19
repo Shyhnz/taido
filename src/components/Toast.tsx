@@ -7,7 +7,7 @@
 import { X } from "lucide-react";
 import { useEffect } from "react";
 import { create } from "zustand";
-import { fr } from "../i18n/fr";
+import { t } from "../i18n";
 
 export const TOAST_DURATION_MS = 5000;
 
@@ -86,7 +86,7 @@ function ToastItem({ toast }: { toast: Toast }) {
       )}
       <button
         type="button"
-        aria-label={fr.common.close}
+        aria-label={t.common.close}
         onClick={() => dismiss(toast.id)}
         className="rounded-md p-1 opacity-70 hover:opacity-100"
       >
@@ -102,7 +102,7 @@ export function ToastHost() {
   const errors = toasts.filter((t) => t.tone === "error");
   return (
     <section
-      aria-label={fr.app.notifications}
+      aria-label={t.app.notifications}
       className="pointer-events-none fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2"
     >
       {/* Always mounted: a live region must exist before its content changes. */}

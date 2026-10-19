@@ -4,7 +4,7 @@
  */
 
 import type { TaskChrono } from "../../bindings";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { chronoSeconds, formatChrono, useNow } from "./chrono";
 
 export function ChronoBadge({ chrono }: { chrono: TaskChrono }) {
@@ -12,8 +12,8 @@ export function ChronoBadge({ chrono }: { chrono: TaskChrono }) {
   const now = useNow(running);
   const time = formatChrono(chronoSeconds(chrono, now));
   const label = running
-    ? fr.chrono.runningLabel(time)
-    : fr.chrono.pausedLabel(time);
+    ? t.chrono.runningLabel(time)
+    : t.chrono.pausedLabel(time);
   return (
     <span
       className={`inline-flex items-center gap-1 tabular-nums ${running ? "text-text" : ""}`}

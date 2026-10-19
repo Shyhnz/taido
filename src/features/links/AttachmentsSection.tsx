@@ -38,7 +38,7 @@ import {
   openMenuAt,
 } from "../../components/Menu";
 import { showError, showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { formatSessionStart } from "../../lib/dates";
 import { commands, errorKind, errorMessage, webFiles } from "../../lib/ipc";
@@ -125,11 +125,11 @@ function WebPreview({
  */
 async function remove(a: Attachment) {
   const ok = await confirmDialog({
-    title: fr.attachments.deleteTitle(a.fileName),
+    title: t.attachments.deleteTitle(a.fileName),
     message: IS_MOBILE
-      ? fr.attachments.web.deleteMessage
-      : fr.attachments.deleteMessage,
-    confirmLabel: fr.attachments.delete,
+      ? t.attachments.web.deleteMessage
+      : t.attachments.deleteMessage,
+    confirmLabel: t.attachments.delete,
   });
   if (ok) void run(commands.deleteAttachment(a.id));
 }
@@ -164,9 +164,9 @@ async function downloadOnMac(a: Attachment): Promise<void> {
   try {
     const copy = await commands.downloadAttachment(a.id);
     showToast({
-      message: fr.attachments.downloaded,
+      message: t.attachments.downloaded,
       action: {
-        label: fr.attachments.reveal,
+        label: t.attachments.reveal,
         onAction: () => void run(commands.revealPath(copy)),
       },
     });
@@ -179,9 +179,9 @@ async function downloadOnMac(a: Attachment): Promise<void> {
 /** French text of a failed « Télécharger » on the Mac. */
 function downloadErrorText(error: unknown): string {
   const kind = errorKind(error);
-  if (kind === "sync_auth") return fr.sync.error.unauthorized;
+  if (kind === "sync_auth") return t.sync.error.unauthorized;
   if (kind === "sync_offline" || kind === "sync_server") {
-    return fr.attachments.downloadError[kind];
+    return t.attachments.downloadError[kind];
   }
   return readableError(error);
 }
@@ -196,18 +196,18 @@ function macItems(
 ): MenuItem[] {
   return [
     {
-      label: fr.attachments.download,
+      label: t.attachments.download,
       disabled: busy || unreachable(a),
       onSelect: download,
     },
     {
-      label: fr.attachments.reveal,
+      label: t.attachments.reveal,
       disabled: !a.exists,
       onSelect: () => void run(commands.revealAttachment(a.id)),
     },
     { separator: true },
     {
-      label: fr.attachments.delete,
+      label: t.attachments.delete,
       danger: true,
       onSelect: () => void remove(a),
     },
@@ -230,8 +230,8 @@ function RemoteLine({
   const refused = remote === "too_large" || remote === "quota_full";
   const label =
     IS_MOBILE && remote === "local_only"
-      ? fr.attachments.web.localOnly
-      : fr.attachments.remote[remote];
+      ? t.attachments.web.localOnly
+      : t.attachments.remote[remote];
   return (
     <span
       className={`truncate px-0.5 text-[11px] ${refused ? "text-due-overdue" : "text-text-3"}`}
@@ -256,7 +256,7 @@ function Tile({
   onDownload: () => void;
   preview: ReactNode;
 }) {
-  const label = fr.attachments.menu(attachment.fileName);
+  const label = t.attachments.menu(attachment.fileName);
   // A file on its way here is not « introuvable »: its size shows until it arrives.
   const coming =
     attachment.remote === "to_download" || attachment.remote === "downloading";
@@ -280,17 +280,17 @@ function Tile({
         </span>
         <span className="truncate px-0.5 text-[11px] text-text-3">
           {attachment.exists
-            ? `${fr.attachments.size(attachment.size)} · ${formatSessionStart(attachment.addedAt)}`
+            ? `${t.attachments.size(attachment.size)} · ${formatSessionStart(attachment.addedAt)}`
             : coming
-              ? fr.attachments.size(attachment.size)
-              : fr.attachments.missing}
+              ? t.attachments.size(attachment.size)
+              : t.attachments.missing}
         </span>
         <RemoteLine attachment={attachment} busy={busy} />
       </button>
       <button
         type="button"
-        aria-label={fr.attachments.removeOne(attachment.fileName)}
-        title={fr.attachments.removeOne(attachment.fileName)}
+        aria-label={t.attachments.removeOne(attachment.fileName)}
+        title={t.attachments.removeOne(attachment.fileName)}
         onClick={() => void remove(attachment)}
         className="absolute top-2.5 right-2.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-elevated text-text-3 opacity-0 shadow-sm hover:bg-hover hover:text-text group-hover/tile:opacity-100 focus-visible:opacity-100"
       >
@@ -315,7 +315,7 @@ export function pastedName(file: File): string {
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
   return file.name && file.name !== "image.png"
     ? file.name
-    : fr.attachments.pasted(stamp);
+    : t.attachments.pasted(stamp);
 }
 
 /** A screenshot pasted in the panel becomes an attachment of the task. */
@@ -351,9 +351,9 @@ function Layout({
   return (
     <Fold
       id="attachments"
-      title={fr.attachments.title}
+      title={t.attachments.title}
       summary={
-        task.attachments.length > 0 && fr.folds.files(task.attachments.length)
+        task.attachments.length > 0 && t.folds.files(task.attachments.length)
       }
       attachTask={task.id}
       onPaste={onPaste}
@@ -382,7 +382,7 @@ function MacAttachmentsSection({ task }: { task: TaskDetail }) {
   const agent = useDefaultAgent();
   const [downloading, start] = useDownloading();
   const browse = async () => {
-    const paths = await run(commands.pickFiles(fr.attachments.pickTitle));
+    const paths = await run(commands.pickFiles(t.attachments.pickTitle));
     if (paths && paths.length > 0) {
       await run(commands.addAttachments({ taskId: task.id, paths }));
     }
@@ -390,7 +390,7 @@ function MacAttachmentsSection({ task }: { task: TaskDetail }) {
   return (
     <Layout
       task={task}
-      hint={fr.attachments.hint(agent)}
+      hint={t.attachments.hint(agent)}
       onPaste={(e) => void pasteFiles(task.id, e)}
       tiles={task.attachments.map((a) => {
         const download = () => {
@@ -417,13 +417,13 @@ function MacAttachmentsSection({ task }: { task: TaskDetail }) {
         >
           <Paperclip size={14} aria-hidden />
           <span>
-            {fr.attachments.drop}{" "}
+            {t.attachments.drop}{" "}
             <button
               type="button"
               onClick={() => void browse()}
               className="text-text-2 underline underline-offset-2 hover:text-text"
             >
-              {fr.attachments.browse}
+              {t.attachments.browse}
             </button>
           </span>
         </div>
@@ -438,8 +438,7 @@ function MacAttachmentsSection({ task }: { task: TaskDetail }) {
 
 /** French text of a failed file operation on the web. */
 function webErrorText(error: unknown): string {
-  if (error instanceof WebFileError)
-    return fr.attachments.web.error[error.kind];
+  if (error instanceof WebFileError) return t.attachments.web.error[error.kind];
   return readableError(error);
 }
 
@@ -453,7 +452,7 @@ async function addOnWeb(
   try {
     const { tooLarge } = await files.add(taskId, list);
     if (tooLarge.length > 0) {
-      showError(fr.attachments.web.tooLarge(tooLarge.join(", ")));
+      showError(t.attachments.web.tooLarge(tooLarge.join(", ")));
     }
   } catch (error) {
     console.error(errorMessage(error), error);
@@ -503,13 +502,13 @@ function WebAttachmentsSection({
 
   const items = (a: Attachment): MenuItem[] => [
     {
-      label: fr.attachments.download,
+      label: t.attachments.download,
       disabled: downloading.has(a.id),
       onSelect: () => download(a),
     },
     { separator: true },
     {
-      label: fr.attachments.delete,
+      label: t.attachments.delete,
       danger: true,
       onSelect: () => void remove(a),
     },
@@ -568,18 +567,18 @@ function WebAttachmentsSection({
         >
           <Paperclip size={14} aria-hidden />
           <span>
-            {fr.attachments.web.drop}{" "}
+            {t.attachments.web.drop}{" "}
             <button
               type="button"
               disabled={adding}
               onClick={() => input.current?.click()}
               className="text-text-2 underline underline-offset-2 hover:text-text disabled:opacity-50"
             >
-              {fr.attachments.browse}
+              {t.attachments.browse}
             </button>
           </span>
           <span role="status" className="ml-auto shrink-0 text-text-2">
-            {adding ? fr.attachments.web.adding : ""}
+            {adding ? t.attachments.web.adding : ""}
           </span>
           <input
             ref={input}

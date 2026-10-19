@@ -304,6 +304,7 @@ export const DEFAULT_SETTINGS: Settings = {
   codexPath: null,
   agentChosen: true,
   voiceSpaceHold: true,
+  language: null,
 };
 
 /** Cards the done column shows (core `views::board::DONE_SHOWN`). */
@@ -2435,6 +2436,7 @@ export class MockBackend {
       if (patch.defaultAgent != null) s.defaultAgent = patch.defaultAgent;
       if (patch.agentChosen != null) s.agentChosen = patch.agentChosen;
       if (patch.voiceSpaceHold != null) s.voiceSpaceHold = patch.voiceSpaceHold;
+      if (patch.language != null) s.language = patch.language;
       if (patch.codexPath != null) {
         const path = patch.codexPath.trim();
         if (path && !path.startsWith("/")) {

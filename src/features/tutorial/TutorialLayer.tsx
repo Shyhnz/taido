@@ -24,7 +24,7 @@ import { Button, IconButton } from "../../components/Button";
 import { Dialog } from "../../components/Dialog";
 import { announce } from "../../components/LiveRegion";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t as strings } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { features } from "../../lib/features";
 import { errorMessage } from "../../lib/ipc";
@@ -85,7 +85,7 @@ function WelcomeOrAgentChoice() {
 /** « Quitter le guide », « Non merci »: over, with where to find it again. */
 function leave() {
   useTutorial.getState().finish();
-  showToast({ message: fr.tutorial.left });
+  showToast({ message: strings.tutorial.left });
 }
 
 // ---------------------------------------------------------------------------
@@ -102,10 +102,15 @@ function WelcomeCard() {
   // Another dialog (Réglages after « Revoir le guide ») goes first.
   if (dialog !== null) return null;
   return (
-    <Dialog title={t.title(fr.appName)} hideTitle onClose={leave} width={460}>
+    <Dialog
+      title={t.title(strings.appName)}
+      hideTitle
+      onClose={leave}
+      width={460}
+    >
       <div className="px-6 pt-6 pb-5">
         <p aria-hidden className="text-[22px] leading-7 font-bold">
-          {t.title(fr.appName)}
+          {t.title(strings.appName)}
         </p>
         <p className="mt-2 text-body text-text-2">{t.text}</p>
         <ul className="mt-4 flex flex-col gap-1 rounded-lg border border-border bg-bg px-3 py-2">
@@ -115,7 +120,7 @@ function WelcomeCard() {
               <span className="text-[13.5px]">{t.examples[i]}</span>
               <StateDot ring={ring} agent={agent} />
               <span className="ml-auto text-[12px] text-text-3">
-                {fr.ring.state(ring, agent)}
+                {strings.ring.state(ring, agent)}
               </span>
             </li>
           ))}
@@ -437,10 +442,10 @@ function StepBubble({ run }: { run: TutorialRun }) {
         <div className="relative rounded-xl border border-border bg-elevated px-4 pt-3 pb-3 shadow-pop">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[12px] font-medium text-text-3">
-              {fr.tutorial.stepOf(n, STEP_COUNT)}
+              {strings.tutorial.stepOf(n, STEP_COUNT)}
             </span>
             <IconButton
-              label={fr.tutorial.quit}
+              label={strings.tutorial.quit}
               size={24}
               className="-mr-1.5"
               onClick={leave}
@@ -494,7 +499,7 @@ function Footer({ children }: { children?: ReactNode }) {
           size="sm"
           onClick={() => dispatch({ type: "next" })}
         >
-          {fr.tutorial.skip}
+          {strings.tutorial.skip}
         </Button>
       )}
     </div>

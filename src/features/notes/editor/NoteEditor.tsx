@@ -18,7 +18,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { NotePage } from "../../../bindings";
 import { Button } from "../../../components/Button";
 import { showToast } from "../../../components/Toast";
-import { fr } from "../../../i18n/fr";
+import { t } from "../../../i18n";
 import { commands, errorMessage, webFiles } from "../../../lib/ipc";
 import { useView } from "../../../lib/queries";
 import { run } from "../../../lib/run";
@@ -155,7 +155,7 @@ export function TooLongNotice() {
       role="alert"
       className="w-full rounded-md border border-[var(--due-overdue)] bg-bg px-3 py-2 text-[13.5px] text-[var(--due-overdue)]"
     >
-      {fr.notes.editor.tooLong}
+      {t.notes.editor.tooLong}
     </p>
   );
 }
@@ -221,7 +221,7 @@ export function NoteEditor({
 
   const editor = useEditor({
     extensions: noteExtensions({
-      placeholder: fr.notes.editor.placeholder,
+      placeholder: t.notes.editor.placeholder,
       wikiLink: WikiLinkChip,
       noteImage: NoteImageView.configure({ pageId: page.id, phone }),
       extra: [LinkSuggest.configure({ source })],
@@ -232,7 +232,7 @@ export function NoteEditor({
       attributes: {
         role: "textbox",
         "aria-multiline": "true",
-        "aria-label": fr.notes.editor.bodyLabel,
+        "aria-label": t.notes.editor.bodyLabel,
         class: `note-editor ${phone ? "text-[16px] leading-7" : "text-[15px] leading-7"}`,
         autocapitalize: "sentences",
       },
@@ -308,7 +308,7 @@ export function NoteEditor({
     shownBody.current = body;
     const sent = run(
       commands.updateNotePage({ id: page.id, title: null, body }),
-      fr.notes.errors.updatePage,
+      t.notes.errors.updatePage,
     ).then((done) => {
       if (done !== undefined) {
         // In the core now: a draft kept earlier is no longer needed (unless a newer one).
@@ -356,7 +356,7 @@ export function NoteEditor({
       if (!tooLongRef.current) return;
       setTimeout(() => {
         if (!isEditorMounted(page.id) && !wasDeletedHere(page.id)) {
-          showToast({ message: fr.notes.editor.draftKept });
+          showToast({ message: t.notes.editor.draftKept });
         }
       }, 0);
     };
@@ -386,9 +386,9 @@ export function NoteEditor({
     dropNoteDraft(page.id);
     if (dropped === null) return;
     showToast({
-      message: fr.notes.editor.draftDropped,
+      message: t.notes.editor.draftDropped,
       action: {
-        label: fr.toast.undo,
+        label: t.toast.undo,
         onAction: () => {
           keepNoteDraft(page.id, dropped);
           setConflict(true);
@@ -574,7 +574,7 @@ export function NoteEditor({
       picker.current?.click();
       return;
     }
-    void run(commands.pickFiles(fr.notes.image.pickTitle)).then((paths) => {
+    void run(commands.pickFiles(t.notes.image.pickTitle)).then((paths) => {
       if (paths && paths.length > 0) addImagesRef.current({ paths });
     });
   };
@@ -613,12 +613,12 @@ export function NoteEditor({
         role="status"
         className={adding ? "mb-2 text-[13px] text-text-3" : "sr-only"}
       >
-        {adding ? fr.notes.image.adding : ""}
+        {adding ? t.notes.image.adding : ""}
       </p>
       {phone && tooLong && (
         // Also in the bar above the keyboard; here for a page read with the keyboard closed.
         <p className="mb-3 rounded-md border border-[var(--due-overdue)] px-3 py-2 text-[14px] text-[var(--due-overdue)]">
-          {fr.notes.editor.tooLong}
+          {t.notes.editor.tooLong}
         </p>
       )}
       {conflict && (
@@ -626,20 +626,20 @@ export function NoteEditor({
           role="alert"
           className="mb-3 flex flex-col gap-2 rounded-md border border-[var(--due-overdue)] px-3 py-2.5 text-[14px] text-text"
         >
-          <p>{fr.notes.editor.draftConflict}</p>
+          <p>{t.notes.editor.draftConflict}</p>
           <div className="flex flex-wrap gap-2">
             <Button
               variant="primary"
               className={phone ? "min-h-11" : undefined}
               onClick={resumeDraft}
             >
-              {fr.notes.editor.draftResume}
+              {t.notes.editor.draftResume}
             </Button>
             <Button
               className={phone ? "min-h-11" : undefined}
               onClick={keepCurrent}
             >
-              {fr.notes.editor.draftKeepCurrent}
+              {t.notes.editor.draftKeepCurrent}
             </Button>
           </div>
         </div>

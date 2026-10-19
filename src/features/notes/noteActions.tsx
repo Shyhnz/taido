@@ -9,7 +9,7 @@ import type { NoteGroup, NoteKind } from "../../bindings";
 import { confirmDialog, promptDialog } from "../../components/Dialog";
 import { type MenuItem, useMenuStore } from "../../components/Menu";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t as strings } from "../../i18n";
 import { commands } from "../../lib/ipc";
 import { run } from "../../lib/run";
 import { useUi } from "../../stores/ui";
@@ -53,12 +53,12 @@ export async function createNotePage(
     commands.createNotePage({
       subjectId,
       groupId,
-      title: fr.notes.untitled,
+      title: strings.notes.untitled,
       body: "",
       kind: "page",
       sourceTaskId: null,
     }),
-    fr.notes.errors.createPage,
+    strings.notes.errors.createPage,
   );
   if (!page) return;
   useFreshNotePage.setState({ id: page.id });
@@ -71,7 +71,7 @@ export async function createNoteGroup(
 ): Promise<boolean> {
   const group = await run(
     commands.createNoteGroup({ subjectId, name: name.trim() }),
-    fr.notes.errors.createGroup,
+    strings.notes.errors.createGroup,
   );
   return group !== undefined;
 }
@@ -82,7 +82,7 @@ export async function renameNoteGroup(
 ): Promise<boolean> {
   const group = await run(
     commands.updateNoteGroup({ id, name: name.trim() }),
-    fr.notes.errors.updateGroup,
+    strings.notes.errors.updateGroup,
   );
   return group !== undefined;
 }
@@ -90,13 +90,13 @@ export async function renameNoteGroup(
 /** « + Nouveau groupe » on a phone: a small dialog (no field in the list under the finger). */
 export function promptNewGroup(subjectId: string): void {
   void promptDialog({
-    title: fr.notes.newGroup,
-    fields: [{ name: "name", label: fr.notes.groupName, required: true }],
-    confirmLabel: fr.common.add,
+    title: strings.notes.newGroup,
+    fields: [{ name: "name", label: strings.notes.groupName, required: true }],
+    confirmLabel: strings.common.add,
     submit: {
       run: (v) =>
         commands.createNoteGroup({ subjectId, name: (v.name ?? "").trim() }),
-      action: fr.notes.errors.createGroup,
+      action: strings.notes.errors.createGroup,
     },
   });
 }
@@ -105,12 +105,12 @@ export function promptNewGroup(subjectId: string): void {
 export function groupMenuItems(group: NoteGroup, inPlace: boolean): MenuItem[] {
   return [
     {
-      label: fr.notes.newPageHere,
+      label: strings.notes.newPageHere,
       // On a large screen the page opens beside the list; on the phone, in its sheet.
       onSelect: () => void createNotePage(group.subjectId, group.id, !inPlace),
     },
     {
-      label: fr.notes.rename,
+      label: strings.notes.rename,
       onSelect: () => {
         if (inPlace) {
           // After the menu closed and gave the focus back.
@@ -121,11 +121,11 @@ export function groupMenuItems(group: NoteGroup, inPlace: boolean): MenuItem[] {
           return;
         }
         void promptDialog({
-          title: fr.notes.renameGroup,
+          title: strings.notes.renameGroup,
           fields: [
             {
               name: "name",
-              label: fr.notes.groupName,
+              label: strings.notes.groupName,
               initial: group.name,
               required: true,
             },
@@ -136,14 +136,14 @@ export function groupMenuItems(group: NoteGroup, inPlace: boolean): MenuItem[] {
                 id: group.id,
                 name: (v.name ?? "").trim(),
               }),
-            action: fr.notes.errors.updateGroup,
+            action: strings.notes.errors.updateGroup,
           },
         });
       },
     },
     { separator: true },
     {
-      label: fr.common.delete,
+      label: strings.common.delete,
       danger: true,
       onSelect: () => void deleteNoteGroup(group),
     },
@@ -152,11 +152,14 @@ export function groupMenuItems(group: NoteGroup, inPlace: boolean): MenuItem[] {
 
 async function deleteNoteGroup(group: NoteGroup): Promise<void> {
   const ok = await confirmDialog({
-    title: fr.notes.deleteGroupTitle(group.name),
-    message: fr.notes.deleteGroupText,
+    title: strings.notes.deleteGroupTitle(group.name),
+    message: strings.notes.deleteGroupText,
   });
   if (!ok) return;
-  await run(commands.deleteNoteGroup(group.id), fr.notes.errors.deleteGroup);
+  await run(
+    commands.deleteNoteGroup(group.id),
+    strings.notes.errors.deleteGroup,
+  );
 }
 
 /** What the page menu needs to know about a page. */
@@ -172,7 +175,7 @@ async function setPinned(page: PageRef, pinned: boolean): Promise<void> {
   await flushNoteEdits();
   await run(
     commands.pinNotePage({ id: page.id, pinned }),
-    fr.notes.errors.movePage,
+    strings.notes.errors.movePage,
   );
 }
 
@@ -182,7 +185,7 @@ async function duplicate(subjectId: string, id: string): Promise<void> {
   await flushNoteEdits();
   const copy = await run(
     commands.duplicateNotePage(id),
-    fr.notes.errors.createPage,
+    strings.notes.errors.createPage,
   );
   if (!copy) return;
   const ui = useUi.getState();
@@ -198,19 +201,19 @@ export async function deleteNotePage(id: string): Promise<void> {
   deletedHere.add(id);
   const done = await run(
     commands.deleteNotePage(id),
-    fr.notes.errors.deletePage,
+    strings.notes.errors.deletePage,
   );
   if (done === undefined) {
     deletedHere.delete(id);
     return;
   }
   showToast({
-    message: fr.notes.deleted,
+    message: strings.notes.deleted,
     action: {
-      label: fr.toast.undo,
+      label: strings.toast.undo,
       onAction: () => {
         deletedHere.delete(id);
-        void run(commands.restoreNotePage(id), fr.notes.errors.deletePage);
+        void run(commands.restoreNotePage(id), strings.notes.errors.deletePage);
       },
     },
   });
@@ -230,11 +233,11 @@ export function pageMenuItems(
   const targets = moveTargets(page.kind, page.place, groups);
   return [
     {
-      label: pinned ? fr.notes.unpin : fr.notes.pin,
+      label: pinned ? strings.notes.unpin : strings.notes.pin,
       onSelect: () => void setPinned(page, !pinned),
     },
     {
-      label: fr.notes.moveTo,
+      label: strings.notes.moveTo,
       disabled: targets.length === 0,
       onSelect: () =>
         // After this menu closed.
@@ -253,22 +256,22 @@ export function pageMenuItems(
                         target: t.target,
                         index: null,
                       }),
-                      fr.notes.errors.movePage,
+                      strings.notes.errors.movePage,
                     ),
                   ),
               })),
-              fr.notes.moveToLabel(page.title),
+              strings.notes.moveToLabel(page.title),
             ),
           0,
         ),
     },
     {
-      label: fr.notes.duplicate,
+      label: strings.notes.duplicate,
       onSelect: () => void duplicate(subjectId, page.id),
     },
     { separator: true },
     {
-      label: fr.common.delete,
+      label: strings.common.delete,
       danger: true,
       onSelect: () => void deleteNotePage(page.id),
     },

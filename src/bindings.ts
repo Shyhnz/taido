@@ -962,6 +962,12 @@ export type JournalEntry = {
 
 export type JournalKind = "created" | "note" | "session_started" | "prompt" | "turn_ended" | "waiting" | "error" | "session_ended" | "crashed" | "resumed" | "cleared" | "compacted" | "completed" | "reopened";
 
+/**
+ *  UI language (Settings › General). `None` in `Settings` = not chosen yet: the UI follows the
+ *  system language at first launch.
+ */
+export type Language = "en" | "fr";
+
 /**  Which template the UI renders (strings live in `src/i18n/fr.ts`). */
 export type LineKind = 
 /**  First line of the description (`text`). */
@@ -1473,6 +1479,8 @@ export type Settings = {
 	 *  can be turned off in Réglages › Agents). The mic button works either way.
 	 */
 	voiceSpaceHold: boolean,
+	/**  The UI language; `None` until chosen (the UI then follows the system language). */
+	language: Language | null,
 };
 
 export type SettingsPatch = {
@@ -1494,6 +1502,7 @@ export type SettingsPatch = {
 	codexPath: string | null,
 	agentChosen: boolean | null,
 	voiceSpaceHold: boolean | null,
+	language: Language | null,
 };
 
 /**  A cited source once checked. */

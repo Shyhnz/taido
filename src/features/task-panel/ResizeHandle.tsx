@@ -4,7 +4,7 @@
  */
 
 import { type KeyboardEvent, type PointerEvent, useRef } from "react";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { PANEL_MIN } from "./panelWidth";
 
 export function ResizeHandle({
@@ -12,7 +12,7 @@ export function ResizeHandle({
   max,
   onResize,
   onCommit,
-  label = fr.panel.resize,
+  label = t.panel.resize,
 }: {
   width: number;
   max: number;

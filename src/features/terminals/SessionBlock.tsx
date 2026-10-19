@@ -45,7 +45,7 @@ import type {
 } from "../../bindings";
 import { Button, IconButton } from "../../components/Button";
 import { type MenuItem, openMenuAt } from "../../components/Menu";
-import { fr } from "../../i18n/fr";
+import { t as strings } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { commands } from "../../lib/ipc";
 import { queryKeys, useTaskSessions } from "../../lib/queries";
@@ -165,15 +165,15 @@ function addItems(
 ): MenuItem[] {
   return [
     ...menuAgents(agent, installed).map((a) => ({
-      label: fr.terminals.addAgent(a),
+      label: strings.terminals.addAgent(a),
       onSelect: () => void launchAgent(taskId, a),
     })),
     {
-      label: fr.terminals.addShell,
+      label: strings.terminals.addShell,
       onSelect: () => void openTerminal(taskId, "shell"),
     },
     {
-      label: fr.terminals.addCommand,
+      label: strings.terminals.addCommand,
       onSelect: () => void promptCommand(taskId),
     },
   ];
@@ -186,7 +186,7 @@ export function openAddMenu(
   agent: Agent,
   installed: readonly Agent[] | undefined,
 ): void {
-  openMenuAt(anchor, addItems(taskId, agent, installed), fr.terminals.add);
+  openMenuAt(anchor, addItems(taskId, agent, installed), strings.terminals.add);
 }
 
 function AddButton({ taskId }: { taskId: string }) {
@@ -201,7 +201,7 @@ function AddButton({ taskId }: { taskId: string }) {
   }).data;
   return (
     <IconButton
-      label={fr.terminals.add}
+      label={strings.terminals.add}
       aria-haspopup="menu"
       onClick={(e) => openAddMenu(e.currentTarget, taskId, agent, installed)}
     >
@@ -217,8 +217,8 @@ function AddButton({ taskId }: { taskId: string }) {
 function FinderButton({ taskId }: { taskId: string }) {
   return (
     <IconButton
-      label={fr.terminals.openInFinder}
-      title={fr.terminals.openInFinder}
+      label={strings.terminals.openInFinder}
+      title={strings.terminals.openInFinder}
       onClick={() => void openTaskFolderIn(taskId, "finder")}
     >
       <Folder size={15} aria-hidden />
@@ -235,7 +235,7 @@ function QuickActions({ taskId }: { taskId: string }) {
   return (
     <div
       role="toolbar"
-      aria-label={fr.terminals.quickActions}
+      aria-label={strings.terminals.quickActions}
       className="mt-5 flex flex-wrap items-center gap-1.5 pl-8"
     >
       <Button
@@ -245,12 +245,12 @@ function QuickActions({ taskId }: { taskId: string }) {
         onClick={() => void launchAgent(taskId, agent)}
       >
         <Sparkles size={14} aria-hidden />
-        {fr.terminals.launchAgent(agent)}
+        {strings.terminals.launchAgent(agent)}
         <span className="text-[11.5px] opacity-70">⌘T</span>
       </Button>
       <Button size="sm" onClick={() => void openTerminal(taskId, "shell")}>
         <SquareTerminal size={14} aria-hidden />
-        {fr.terminals.shell}
+        {strings.terminals.shell}
       </Button>
       <FinderButton taskId={taskId} />
     </div>
@@ -373,7 +373,7 @@ function Tab({
         </span>
         {!terminal.running && (
           <span className="shrink-0 text-[12px] text-text-3">
-            · {fr.terminals.exited}
+            · {strings.terminals.exited}
           </span>
         )}
         {usage && session && active && (
@@ -383,7 +383,7 @@ function Tab({
       {usage && active && <ContextThread usage={usage} />}
       {bubble}
       <IconButton
-        label={fr.terminals.close(label)}
+        label={strings.terminals.close(label)}
         size={24}
         onClick={() => void closeTerminal(terminal)}
         className={`mr-0.5 focus-visible:opacity-100 group-hover/tab:opacity-100 ${
@@ -436,11 +436,11 @@ function HeightHandle({
     <div
       role="separator"
       aria-orientation="horizontal"
-      aria-label={fr.terminals.resize}
+      aria-label={strings.terminals.resize}
       aria-valuemin={TERMINAL_HEIGHT_MIN}
       aria-valuemax={TERMINAL_HEIGHT_MAX}
       aria-valuenow={height}
-      title={fr.terminals.resetHeight}
+      title={strings.terminals.resetHeight}
       tabIndex={0}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -480,7 +480,7 @@ function StatusBar({
       >
         <StateDot ring="waiting" agent={session.agent} size={10} />
         <span className="shrink-0">
-          {fr.terminals.waitingBar(session.agent)}
+          {strings.terminals.waitingBar(session.agent)}
         </span>
         {detail && <span className="truncate text-text-2">· {detail}</span>}
       </div>
@@ -521,8 +521,8 @@ function StatusBar({
     >
       <span className="truncate">
         {terminal.kind === "agent"
-          ? fr.terminals.sessionEnded
-          : fr.terminals.processEnded(terminal.exitCode)}
+          ? strings.terminals.sessionEnded
+          : strings.terminals.processEnded(terminal.exitCode)}
       </span>
       <span className="ml-auto flex shrink-0 gap-1.5">
         <Button
@@ -532,14 +532,14 @@ function StatusBar({
           disabled={pending}
           onClick={() => void again()}
         >
-          {canResume ? fr.sessions.resume : fr.terminals.relaunch}
+          {canResume ? strings.sessions.resume : strings.terminals.relaunch}
         </Button>
         <Button
           size="sm"
           className="h-6"
           onClick={() => void closeTerminal(terminal)}
         >
-          {fr.terminals.closeTab}
+          {strings.terminals.closeTab}
         </Button>
       </span>
     </div>
@@ -596,7 +596,7 @@ function Frame({
       >
         <TerminalView
           terminalId={terminal.id}
-          label={fr.terminals.view(label)}
+          label={strings.terminals.view(label)}
         />
         <MicButton terminal={terminal} />
       </div>
@@ -612,7 +612,7 @@ function WaitingWord({ task }: { task: TaskDetail }) {
   return (
     <span className="ml-auto flex shrink-0 items-center gap-1.5 pr-1 pl-2 text-[12.5px] text-waiting-text">
       <StateDot ring="waiting" agent={waiting.agent} size={10} />
-      {fr.terminals.waitingShort(waiting.agent)}
+      {strings.terminals.waitingShort(waiting.agent)}
     </span>
   );
 }
@@ -643,7 +643,7 @@ function Tabs({ task, active }: { task: TaskDetail; active: TerminalInfo }) {
   return (
     <div
       role="tablist"
-      aria-label={fr.terminals.tabs}
+      aria-label={strings.terminals.tabs}
       onKeyDown={onTabKey}
       className="flex min-w-0 gap-0.5 overflow-hidden"
     >
@@ -681,7 +681,7 @@ export function SessionBlock({ task }: { task: TaskDetail }) {
     // Wider than the task text: the terminal is narrow enough already.
     <section aria-labelledby="session-title" className="-mx-3 mt-5">
       <h2 id="session-title" className="sr-only">
-        {fr.terminals.session}
+        {strings.terminals.session}
       </h2>
       <div className="mb-1.5 flex items-center gap-0.5">
         <Tabs task={task} active={active} />
@@ -742,8 +742,8 @@ function saveRatio(key: string, r: number): void {
 const DIVIDERS = {
   columns: {
     orientation: "vertical",
-    label: fr.terminals.resizePanes,
-    title: fr.terminals.resetPanes,
+    label: strings.terminals.resizePanes,
+    title: strings.terminals.resetPanes,
     fallback: PANE_SPLIT_DEFAULT,
     back: "ArrowLeft",
     forward: "ArrowRight",
@@ -753,8 +753,8 @@ const DIVIDERS = {
   },
   rows: {
     orientation: "horizontal",
-    label: fr.terminals.resizePaneRows,
-    title: fr.terminals.resetPaneRows,
+    label: strings.terminals.resizePaneRows,
+    title: strings.terminals.resetPaneRows,
     fallback: PANE_ROWS_DEFAULT,
     back: "ArrowUp",
     forward: "ArrowDown",
@@ -850,8 +850,8 @@ function PaneDivider({
   );
 }
 
-/** Where a pane sits; its name in the pane's menu comes from `fr.terminals.panePlace`. */
-type PanePlace = keyof typeof fr.terminals.panePlace;
+/** Where a pane sits; its name in the pane's menu comes from `strings.terminals.panePlace`. */
+type PanePlace = keyof typeof strings.terminals.panePlace;
 
 /**
  * Places of the panes by count (2026-10-05): two side by side; with a third the right
@@ -915,13 +915,13 @@ function PaneHeader({
   const label = labels.get(terminal.id) ?? "";
   const session = sessionOf(task, terminal);
   const usage = (terminal.running && session?.context) || null;
-  const title = fr.terminals.paneMenu(fr.terminals.panePlace[place]);
+  const title = strings.terminals.paneMenu(strings.terminals.panePlace[place]);
   // With more panes, picking a terminal shown elsewhere swaps them already.
   const swap: MenuItem[] =
     panes.length === 2
       ? [
           { separator: true },
-          { label: fr.terminals.swapPanes, onSelect: onSwap },
+          { label: strings.terminals.swapPanes, onSelect: onSwap },
         ]
       : [];
   const items = (): MenuItem[] => [
@@ -931,7 +931,7 @@ function PaneHeader({
       checked: t.id === terminal.id,
       hint:
         t.id !== terminal.id && panes.includes(t.id)
-          ? fr.terminals.inOtherPane
+          ? strings.terminals.inOtherPane
           : undefined,
       onSelect: () => onChoose(pane, t.id),
     })),
@@ -956,7 +956,7 @@ function PaneHeader({
             <span className="truncate">{label}</span>
             {!terminal.running && (
               <span className="shrink-0 text-[12px] text-text-3">
-                · {fr.terminals.exited}
+                · {strings.terminals.exited}
               </span>
             )}
             {usage && session && (
@@ -972,7 +972,7 @@ function PaneHeader({
         )}
       </PaneButton>
       <IconButton
-        label={fr.terminals.close(label)}
+        label={strings.terminals.close(label)}
         size={24}
         onClick={() => void closeTerminal(terminal)}
       >
@@ -1024,18 +1024,18 @@ function HiddenTerminals({
     <button
       type="button"
       aria-haspopup="menu"
-      aria-label={fr.terminals.hiddenTerminals(hidden.length)}
-      title={fr.terminals.hiddenTerminals(hidden.length)}
+      aria-label={strings.terminals.hiddenTerminals(hidden.length)}
+      title={strings.terminals.hiddenTerminals(hidden.length)}
       onClick={(e) =>
         openMenuAt(
           e.currentTarget,
           hidden.map((t) => ({
             label: labels.get(t.id) ?? "",
             icon: <KindIcon kind={t.kind} session={sessionOf(task, t)} />,
-            hint: fr.terminals.toFocusedPane,
+            hint: strings.terminals.toFocusedPane,
             onSelect: () => onPick(t.id),
           })),
-          fr.terminals.hiddenTerminals(hidden.length),
+          strings.terminals.hiddenTerminals(hidden.length),
         )
       }
       className={`mr-1 inline-flex h-6 shrink-0 items-center gap-1 rounded-full border px-2 text-[12px] ${
@@ -1312,7 +1312,7 @@ export function FocusView({
         </div>
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-[13.5px] text-text-2">
-          <span>{fr.terminals.noTerminal}</span>
+          <span>{strings.terminals.noTerminal}</span>
           {task.completedAt === null && <QuickActions taskId={task.id} />}
         </div>
       )}

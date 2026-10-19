@@ -6,7 +6,7 @@ use serde::Serialize;
 
 use crate::db::synced_settings;
 use crate::error::{AppError, AppResult};
-use crate::model::{ColorTheme, Settings, SettingsPatch, Theme};
+use crate::model::{ColorTheme, Language, Settings, SettingsPatch, Theme};
 
 pub const PANEL_WIDTH_MIN: u32 = 360;
 pub const PANEL_WIDTH_MAX: u32 = 1000;
@@ -27,6 +27,7 @@ const DEFAULT_AGENT: &str = "default_agent";
 const CODEX_PATH: &str = "codex_path";
 const AGENT_CHOSEN: &str = "agent_chosen";
 const VOICE_SPACE_HOLD: &str = "voice_space_hold";
+const LANGUAGE: &str = "language";
 
 /// The synced setting `appearance` (sync_proto::SETTING_APPEARANCE).
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, serde::Deserialize)]
@@ -82,6 +83,8 @@ pub fn get(conn: &Connection) -> AppResult<Settings> {
         codex_path: read::<Option<String>>(conn, CODEX_PATH)?.flatten(),
         agent_chosen: read(conn, AGENT_CHOSEN)?.unwrap_or(defaults.agent_chosen),
         voice_space_hold: read(conn, VOICE_SPACE_HOLD)?.unwrap_or(defaults.voice_space_hold),
+        // Unset (or unreadable) = not chosen yet: the UI then follows the system language.
+        language: read::<Language>(conn, LANGUAGE)?,
     })
 }
 
@@ -120,6 +123,9 @@ pub fn update(conn: &Connection, patch: &SettingsPatch) -> AppResult<Settings> {
     }
     if let Some(on) = patch.voice_space_hold {
         write(&tx, VOICE_SPACE_HOLD, &on)?;
+    }
+    if let Some(language) = patch.language {
+        write(&tx, LANGUAGE, &language)?;
     }
     if let Some(editor) = patch.editor {
         write(&tx, EDITOR, &editor)?;
@@ -234,9 +240,59 @@ mod tests {
                 codex_path: None,
                 agent_chosen: false,
                 voice_space_hold: true,
+                language: None,
             }
         );
         assert_eq!(s, Settings::default());
+    }
+
+    #[test]
+    fn language_setting_round_trips() {
+        let conn = open_in_memory().expect("db");
+        assert_eq!(get(&conn).expect("get").language, None);
+        let s = update(
+            &conn,
+            &SettingsPatch {
+                language: Some(Language::En),
+                ..Default::default()
+            },
+        )
+        .expect("update");
+        assert_eq!(s.language, Some(Language::En));
+        // Another field leaves it alone; a stored value is read back as "en" / "fr".
+        let s = update(
+            &conn,
+            &SettingsPatch {
+                show_completed: Some(true),
+                ..Default::default()
+            },
+        )
+        .expect("update");
+        assert_eq!(s.language, Some(Language::En));
+        let raw: String = conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = 'language'",
+                [],
+                |r| r.get(0),
+            )
+            .expect("row");
+        assert_eq!(raw, "\"en\"");
+        update(
+            &conn,
+            &SettingsPatch {
+                language: Some(Language::Fr),
+                ..Default::default()
+            },
+        )
+        .expect("update");
+        assert_eq!(get(&conn).expect("get").language, Some(Language::Fr));
+    }
+
+    #[test]
+    fn an_unreadable_language_falls_back_to_unset() {
+        let conn = open_in_memory().expect("db");
+        write(&conn, LANGUAGE, &"klingon").expect("write");
+        assert_eq!(get(&conn).expect("get").language, None);
     }
 
     #[test]
@@ -280,6 +336,7 @@ mod tests {
                 codex_path: None,
                 agent_chosen: false,
                 voice_space_hold: true,
+                language: None,
             }
         );
         assert_eq!(get(&conn).expect("get"), s);

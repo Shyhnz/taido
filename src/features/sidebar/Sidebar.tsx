@@ -51,7 +51,7 @@ import {
 import type { Subject, SubjectColor, SubjectDot } from "../../bindings";
 import { Button, IconButton } from "../../components/Button";
 import { openContextMenu, openMenuAt } from "../../components/Menu";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { features } from "../../lib/features";
 import { subjectColorVar } from "../../lib/format";
@@ -167,12 +167,12 @@ function NavButton({
       {waiting > 0 && (
         <span
           data-waiting-count
-          title={fr.sidebar.waitingCount(waiting, agent)}
+          title={t.sidebar.waitingCount(waiting, agent)}
           className="min-w-[18px] rounded-full bg-waiting px-1.5 text-center text-[11.5px] leading-[18px] font-semibold text-on-waiting tabular-nums"
         >
           <span aria-hidden="true">{waiting}</span>
           <span className="sr-only">
-            {fr.sidebar.waitingCount(waiting, agent)}
+            {t.sidebar.waitingCount(waiting, agent)}
           </span>
         </span>
       )}
@@ -303,8 +303,8 @@ function SubProjectsToggle({ subject }: { subject: Subject }) {
     <IconButton
       label={
         open
-          ? fr.subProjects.hide(subject.name)
-          : fr.subProjects.show(subject.name)
+          ? t.subProjects.hide(subject.name)
+          : t.subProjects.show(subject.name)
       }
       size={20}
       aria-expanded={open}
@@ -413,8 +413,8 @@ function SubjectRow({
       : subjectMenuItems(subject, { x, y }, subjects);
   const menuLabel =
     selected && selection.length > 1
-      ? fr.groups.selection(selection.length)
-      : fr.sidebar.projectMenu(subject.name);
+      ? t.groups.selection(selection.length)
+      : t.sidebar.projectMenu(subject.name);
   const onRowClick = (e: ReactMouseEvent) => {
     const sel = useProjectSelection.getState();
     if (e.metaKey || e.ctrlKey) {
@@ -435,7 +435,7 @@ function SubjectRow({
       <div ref={setNodeRef}>
         <InlineNameInput
           color={subject.color}
-          label={fr.projectNav.renameLabel(subject.name)}
+          label={t.projectNav.renameLabel(subject.name)}
           initial={subject.name}
           onCommit={async (name) => {
             await saveSubjectName(subject, name);
@@ -454,7 +454,7 @@ function SubjectRow({
   if (subject.isGroup) {
     const groupMenu = (x: number, y: number) =>
       groupMenuItems(subject, { x, y });
-    const groupLabel = fr.groups.menuLabel(subject.name);
+    const groupLabel = t.groups.menuLabel(subject.name);
     return (
       <div
         ref={setNodeRef}
@@ -478,7 +478,7 @@ function SubjectRow({
             type="button"
             data-nav-item
             aria-expanded={!folded}
-            aria-label={fr.groups.toggle(subject.name, !folded)}
+            aria-label={t.groups.toggle(subject.name, !folded)}
             onClick={() => useUi.getState().toggleSubProjects(subject.id)}
             onKeyDown={onNavKeyDown}
             className="ml-1 inline-flex h-7 max-w-[calc(100%-36px)] items-center rounded-md px-2.5 text-[13px] font-semibold"
@@ -548,10 +548,10 @@ function SubjectRow({
             <span
               className="h-[7px] w-[7px] shrink-0 rounded-full"
               style={{ background: DOT_COLOR[subject.dot] }}
-              title={fr.ring.state(subject.dot, agent)}
+              title={t.ring.state(subject.dot, agent)}
             >
               <span className="sr-only">
-                {fr.ring.state(subject.dot, agent)}
+                {t.ring.state(subject.dot, agent)}
               </span>
             </span>
           )}
@@ -654,9 +654,9 @@ function NewSubProjectInput({
   return (
     <InlineNameInput
       color={color}
-      label={fr.subProjects.newLabel(parent.name)}
-      placeholder={fr.subProjects.newPlaceholder}
-      hint={fr.projectNav.newHint}
+      label={t.subProjects.newLabel(parent.name)}
+      placeholder={t.subProjects.newPlaceholder}
+      hint={t.projectNav.newHint}
       focusKey={request}
       onCommit={async (name, fromBlur) => {
         // Enter opens the sub-project; leaving the field only saves it.
@@ -688,9 +688,9 @@ function NewProjectLine({ subjects }: { subjects: Subject[] }) {
       <div className="mt-0.5" data-tutorial="new-project">
         <InlineNameInput
           color={color}
-          label={fr.projectNav.newLabel}
-          placeholder={fr.projectNav.newPlaceholder}
-          hint={fr.projectNav.newHint}
+          label={t.projectNav.newLabel}
+          placeholder={t.projectNav.newPlaceholder}
+          hint={t.projectNav.newHint}
           focusKey={request}
           onCommit={async (name, fromBlur) => {
             // Enter opens the project; leaving the field only saves it.
@@ -716,7 +716,7 @@ function NewProjectLine({ subjects }: { subjects: Subject[] }) {
         <span className="flex w-[18px] shrink-0 justify-center">
           <Plus size={15} aria-hidden />
         </span>
-        {fr.sidebar.firstProject}
+        {t.sidebar.firstProject}
       </button>
     );
   }
@@ -726,13 +726,13 @@ function NewProjectLine({ subjects }: { subjects: Subject[] }) {
       type="button"
       data-tutorial="new-project"
       onClick={() => start()}
-      title={withShortcut(fr.sidebar.newProject, "⌘⇧N")}
+      title={withShortcut(t.sidebar.newProject, "⌘⇧N")}
       className="nav-row mt-0.5 flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-left text-body text-text-2"
     >
       <span className="flex w-[18px] shrink-0 justify-center">
         <Plus size={15} aria-hidden />
       </span>
-      <span className="flex-1 truncate">{fr.sidebar.newProject}</span>
+      <span className="flex-1 truncate">{t.sidebar.newProject}</span>
     </button>
   );
 }
@@ -746,7 +746,7 @@ function ProjectsSkeleton() {
   return (
     <div
       role="status"
-      aria-label={fr.projectNav.loading}
+      aria-label={t.projectNav.loading}
       className="flex flex-col gap-0.5"
     >
       {visible &&
@@ -773,10 +773,10 @@ function ProjectsError({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex items-center justify-between gap-2 px-2 py-1.5">
       <span className="text-[13px] text-text-2">
-        {fr.sidebar.projectsUnavailable}
+        {t.sidebar.projectsUnavailable}
       </span>
       <Button size="sm" variant="ghost" onClick={onRetry}>
-        {fr.common.retry}
+        {t.common.retry}
       </Button>
     </div>
   );
@@ -786,8 +786,8 @@ function ProjectsError({ onRetry }: { onRetry: () => void }) {
 function SettingsButton() {
   return (
     <IconButton
-      label={fr.sidebar.settings}
-      title={features.shortcuts ? fr.settings.open : fr.sidebar.settings}
+      label={t.sidebar.settings}
+      title={features.shortcuts ? t.settings.open : t.sidebar.settings}
       aria-haspopup="dialog"
       data-tutorial="settings"
       className="touch-target relative"
@@ -802,8 +802,8 @@ function SettingsButton() {
 function CollapseButton() {
   return (
     <IconButton
-      label={fr.sidebar.collapse}
-      title={withShortcut(fr.sidebar.collapse, "M")}
+      label={t.sidebar.collapse}
+      title={withShortcut(t.sidebar.collapse, "M")}
       className="touch-target relative"
       onClick={() => useUi.getState().toggleSidebar(false)}
     >
@@ -832,7 +832,7 @@ function InboxRow({
   const data: DragData = {
     type: "subject",
     subjectId: null,
-    name: fr.sidebar.noProject,
+    name: t.sidebar.noProject,
     index,
     parentId: null,
   };
@@ -885,7 +885,7 @@ function InboxRow({
       >
         <NavButton
           item={{ kind: "inbox", subjectId: null }}
-          label={fr.sidebar.noProject}
+          label={t.sidebar.noProject}
           icon={
             <Inbox size={16} aria-hidden strokeWidth={1.75} className="mx-px" />
           }
@@ -1001,7 +1001,7 @@ export function Sidebar() {
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-border bg-sidebar">
       <div className="flex h-14 shrink-0 items-center justify-between pr-2 pl-4">
-        <span className="text-[14px] font-semibold">{fr.appName}</span>
+        <span className="text-[14px] font-semibold">{t.appName}</span>
         <div className="flex items-center gap-0.5">
           <SyncButton />
           <SettingsButton />
@@ -1013,13 +1013,13 @@ export function Sidebar() {
         <button
           type="button"
           onClick={() => openAddTaskForView()}
-          title={withShortcut(fr.sidebar.newTask, "⌘N")}
+          title={withShortcut(t.sidebar.newTask, "⌘N")}
           className="nav-row flex h-[34px] w-full items-center gap-2.5 rounded-md px-2 text-[14px] text-text-2"
         >
           <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-current">
             <Plus size={12} strokeWidth={2.25} aria-hidden />
           </span>
-          <span className="flex-1 text-left">{fr.sidebar.newTask}</span>
+          <span className="flex-1 text-left">{t.sidebar.newTask}</span>
           {features.shortcuts && (
             <kbd className="font-sans text-[12px] text-text-3">⌘N</kbd>
           )}
@@ -1030,17 +1030,15 @@ export function Sidebar() {
             type="button"
             data-nav-item
             aria-haspopup="dialog"
-            aria-label={fr.sidebar.searchRow}
+            aria-label={t.sidebar.searchRow}
             onClick={() => useUi.getState().openDialog({ type: "search" })}
             title={
-              features.shortcuts
-                ? `${fr.search.open} (⌘K)`
-                : fr.sidebar.searchRow
+              features.shortcuts ? `${t.search.open} (⌘K)` : t.sidebar.searchRow
             }
             className="nav-row flex h-[34px] w-full items-center gap-2.5 rounded-md px-2 text-body text-text"
           >
             <Search size={18} aria-hidden strokeWidth={1.75} />
-            <span className="flex-1 text-left">{fr.sidebar.searchRow}</span>
+            <span className="flex-1 text-left">{t.sidebar.searchRow}</span>
             {features.shortcuts && (
               <kbd className="font-sans text-[12px] text-text-3">⌘K</kbd>
             )}
@@ -1049,31 +1047,31 @@ export function Sidebar() {
       </div>
 
       <nav
-        aria-label={fr.sidebar.navLabel}
+        aria-label={t.sidebar.navLabel}
         className="flex min-h-0 flex-1 flex-col"
       >
         <div className="px-2.5 pt-1">
           {/* Every open task, grouped by project; first and opened at launch. */}
           <NavButton
             item={{ kind: "all", subjectId: null }}
-            label={fr.all.title}
-            title={withShortcut(fr.all.title, "⌘1")}
+            label={t.all.title}
+            title={withShortcut(t.all.title, "⌘1")}
             icon={<ListTodo size={18} aria-hidden strokeWidth={1.75} />}
             count={0}
             shortcut="⌘1"
           />
           <NavButton
             item={{ kind: "today", subjectId: null }}
-            label={fr.sidebar.today}
-            title={withShortcut(fr.sidebar.today, "⌘2")}
+            label={t.sidebar.today}
+            title={withShortcut(t.sidebar.today, "⌘2")}
             icon={<CalendarDays size={18} aria-hidden strokeWidth={1.75} />}
             count={counts?.today ?? 0}
             waiting={features.states ? (counts?.waiting ?? 0) : 0}
           />
           <NavButton
             item={{ kind: "upcoming", subjectId: null }}
-            label={fr.sidebar.upcoming}
-            title={withShortcut(fr.sidebar.upcoming, "⌘3")}
+            label={t.sidebar.upcoming}
+            title={withShortcut(t.sidebar.upcoming, "⌘3")}
             icon={<CalendarRange size={18} aria-hidden strokeWidth={1.75} />}
             count={0}
             shortcut="⌘3"
@@ -1082,7 +1080,7 @@ export function Sidebar() {
           {largeScreen && (
             <NavButton
               item={{ kind: "portfolio", subjectId: null }}
-              label={fr.portfolio.title}
+              label={t.portfolio.title}
               icon={
                 <BriefcaseBusiness size={18} aria-hidden strokeWidth={1.75} />
               }
@@ -1093,7 +1091,7 @@ export function Sidebar() {
 
         <div className="mx-4 mt-3 border-t border-border" />
         <h2 className="mt-3 pr-2.5 pb-1 pl-4 text-[13px] leading-6 font-semibold">
-          {fr.sidebar.projects}
+          {t.sidebar.projects}
         </h2>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-3">

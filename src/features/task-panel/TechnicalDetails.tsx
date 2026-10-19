@@ -7,7 +7,7 @@ import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import type { TaskDetail } from "../../bindings";
 import { IconButton } from "../../components/Button";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { formatRelative } from "../../lib/dates";
 import { shortenPath } from "../../lib/format";
 import { commands } from "../../lib/ipc";
@@ -33,7 +33,7 @@ export function TechnicalDetails({ task }: { task: TaskDetail }) {
   const since = task.ringSince ? formatRelative(task.ringSince) : null;
 
   const pickFolder = async () => {
-    const path = await run(commands.pickFolder(fr.attrs.folderPick));
+    const path = await run(commands.pickFolder(t.attrs.folderPick));
     if (path) {
       await run(commands.setTaskWorkdirOverride({ id: task.id, path }));
     }
@@ -43,7 +43,7 @@ export function TechnicalDetails({ task }: { task: TaskDetail }) {
   return (
     <Fold
       id="technical"
-      title={fr.folds.technical}
+      title={t.folds.technical}
       summary={
         (folderName || task.gitBranch) && (
           <span className="truncate font-mono text-[12px]">
@@ -53,22 +53,22 @@ export function TechnicalDetails({ task }: { task: TaskDetail }) {
       }
     >
       <div>
-        <Row label={fr.attrs.folder}>
+        <Row label={t.attrs.folder}>
           <div className="flex items-start gap-1">
             <button
               type="button"
               onClick={() => void pickFolder()}
-              title={task.workdir?.path ?? fr.attrs.folderPick}
-              aria-label={`${fr.attrs.folderPick} · ${task.workdir?.path ?? fr.attrs.folderNone}`}
+              title={task.workdir?.path ?? t.attrs.folderPick}
+              aria-label={`${t.attrs.folderPick} · ${task.workdir?.path ?? t.attrs.folderNone}`}
               className="-mx-1 min-w-0 flex-1 rounded-md px-1 text-left font-mono text-[12.5px] break-all hover:bg-hover"
             >
               {task.workdir
                 ? shortenPath(task.workdir.path)
-                : fr.attrs.folderNone}
+                : t.attrs.folderNone}
             </button>
             {task.workdirOverride && (
               <IconButton
-                label={fr.attrs.folderReset}
+                label={t.attrs.folderReset}
                 size={22}
                 onClick={() =>
                   void run(
@@ -86,22 +86,22 @@ export function TechnicalDetails({ task }: { task: TaskDetail }) {
           {task.workdir && (
             <p className="mt-0.5 text-[12px] text-text-3">
               {task.workdir.exists
-                ? fr.attrs.folderInherited[task.workdir.source]
-                : fr.attrs.folderMissing}
+                ? t.attrs.folderInherited[task.workdir.source]
+                : t.attrs.folderMissing}
             </p>
           )}
         </Row>
-        <Row label={fr.attrs.gitBranch}>
+        <Row label={t.attrs.gitBranch}>
           <span className="font-mono text-[12.5px]">
             {task.gitBranch ?? "—"}
           </span>
         </Row>
-        <Row label={fr.attrs.terminals}>
+        <Row label={t.attrs.terminals}>
           {task.terminals.length > 0
             ? task.terminals.map((t) => terminalLabel(t)).join(", ")
             : "—"}
         </Row>
-        <Row label={fr.attrs.state}>
+        <Row label={t.attrs.state}>
           <div className="flex items-start gap-2">
             <span className="pt-1">
               <StateDot

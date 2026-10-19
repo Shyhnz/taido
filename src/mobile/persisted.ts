@@ -18,9 +18,9 @@ export interface PersistedState {
   subjects: SubjectRec[];
   sections: SectionRec[];
   tasks: TaskRec[];
-  /** `colorTheme` and `syncTheme`: absent in a set saved before the colour themes. */
+  /** `colorTheme`, `syncTheme` and `language`: absent in a set saved before the colour themes. */
   settings: Pick<Settings, "theme"> &
-    Partial<Pick<Settings, "colorTheme" | "syncTheme">>;
+    Partial<Pick<Settings, "colorTheme" | "syncTheme" | "language">>;
   /**
    * Shared settings synced between devices (`MockState.syncedSettings`), by key. Optional:
    * a set saved before protocol 2 has none (read as `{}`).

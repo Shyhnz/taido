@@ -21,6 +21,7 @@ const NO_CHANGE: SettingsPatch = {
   codexPath: null,
   agentChosen: null,
   voiceSpaceHold: null,
+  language: null,
 };
 
 /** A full `SettingsPatch` that changes only the given fields. */

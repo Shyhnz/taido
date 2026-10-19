@@ -219,6 +219,7 @@ export class MobileBackend extends MockBackend {
     // A set saved before the colour themes has neither: the defaults.
     this.state.settings.colorTheme = p.state.settings.colorTheme ?? "taido";
     this.state.settings.syncTheme = p.state.settings.syncTheme ?? true;
+    this.state.settings.language = p.state.settings.language ?? null;
     // A set saved before protocol 2 has no shared settings.
     this.state.syncedSettings = p.state.syncedSettings ?? {};
     this.links.attachments = p.state.attachments ?? [];
@@ -795,6 +796,7 @@ export class MobileBackend extends MockBackend {
           theme: this.state.settings.theme,
           colorTheme: this.state.settings.colorTheme,
           syncTheme: this.state.settings.syncTheme,
+          language: this.state.settings.language,
         },
         syncedSettings: this.state.syncedSettings,
         attachments: this.links.attachments,

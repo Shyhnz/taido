@@ -8,7 +8,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { announce } from "../../components/LiveRegion";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { features } from "../../lib/features";
 import { commands, errorKind, errorMessage } from "../../lib/ipc";
@@ -111,7 +111,7 @@ export function TutorialDriver({ run }: { run: TutorialRun }) {
     const n = stepNumber(step);
     if (n !== null) {
       announce(
-        `${fr.tutorial.stepOf(n, STEP_COUNT)} : ${stepTitle(step, agent.current)}`,
+        `${t.tutorial.stepOf(n, STEP_COUNT)} : ${stepTitle(step, agent.current)}`,
       );
     }
     // `subjectId` and `taskId` change together with the step that sets them.

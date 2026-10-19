@@ -22,7 +22,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { type ReactNode, useState } from "react";
 import type { NoteKind, NoteTarget, TaskRow } from "../../bindings";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands } from "../../lib/ipc";
 import { run } from "../../lib/run";
 import { longDay } from "../views/upcomingModel";
@@ -279,7 +279,7 @@ function reorderProject(subjectId: string | null, index: number) {
     subjectId === null
       ? commands.reorderInbox(index)
       : commands.reorderSubject({ id: subjectId, index }),
-    fr.errors.action.reorder,
+    t.errors.action.reorder,
   );
 }
 
@@ -306,7 +306,7 @@ async function dropNotePage(
   }
   await run(
     commands.moveNotePage({ id: from.pageId, target: to.place, index }),
-    fr.notes.errors.movePage,
+    t.notes.errors.movePage,
   );
 }
 
@@ -350,9 +350,9 @@ export async function handleDragEnd(event: DragEndEvent) {
     if (to.type !== "calendar_day" || to.date === from.date) return;
     const moved = await run(
       commands.setTaskDue({ id: from.taskId, date: to.date, time: from.time }),
-      fr.errors.action.updateTask,
+      t.errors.action.updateTask,
     );
-    if (moved) showToast({ message: fr.upcoming.movedTo(to.label) });
+    if (moved) showToast({ message: t.upcoming.movedTo(to.label) });
     return;
   }
   if (from.type !== "task") return;
@@ -372,7 +372,7 @@ export async function handleDragEnd(event: DragEndEvent) {
         index: null,
       }),
     );
-    if (moved) showToast({ message: fr.toast.moved(to.name) });
+    if (moved) showToast({ message: t.toast.moved(to.name) });
     return;
   }
   // « Prochainement » list: dropped on another day, the task is due there (time kept).
@@ -382,9 +382,9 @@ export async function handleDragEnd(event: DragEndEvent) {
     if (!date || date === from.day.date) return;
     const moved = await run(
       commands.setTaskDue({ id: from.taskId, date, time: from.day.time }),
-      fr.errors.action.updateTask,
+      t.errors.action.updateTask,
     );
-    if (moved) showToast({ message: fr.upcoming.movedTo(longDay(date)) });
+    if (moved) showToast({ message: t.upcoming.movedTo(longDay(date)) });
     return;
   }
   if (!from.reorderable) return;
@@ -445,19 +445,19 @@ function spokenName(x: { data: { current?: unknown } } | null) {
 const announcements: Announcements = {
   onDragStart: ({ active }) => {
     const name = spokenName(active);
-    return name === undefined ? undefined : fr.dnd.pickedUp(name);
+    return name === undefined ? undefined : t.dnd.pickedUp(name);
   },
   onDragOver: ({ active, over }) => {
     const target = spokenName(over);
     return target === undefined || active.id === over?.id
       ? undefined
-      : fr.dnd.over(target);
+      : t.dnd.over(target);
   },
   onDragEnd: ({ over }) => {
     const target = spokenName(over);
-    return target === undefined ? fr.dnd.dropped : fr.dnd.droppedOn(target);
+    return target === undefined ? t.dnd.dropped : t.dnd.droppedOn(target);
   },
-  onDragCancel: () => fr.dnd.cancelled,
+  onDragCancel: () => t.dnd.cancelled,
 };
 
 export function DndProvider({ children }: { children: ReactNode }) {
@@ -470,7 +470,7 @@ export function DndProvider({ children }: { children: ReactNode }) {
       sensors={sensors}
       accessibility={{
         announcements,
-        screenReaderInstructions: { draggable: fr.dnd.instructions },
+        screenReaderInstructions: { draggable: t.dnd.instructions },
       }}
       collisionDetection={collisionDetection}
       onDragStart={(e: DragStartEvent) => setActive(e.active)}

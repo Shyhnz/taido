@@ -14,7 +14,7 @@ import { DatePickerPopover, type DueValue } from "../../components/DatePicker";
 import { announce } from "../../components/LiveRegion";
 import { type MenuItem, openMenuAt } from "../../components/Menu";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { formatDue, todayString, tomorrowString } from "../../lib/dates";
 import { features } from "../../lib/features";
 import { projectPath, sectionPath, subjectColorVar } from "../../lib/format";
@@ -100,7 +100,7 @@ export function addedInView(
 /** « Globex › Summit Events », or « Sans projet ». */
 export function destinationLabel(draft: Draft, subjects: Subject[]): string {
   const subject = subjects.find((s) => s.id === draft.subjectId);
-  if (!subject) return fr.sidebar.noProject;
+  if (!subject) return t.sidebar.noProject;
   const section = subject.sections.find((s) => s.id === draft.sectionId);
   return section
     ? sectionPath(subject, section, subjects)
@@ -124,7 +124,7 @@ export function destinationItems(
 ): MenuItem[] {
   const items: MenuItem[] = [
     {
-      label: fr.sidebar.noProject,
+      label: t.sidebar.noProject,
       icon: <Inbox size={13} aria-hidden />,
       checked: draft.subjectId === null ? true : undefined,
       onSelect: () => set({ ...draft, subjectId: null, sectionId: null }),
@@ -175,13 +175,13 @@ function Chips({
     <div className="flex min-w-0 flex-wrap items-center gap-2">
       <button
         type="button"
-        aria-label={fr.editor.destination(where)}
+        aria-label={t.editor.destination(where)}
         className={CHIP}
         onClick={(e) =>
           openMenuAt(
             e.currentTarget,
             destinationItems(draft, subjects, setDraft),
-            fr.editor.projectMenu,
+            t.editor.projectMenu,
           )
         }
       >
@@ -195,14 +195,14 @@ function Chips({
       <button
         ref={dueRef}
         type="button"
-        aria-label={dueLabel ? fr.editor.due(dueLabel) : fr.editor.noDue}
+        aria-label={dueLabel ? t.editor.due(dueLabel) : t.editor.noDue}
         aria-haspopup="dialog"
         aria-expanded={dueOpen}
         className={`${CHIP} ${dueLabel ? "" : "border-dashed"}`}
         onClick={() => setDueOpen((o) => !o)}
       >
         <CalendarDays size={13} aria-hidden />
-        {dueLabel ?? fr.editor.noDue}
+        {dueLabel ?? t.editor.noDue}
       </button>
       {dueOpen && (
         <DatePickerPopover
@@ -231,15 +231,15 @@ export function notifyAdded(
   dueDate?: string,
 ): void {
   if (addedInView(target, draft, dueDate)) {
-    announce(fr.list.announce.added(title));
+    announce(t.list.announce.added(title));
     return;
   }
   const where = destinationLabel({ ...draft, sectionId: null }, subjects);
   const subjectId = draft.subjectId;
   showToast({
-    message: fr.toast.added(where),
+    message: t.toast.added(where),
     action: {
-      label: fr.toast.see,
+      label: t.toast.see,
       onAction: () =>
         useUi
           .getState()
@@ -284,7 +284,7 @@ export function TaskEditor({
         dueDate: dueDateOf(draft.due),
         dueTime: dueTimeOf(draft.due),
       }),
-      fr.errors.action.createTask,
+      t.errors.action.createTask,
     );
     setBusy(false);
     if (!task) return;
@@ -322,16 +322,16 @@ export function TaskEditor({
           ref={titleRef}
           // biome-ignore lint/a11y/noAutofocus: the editor opens on an explicit user action
           autoFocus
-          aria-label={fr.addTask.titlePlaceholder}
-          placeholder={fr.addTask.titlePlaceholder}
+          aria-label={t.addTask.titlePlaceholder}
+          placeholder={t.addTask.titlePlaceholder}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={onFieldKeyDown}
           className="bg-transparent text-[14.5px] font-medium outline-hidden placeholder:text-text-3"
         />
         <textarea
-          aria-label={fr.addTask.descriptionPlaceholder}
-          placeholder={fr.addTask.descriptionPlaceholder}
+          aria-label={t.addTask.descriptionPlaceholder}
+          placeholder={t.addTask.descriptionPlaceholder}
           value={description}
           rows={1}
           onChange={(e) => setDescription(e.target.value)}
@@ -344,11 +344,11 @@ export function TaskEditor({
         <div className="flex shrink-0 items-center gap-2">
           {features.shortcuts && (
             <span className="hidden text-[12px] text-text-3 sm:inline">
-              {fr.addTask.hint}
+              {t.addTask.hint}
             </span>
           )}
           <Button size="sm" onClick={onClose}>
-            {fr.common.cancel}
+            {t.common.cancel}
           </Button>
           <Button
             size="sm"
@@ -356,7 +356,7 @@ export function TaskEditor({
             disabled={title.trim().length === 0 || busy}
             onClick={() => void submit()}
           >
-            {fr.addTask.submit}
+            {t.addTask.submit}
           </Button>
         </div>
       </div>

@@ -7,7 +7,7 @@
 
 import type { Editor } from "@tiptap/core";
 import { showError } from "../../../components/Toast";
-import { fr } from "../../../i18n/fr";
+import { t } from "../../../i18n";
 import { commands, errorMessage, webFiles } from "../../../lib/ipc";
 import { run } from "../../../lib/run";
 import { WebFileError } from "../../../lib/web-files";
@@ -61,8 +61,8 @@ function onlyImages(source: ImageSource): ImageSource | null {
     "files" in source
       ? source.files.map((f) => pageImageRefusal(f.name, f.type))
       : source.paths.map((p) => pageImageRefusal(nameOf(p)));
-  if (refusals.includes("format")) showError(fr.notes.image.unsupportedFormat);
-  if (refusals.includes("other")) showError(fr.notes.image.onlyImages);
+  if (refusals.includes("format")) showError(t.notes.image.unsupportedFormat);
+  if (refusals.includes("other")) showError(t.notes.image.onlyImages);
   const kept: ImageSource =
     "files" in source
       ? { files: source.files.filter((_, i) => refusals[i] === null) }
@@ -81,7 +81,7 @@ export async function addImagesToPage(
   if ("paths" in kept) {
     const added = await run(
       commands.addNoteAttachments({ notePageId: pageId, paths: kept.paths }),
-      fr.notes.image.addError,
+      t.notes.image.addError,
     );
     return added?.map((a) => a.id) ?? [];
   }
@@ -94,15 +94,15 @@ export async function addImagesToPage(
       });
       const { ids, tooLarge } = await files.addToPage(pageId, named);
       if (tooLarge.length > 0) {
-        showError(fr.attachments.web.tooLarge(tooLarge.join(", ")));
+        showError(t.attachments.web.tooLarge(tooLarge.join(", ")));
       }
       return ids;
     } catch (error) {
       console.error(errorMessage(error), error);
       showError(
         error instanceof WebFileError
-          ? fr.attachments.web.error[error.kind]
-          : fr.notes.image.addError,
+          ? t.attachments.web.error[error.kind]
+          : t.notes.image.addError,
       );
       return [];
     }
@@ -115,7 +115,7 @@ export async function addImagesToPage(
         name: imageFileName(pastedName(file), file.type),
         base64: await toBase64(file),
       }),
-      fr.notes.image.addError,
+      t.notes.image.addError,
     );
     if (added) ids.push(added.id);
   }

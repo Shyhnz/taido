@@ -17,7 +17,7 @@ import { useRef, useState } from "react";
 import type { Subject, TaskDetail } from "../../bindings";
 import { DatePickerPopover, type DueValue } from "../../components/DatePicker";
 import { type MenuItem, openMenuAt } from "../../components/Menu";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { formatDue } from "../../lib/dates";
 import { projectPath, sectionPath, subjectColorVar } from "../../lib/format";
 import { commands } from "../../lib/ipc";
@@ -51,7 +51,7 @@ export function locationText(
   task: TaskDetail,
   subjects: Subject[] = [],
 ): string {
-  if (!task.subject) return fr.panel.noProject;
+  if (!task.subject) return t.panel.noProject;
   const id = task.subject.id;
   const subject = subjects.find((s) => s.id === id) ?? {
     name: task.subject.name,
@@ -74,14 +74,14 @@ function LocationChip({ task }: { task: TaskDetail }) {
     }
     void run(
       commands.moveTask({ id: task.id, subjectId, sectionId, index: null }),
-      fr.errors.action.moveTask,
+      t.errors.action.moveTask,
     );
   };
 
   const items = (): MenuItem[] => {
     const list: MenuItem[] = [
       {
-        label: fr.move.noProject,
+        label: t.move.noProject,
         icon: <Inbox size={14} aria-hidden />,
         checked: task.subject === null,
         onSelect: () => move(null, null),
@@ -111,7 +111,7 @@ function LocationChip({ task }: { task: TaskDetail }) {
   if (task.parent) {
     return (
       <span
-        title={fr.panelBis.locationFromParent}
+        title={t.panelBis.locationFromParent}
         data-chip="location"
         className={`${chipClass} hover:bg-bg`}
       >
@@ -128,10 +128,10 @@ function LocationChip({ task }: { task: TaskDetail }) {
     <button
       type="button"
       aria-haspopup="menu"
-      aria-label={fr.panel.location(text)}
+      aria-label={t.panel.location(text)}
       title={text}
       onClick={(e) =>
-        openMenuAt(e.currentTarget, items(), fr.panel.locationMenu)
+        openMenuAt(e.currentTarget, items(), t.panel.locationMenu)
       }
       className={chipClass}
     >
@@ -160,7 +160,7 @@ export function saveTaskDue(task: TaskDetail, value: DueValue): void {
       date: value.date,
       time: value.date ? value.time : null,
     }),
-    fr.errors.action.updateTask,
+    t.errors.action.updateTask,
   );
 }
 
@@ -180,10 +180,10 @@ function DueChip({ task }: { task: TaskDetail }) {
         aria-expanded={open}
         aria-label={
           label
-            ? fr.panel.dueChip(
-                overdue ? `${label}, ${fr.panel.dueOverdue}` : label,
+            ? t.panel.dueChip(
+                overdue ? `${label}, ${t.panel.dueOverdue}` : label,
               )
-            : fr.panel.dueEmpty
+            : t.panel.dueEmpty
         }
         onClick={() => setOpen((o) => !o)}
         className={`${chipClass} ${label ? "" : "text-text-2"}`}
@@ -194,7 +194,7 @@ function DueChip({ task }: { task: TaskDetail }) {
           className={`shrink-0 ${overdue ? "text-due-overdue" : "text-text-2"}`}
         />
         <span className={`truncate ${overdue ? "text-due-overdue" : ""}`}>
-          {label ?? fr.panel.dueEmpty}
+          {label ?? t.panel.dueEmpty}
         </span>
       </button>
       {open && (
@@ -231,19 +231,19 @@ function PriorityChip({ task }: { task: TaskDetail }) {
     <button
       type="button"
       aria-haspopup="menu"
-      aria-label={fr.panelBis.priorityChip(shown)}
-      title={fr.panelBis.priorityName(shown)}
+      aria-label={t.panelBis.priorityChip(shown)}
+      title={t.panelBis.priorityName(shown)}
       onClick={(e) =>
         openMenuAt(
           e.currentTarget,
           priorityMenuItems(task),
-          fr.panelBis.priority,
+          t.panelBis.priority,
         )
       }
       className={`${chipClass} ${p === 1 ? "text-text-2" : ""}`}
     >
       <PriorityFlag priority={p} />
-      <span>{fr.panelBis.priorityShort(shown)}</span>
+      <span>{t.panelBis.priorityShort(shown)}</span>
     </button>
   );
 }
@@ -259,12 +259,12 @@ function BlockedByItem({ task }: { task: TaskDetail }) {
     <button
       type="button"
       data-chip="blocked-by"
-      aria-label={fr.folds.blockedByChipLabel(n)}
+      aria-label={t.folds.blockedByChipLabel(n)}
       onClick={() => revealFold("relations")}
       className={`${chipClass} text-due-overdue`}
     >
       <Ban size={14} aria-hidden className="shrink-0" />
-      <span className="truncate">{fr.folds.blockedByChip(n)}</span>
+      <span className="truncate">{t.folds.blockedByChip(n)}</span>
     </button>
   );
 }

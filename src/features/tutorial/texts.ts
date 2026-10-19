@@ -1,10 +1,10 @@
 import type { Agent } from "../../bindings";
-import { fr, tutorialTexts } from "../../i18n/fr";
+import { t as strings, tutorialTexts } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import type { StepId } from "./model";
 
 /** The guide's texts for the default agent (chosen on the first card). */
-export function useTutorialTexts(): typeof fr.tutorial {
+export function useTutorialTexts(): typeof strings.tutorial {
   return tutorialTexts(useDefaultAgent());
 }
 
@@ -13,7 +13,7 @@ export function stepTitle(step: StepId, agent: Agent = "claude"): string {
   const t = tutorialTexts(agent);
   switch (step) {
     case "welcome":
-      return t.welcome.title(fr.appName);
+      return t.welcome.title(strings.appName);
     case "project":
       return t.project.title;
     case "task":

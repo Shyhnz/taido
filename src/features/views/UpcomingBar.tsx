@@ -11,7 +11,7 @@ import { useRef, useState } from "react";
 import type { ViewModel } from "../../bindings";
 import { IconButton } from "../../components/Button";
 import { DatePickerPopover } from "../../components/DatePicker";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { parseLocalDate } from "../../lib/dates";
 import { useUi } from "../../stores/ui";
 import { useList } from "./listStore";
@@ -81,7 +81,7 @@ export function UpcomingBar({
           type="button"
           aria-haspopup="dialog"
           aria-expanded={pickerOpen}
-          aria-label={fr.upcoming.monthPicker(monthLabel(shownFrom))}
+          aria-label={t.upcoming.monthPicker(monthLabel(shownFrom))}
           onClick={() => setPickerOpen((o) => !o)}
           className="-ml-1.5 inline-flex h-8 items-center gap-1 rounded-md px-1.5 text-[14px] font-semibold hover:bg-hover"
         >
@@ -91,7 +91,7 @@ export function UpcomingBar({
         {pickerOpen && (
           <DatePickerPopover
             anchorRef={monthRef}
-            label={fr.upcoming.monthPicker(monthLabel(shownFrom))}
+            label={t.upcoming.monthPicker(monthLabel(shownFrom))}
             dateOnly
             value={{ date: shownFrom, time: null }}
             onChange={(v) => {
@@ -105,7 +105,7 @@ export function UpcomingBar({
         )}
         <div className="flex items-center gap-0.5">
           <IconButton
-            label={fr.upcoming.previousWeek}
+            label={t.upcoming.previousWeek}
             size={28}
             disabled={monday <= thisWeek}
             onClick={() => goTo(shiftDays(monday, -7))}
@@ -117,10 +117,10 @@ export function UpcomingBar({
             onClick={() => goTo(today)}
             className="h-7 rounded-md border border-border px-2 text-[12.5px] font-medium text-text-2 hover:bg-hover hover:text-text"
           >
-            {fr.upcoming.today}
+            {t.upcoming.today}
           </button>
           <IconButton
-            label={fr.upcoming.nextWeek}
+            label={t.upcoming.nextWeek}
             size={28}
             onClick={() => goTo(shiftDays(monday, 7))}
           >
@@ -131,7 +131,7 @@ export function UpcomingBar({
       {/* biome-ignore lint/a11y/useSemanticElements: a strip of day buttons, not a fieldset */}
       <div
         role="group"
-        aria-label={fr.upcoming.weekLabel}
+        aria-label={t.upcoming.weekLabel}
         data-week-strip
         className="grid grid-cols-7 border-b border-border pb-2"
       >
@@ -147,7 +147,7 @@ export function UpcomingBar({
               data-day={date}
               disabled={past}
               aria-current={isToday ? "date" : undefined}
-              aria-label={fr.upcoming.dayButton(name, count)}
+              aria-label={t.upcoming.dayButton(name, count)}
               onClick={() => scrollToDay(date)}
               className={`flex h-14 flex-col items-center justify-center gap-0.5 rounded-md text-[12px] ${
                 past ? "text-text-3" : "text-text-2 hover:bg-hover"

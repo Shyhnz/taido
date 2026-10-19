@@ -27,7 +27,7 @@ import type {
   TerminalInfo,
   WaitingKind,
 } from "../bindings";
-import { agentErrorLabel } from "../i18n/fr";
+import { agentErrorLabel } from "../i18n";
 import type { MockTerminals } from "./mock-terminals";
 
 /** Delays of the simulation (ms). */

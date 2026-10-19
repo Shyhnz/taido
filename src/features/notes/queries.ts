@@ -12,7 +12,7 @@ import type {
   NotePageRow,
   NoteTarget,
 } from "../../bindings";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queries";
 import { useMediaQuery } from "../../lib/screen";
@@ -169,7 +169,7 @@ export function moveTargets(
   const all = [
     {
       target: loose,
-      label: kind === "summary" ? fr.notes.summaries : fr.notes.ungrouped,
+      label: kind === "summary" ? t.notes.summaries : t.notes.ungrouped,
     },
     ...groups.map((g) => ({
       target: { group: { id: g.id } } as NoteTarget,

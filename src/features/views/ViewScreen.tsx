@@ -19,7 +19,7 @@ import type { Subject, TaskRow, ViewModel } from "../../bindings";
 import { Button } from "../../components/Button";
 import { openMenuAt } from "../../components/Menu";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { useDay } from "../../lib/clock";
 import { formatLongDate } from "../../lib/dates";
 import { features } from "../../lib/features";
@@ -53,19 +53,19 @@ import {
 export const SKELETON_DELAY_MS = 150;
 
 function viewTitle(view: ViewModel): string {
-  if (view.kind === "today") return fr.sidebar.today;
-  if (view.kind === "upcoming") return fr.upcoming.title;
-  if (view.kind === "all") return fr.all.title;
+  if (view.kind === "today") return t.sidebar.today;
+  if (view.kind === "upcoming") return t.upcoming.title;
+  if (view.kind === "all") return t.all.title;
   if (view.kind === "subject") return view.subject?.name ?? "";
-  return fr.sidebar.noProject;
+  return t.sidebar.noProject;
 }
 
 function viewSubtitle(view: ViewModel): string {
   // « Prochainement » has its month and its week strip instead (Todoist).
   if (view.kind === "upcoming") return "";
   return view.kind === "today"
-    ? fr.views.todaySubtitle(formatLongDate(view.today), view.openCount)
-    : fr.views.countSubtitle(view.openCount);
+    ? t.views.todaySubtitle(formatLongDate(view.today), view.openCount)
+    : t.views.countSubtitle(view.openCount);
 }
 
 /** Open rows in display order, subtasks included unless folded (keyboard navigation). */
@@ -90,16 +90,16 @@ function ProjectTabs({ notes }: { notes: boolean }) {
   const tab = useUi((s) => s.projectTab);
   const setTab = useUi((s) => s.setProjectTab);
   const tabs: { key: ProjectTab; label: string }[] = [
-    { key: "list", label: fr.board.list },
-    { key: "board", label: fr.board.board },
-    { key: "dashboard", label: fr.dashboard.tab },
+    { key: "list", label: t.board.list },
+    { key: "board", label: t.board.board },
+    { key: "dashboard", label: t.dashboard.tab },
     // « Sans projet » has no notebook.
-    ...(notes ? [{ key: "notes" as const, label: fr.notes.tab }] : []),
+    ...(notes ? [{ key: "notes" as const, label: t.notes.tab }] : []),
   ];
   return (
     <div
       role="tablist"
-      aria-label={fr.board.tabs}
+      aria-label={t.board.tabs}
       className="mt-3 inline-flex max-w-full overflow-x-auto rounded-lg bg-hover p-0.5"
     >
       {tabs.map((t) => (
@@ -133,8 +133,8 @@ function ProjectMenuButton({ subject }: { subject: Subject }) {
   return (
     <button
       type="button"
-      aria-label={fr.sidebar.projectMenu(subject.name)}
-      title={fr.common.more}
+      aria-label={t.sidebar.projectMenu(subject.name)}
+      title={t.common.more}
       onClick={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         openMenuAt(
@@ -144,7 +144,7 @@ function ProjectMenuButton({ subject }: { subject: Subject }) {
             { x: rect.left, y: rect.bottom + 4 },
             subjects,
           ),
-          fr.sidebar.projectMenu(subject.name),
+          t.sidebar.projectMenu(subject.name),
           true,
         );
       }}
@@ -165,7 +165,7 @@ function AskButton({ subject }: { subject: Subject }) {
     <button
       type="button"
       aria-pressed={open}
-      title={fr.ask.button}
+      title={t.ask.button}
       onClick={() => {
         const ui = useUi.getState();
         if (open) ui.closeAsk();
@@ -178,7 +178,7 @@ function AskButton({ subject }: { subject: Subject }) {
       }`}
     >
       <Search size={14} aria-hidden />
-      <span className="hidden lg:inline">{fr.ask.button}</span>
+      <span className="hidden lg:inline">{t.ask.button}</span>
     </button>
   );
 }
@@ -188,14 +188,14 @@ function UpcomingModeSwitch() {
   const mode = useUi((s) => s.upcomingMode);
   const setMode = useUi((s) => s.setUpcomingMode);
   const options = [
-    { value: "list", label: fr.upcoming.list, Icon: List },
-    { value: "calendar", label: fr.upcoming.calendar, Icon: CalendarDays },
+    { value: "list", label: t.upcoming.list, Icon: List },
+    { value: "calendar", label: t.upcoming.calendar, Icon: CalendarDays },
   ] as const;
   return (
     // biome-ignore lint/a11y/useSemanticElements: a two-button switch, not a fieldset
     <div
       role="group"
-      aria-label={fr.upcoming.modeLabel}
+      aria-label={t.upcoming.modeLabel}
       className="mt-0.5 flex shrink-0 gap-0.5 rounded-lg border border-border bg-sidebar p-0.5"
     >
       {options.map(({ value, label, Icon }) => (
@@ -293,7 +293,7 @@ function Skeleton() {
   return (
     <div
       role="status"
-      aria-label={fr.list.loading}
+      aria-label={t.list.loading}
       className={`pt-10 ${visible ? "" : "invisible"}`}
     >
       <div className="mb-6 h-7 w-48 rounded-md bg-hover" />
@@ -310,8 +310,8 @@ function Skeleton() {
 function ErrorBlock({ onRetry }: { onRetry: () => void }) {
   return (
     <div role="alert" className="flex flex-col items-center gap-3 pt-28">
-      <p className="text-[14px] text-text-2">{fr.views.loadError}</p>
-      <Button onClick={onRetry}>{fr.list.retry}</Button>
+      <p className="text-[14px] text-text-2">{t.views.loadError}</p>
+      <Button onClick={onRetry}>{t.list.retry}</Button>
     </div>
   );
 }
@@ -331,7 +331,7 @@ function AddSection({ subjectId }: { subjectId: string }) {
         name: name.trim(),
         subpath: subpath.trim() ? subpath.trim() : null,
       }),
-      fr.errors.action.createSection,
+      t.errors.action.createSection,
     );
     if (section) close();
   };
@@ -354,16 +354,16 @@ function AddSection({ subjectId }: { subjectId: string }) {
         <input
           // biome-ignore lint/a11y/noAutofocus: opened on an explicit user action
           autoFocus
-          aria-label={fr.section.nameLabel}
-          placeholder={fr.section.namePlaceholder}
+          aria-label={t.section.nameLabel}
+          placeholder={t.section.namePlaceholder}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="h-9 min-w-0 flex-1 rounded-md border border-border-input bg-bg px-2.5 text-[14px] font-semibold"
         />
         {features.terminals && (
           <input
-            aria-label={fr.section.subpathLabel}
-            placeholder={fr.section.subpathLabel}
+            aria-label={t.section.subpathLabel}
+            placeholder={t.section.subpathLabel}
             value={subpath}
             onChange={(e) => setSubpath(e.target.value)}
             className="h-9 w-[220px] rounded-md border border-border-input bg-bg px-2.5 font-mono text-[12.5px]"
@@ -377,10 +377,10 @@ function AddSection({ subjectId }: { subjectId: string }) {
           variant="primary"
           disabled={!name.trim()}
         >
-          {fr.section.add}
+          {t.section.add}
         </Button>
         <Button size="sm" onClick={close}>
-          {fr.common.cancel}
+          {t.common.cancel}
         </Button>
       </div>
     </form>
@@ -405,7 +405,7 @@ function ViewBody({
   const toggleCompleted = () => {
     void run(
       commands.updateSettings(settingsPatch({ showCompleted: !showCompleted })),
-      fr.errors.action.settings,
+      t.errors.action.settings,
     );
   };
 
@@ -432,12 +432,12 @@ function ViewBody({
     (view.kind !== "subject" || noSections);
   const [emptyTitle, emptyText] =
     view.kind === "today"
-      ? [fr.views.empty.todayTitle, fr.views.empty.todayText]
+      ? [t.views.empty.todayTitle, t.views.empty.todayText]
       : view.kind === "subject"
-        ? [fr.views.empty.subjectTitle, fr.views.empty.subjectText]
+        ? [t.views.empty.subjectTitle, t.views.empty.subjectText]
         : view.kind === "all"
-          ? [fr.all.emptyTitle, fr.all.emptyText]
-          : [fr.views.empty.noProjectTitle, fr.views.empty.noProjectText];
+          ? [t.all.emptyTitle, t.all.emptyText]
+          : [t.views.empty.noProjectTitle, t.views.empty.noProjectText];
 
   const hasBoard = view.kind === "subject" || view.kind === "inbox";
   if (hasBoard && projectTab === "board") {
@@ -548,7 +548,7 @@ export function ViewScreen() {
   // A deleted project: say so and go back to Today (audit B2).
   useEffect(() => {
     if (!gone) return;
-    showToast({ message: fr.views.unknownSubject });
+    showToast({ message: t.views.unknownSubject });
     setView({ kind: "today", subjectId: null });
   }, [gone, setView]);
 

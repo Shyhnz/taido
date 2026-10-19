@@ -28,7 +28,7 @@ import type {
   TaskDetail,
 } from "../../bindings";
 import { Button, IconButton } from "../../components/Button";
-import { agentErrorLabel, fr } from "../../i18n/fr";
+import { agentErrorLabel, t } from "../../i18n";
 import { formatSessionDuration, formatSessionStart } from "../../lib/dates";
 import { commands } from "../../lib/ipc";
 import {
@@ -66,7 +66,7 @@ function ExchangeText({ text }: { text: string }) {
           onClick={() => setExpanded((v) => !v)}
           className="mt-0.5 text-[12.5px] text-text-2 hover:text-text"
         >
-          {expanded ? fr.sessions.showLess : fr.sessions.showMore}
+          {expanded ? t.sessions.showLess : t.sessions.showMore}
         </button>
       )}
     </div>
@@ -79,11 +79,11 @@ function eventText(e: Exchange): string | null {
     case "error":
       return agentErrorLabel(e.text || null);
     case "resumed":
-      return fr.sessions.resumed;
+      return t.sessions.resumed;
     case "cleared":
-      return fr.sessions.cleared;
+      return t.sessions.cleared;
     case "compacted":
-      return fr.sessions.compacted;
+      return t.sessions.compacted;
     default:
       return null;
   }
@@ -104,22 +104,22 @@ function Exchanges({
   );
   let body: ReactNode;
   if (isPending) {
-    body = <p className="text-[12.5px] text-text-3">{fr.sessions.loading}</p>;
+    body = <p className="text-[12.5px] text-text-3">{t.sessions.loading}</p>;
   } else if (isError) {
     body = (
       <p className="flex items-center gap-2 text-[12.5px] text-text-2">
-        {fr.sessions.loadError}
+        {t.sessions.loadError}
         <button
           type="button"
           onClick={() => void refetch()}
           className="underline hover:text-text"
         >
-          {fr.sessions.retry}
+          {t.sessions.retry}
         </button>
       </p>
     );
   } else if (data.length === 0) {
-    body = <p className="text-[12.5px] text-text-3">{fr.sessions.empty}</p>;
+    body = <p className="text-[12.5px] text-text-3">{t.sessions.empty}</p>;
   } else {
     body = (
       <ol className="flex flex-col gap-2">
@@ -136,8 +136,8 @@ function Exchanges({
                     }`}
                   >
                     {e.kind === "prompt"
-                      ? fr.sessions.you
-                      : fr.sessions.agent(agent)}
+                      ? t.sessions.you
+                      : t.sessions.agent(agent)}
                   </span>
                   <ExchangeText text={e.text} />
                 </>
@@ -173,8 +173,8 @@ export function recapSource(summary: SessionSummary): RecapSource {
 export function sessionRecap(summary: SessionSummary): string {
   if (summary.title) return summary.title;
   if (summary.aiSummary) return summary.aiSummary;
-  if (!summary.firstPrompt) return fr.sessions.noMessage;
-  return fr.panelBis.recap(summary.firstPrompt, summary.lastReply);
+  if (!summary.firstPrompt) return t.sessions.noMessage;
+  return t.panelBis.recap(summary.firstPrompt, summary.lastReply);
 }
 
 /** Characters kept of a title (like the core). */
@@ -213,7 +213,7 @@ function RenameField({
     if (unchanged) return;
     const ok = await run(
       commands.renameSession({ agentSessionId: summary.id, title }),
-      fr.sessions.renameError,
+      t.sessions.renameError,
     );
     if (ok !== undefined) {
       void client.invalidateQueries({ queryKey: queryKeys.sessionLists });
@@ -236,7 +236,7 @@ function RenameField({
       ref={ref}
       type="text"
       aria-label={label}
-      title={fr.sessions.renameHint}
+      title={t.sessions.renameHint}
       maxLength={TITLE_MAX}
       value={value}
       onChange={(e) => setValue(e.target.value)}
@@ -277,11 +277,11 @@ function SessionRow({
   const start = formatSessionStart(summary.startedAt);
   // date · duration · status
   const meta = [start];
-  if (tab) meta.push(fr.sessions.running);
+  if (tab) meta.push(t.sessions.running);
   else if (summary.endedAt) {
     meta.push(formatSessionDuration(summary.startedAt, summary.endedAt));
   }
-  if (summary.crashed && !tab) meta.push(fr.sessions.crashed);
+  if (summary.crashed && !tab) meta.push(t.sessions.crashed);
   const inert = !tab && !summary.resumable;
   const unfoldable = summary.promptCount > 0;
 
@@ -289,13 +289,13 @@ function SessionRow({
     <li
       data-session-id={summary.id}
       className={inert ? "opacity-60" : undefined}
-      title={inert ? fr.sessions.notResumable : undefined}
+      title={inert ? t.sessions.notResumable : undefined}
     >
       <div className="group/session flex items-start gap-2 rounded-md py-1.5">
         {editing ? (
           <RenameField
             summary={summary}
-            label={fr.sessions.renameLabel(start)}
+            label={t.sessions.renameLabel(start)}
             onDone={() => setEditing(false)}
           />
         ) : (
@@ -304,7 +304,7 @@ function SessionRow({
             disabled={!unfoldable}
             aria-expanded={unfoldable ? open : undefined}
             aria-controls={unfoldable && open ? detailId : undefined}
-            aria-label={fr.sessions.showDetail(start)}
+            aria-label={t.sessions.showDetail(start)}
             aria-describedby={recapId}
             onClick={() => setOpen((v) => !v)}
             // A double click renames (the two clicks fold and unfold back).
@@ -342,12 +342,12 @@ function SessionRow({
                 {source === "ai" && (
                   <span
                     data-part="ai-marker"
-                    title={fr.sessions.aiSummary(summary.agent)}
+                    title={t.sessions.aiSummary(summary.agent)}
                     className="flex shrink-0 items-center gap-1"
                   >
                     <Sparkles size={11} aria-hidden />
                     <span className="sr-only">
-                      {fr.sessions.aiSummary(summary.agent)}
+                      {t.sessions.aiSummary(summary.agent)}
                     </span>
                   </span>
                 )}
@@ -357,7 +357,7 @@ function SessionRow({
         )}
         {!editing && summary.promptCount > 0 && (
           <IconButton
-            label={fr.sessions.rename}
+            label={t.sessions.rename}
             size={26}
             onClick={() => setEditing(true)}
             className="opacity-0 group-focus-within/session:opacity-100 group-hover/session:opacity-100 focus-visible:opacity-100"
@@ -368,7 +368,7 @@ function SessionRow({
         {summary.resumable ? (
           <Button
             size="sm"
-            aria-label={fr.sessions.resumeLabel(start)}
+            aria-label={t.sessions.resumeLabel(start)}
             disabled={pending}
             onClick={() => {
               setPending(true);
@@ -377,7 +377,7 @@ function SessionRow({
               );
             }}
           >
-            {fr.sessions.resume}
+            {t.sessions.resume}
           </Button>
         ) : null}
       </div>
@@ -396,9 +396,9 @@ export function SessionHistory({ task }: { task: TaskDetail }) {
   return (
     <Fold
       id="sessions"
-      title={fr.sessions.title}
+      title={t.sessions.title}
       summary={
-        <span title={fr.sessions.titleCount(sessions.length)}>
+        <span title={t.sessions.titleCount(sessions.length)}>
           {sessions.length}
         </span>
       }

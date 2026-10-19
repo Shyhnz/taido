@@ -12,7 +12,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import type { TaskRow, ViewModel } from "../../bindings";
 import { IconButton } from "../../components/Button";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { parseLocalDate } from "../../lib/dates";
 import { features } from "../../lib/features";
 import { subjectColorVar } from "../../lib/format";
@@ -103,7 +103,7 @@ export function UpcomingCalendar({
         <h2 className="text-[14px] font-semibold">{monthLabel(month)}</h2>
         <div className="flex items-center gap-0.5">
           <IconButton
-            label={fr.upcoming.previousMonth}
+            label={t.upcoming.previousMonth}
             size={28}
             onClick={() => go(shiftMonths(month, -1))}
           >
@@ -114,10 +114,10 @@ export function UpcomingCalendar({
             onClick={() => go(thisMonth)}
             className="h-7 rounded-md border border-border px-2 text-[12.5px] font-medium text-text-2 hover:bg-hover hover:text-text"
           >
-            {fr.upcoming.today}
+            {t.upcoming.today}
           </button>
           <IconButton
-            label={fr.upcoming.nextMonth}
+            label={t.upcoming.nextMonth}
             size={28}
             onClick={() => go(shiftMonths(month, 1))}
           >
@@ -133,7 +133,7 @@ export function UpcomingCalendar({
           aria-hidden="true"
           className="grid grid-cols-7 border-b border-border bg-sidebar"
         >
-          {fr.upcoming.weekdays.map((d) => (
+          {t.upcoming.weekdays.map((d) => (
             <div
               key={d}
               className="px-1.5 py-1.5 text-[12px] font-medium text-text-2 sm:px-2.5"
@@ -174,12 +174,12 @@ export function UpcomingCalendar({
               onClick={() => openInList(selected, today)}
               className="h-8 rounded-md px-2 text-[13px] font-medium text-text-2 hover:bg-hover hover:text-text"
             >
-              {fr.upcoming.seeInList}
+              {t.upcoming.seeInList}
             </button>
           </div>
           {selectedTasks.length === 0 ? (
             <p className="py-2 text-[13px] text-text-3">
-              {fr.upcoming.nothingPlanned}
+              {t.upcoming.nothingPlanned}
             </p>
           ) : (
             <>
@@ -191,9 +191,7 @@ export function UpcomingCalendar({
                 ))}
               </ul>
               {features.touchDrag && (
-                <p className="text-[12px] text-text-3">
-                  {fr.upcoming.dragHint}
-                </p>
+                <p className="text-[12px] text-text-3">{t.upcoming.dragHint}</p>
               )}
             </>
           )}
@@ -274,7 +272,7 @@ function DayCell({
         <>
           <button
             type="button"
-            aria-label={fr.upcoming.openDay(label, tasks.length)}
+            aria-label={t.upcoming.openDay(label, tasks.length)}
             aria-current={isToday ? "date" : undefined}
             onClick={() => openInList(date, today)}
             className="self-start rounded-full hover:bg-hover"
@@ -294,7 +292,7 @@ function DayCell({
               onClick={() => openInList(date, today)}
               className="self-start rounded px-1.5 text-[11.5px] text-text-2 hover:text-text"
             >
-              {fr.upcoming.more(hidden)}
+              {t.upcoming.more(hidden)}
             </button>
           )}
         </>
@@ -302,7 +300,7 @@ function DayCell({
         // Phone: the whole cell selects the day; one dot per task (three at most).
         <button
           type="button"
-          aria-label={fr.upcoming.selectDay(label, tasks.length)}
+          aria-label={t.upcoming.selectDay(label, tasks.length)}
           aria-current={isToday ? "date" : undefined}
           aria-pressed={selected}
           onClick={onSelect}
@@ -370,7 +368,7 @@ function CalendarChip({
       onContextMenu={(e) => {
         if (isTouchContextMenu(e)) e.preventDefault();
       }}
-      aria-label={late ? fr.upcoming.lateOn(row.title) : undefined}
+      aria-label={late ? t.upcoming.lateOn(row.title) : undefined}
       className={`flex w-full min-w-0 cursor-grab items-center select-none ${
         large
           ? "min-h-11 gap-2.5 rounded-lg px-3 text-[14px]"

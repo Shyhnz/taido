@@ -12,7 +12,7 @@
  */
 
 import type { MouseEvent } from "react";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 
 export type PriorityRingSize = 15 | 20 | 24;
 
@@ -71,8 +71,8 @@ export function priorityRingLabel(
   priority: number,
   completed: boolean,
 ): string {
-  if (completed) return fr.priorityRing.reopen;
-  return fr.priorityRing.markDone(displayPriority(priority));
+  if (completed) return t.priorityRing.reopen;
+  return t.priorityRing.markDone(displayPriority(priority));
 }
 
 /** The drawing alone (no button), for static places and the inside of the button. */
@@ -185,7 +185,7 @@ export function PriorityRing({
       type="button"
       data-priority-ring
       aria-label={priorityRingLabel(p, completed)}
-      title={p > 1 ? fr.priorityRing.name(displayPriority(p)) : undefined}
+      title={p > 1 ? t.priorityRing.name(displayPriority(p)) : undefined}
       disabled={disabled}
       tabIndex={tabIndex}
       onClick={(e: MouseEvent) => {

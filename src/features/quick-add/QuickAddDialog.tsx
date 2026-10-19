@@ -42,7 +42,7 @@ import { DatePickerPopover } from "../../components/DatePicker";
 import { Dialog } from "../../components/Dialog";
 import { announce } from "../../components/LiveRegion";
 import { openMenuAt } from "../../components/Menu";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { formatDue } from "../../lib/dates";
 import { features } from "../../lib/features";
 import { subjectColorVar } from "../../lib/format";
@@ -180,7 +180,7 @@ function Chip({
     return (
       <button
         type="button"
-        aria-label={fr.quickAdd.remove(label)}
+        aria-label={t.quickAdd.remove(label)}
         className={`${CHIP} ${CHIP_PART} rounded-md`}
         onClick={onRemove}
       >
@@ -205,8 +205,8 @@ function Chip({
       {onRemove && (
         <button
           type="button"
-          aria-label={fr.quickAdd.remove(label)}
-          title={fr.quickAdd.remove(label)}
+          aria-label={t.quickAdd.remove(label)}
+          title={t.quickAdd.remove(label)}
           className="inline-flex h-full items-center rounded-r-md border-l border-border px-1.5 text-text-3 hover:bg-hover hover:text-text"
           onClick={onRemove}
         >
@@ -234,7 +234,7 @@ function Suggestions({
     <div
       id={id}
       role="listbox"
-      aria-label={fr.quickAdd.suggestions}
+      aria-label={t.quickAdd.suggestions}
       className="mx-3 mb-1 max-h-56 overflow-y-auto rounded-lg border border-border bg-elevated py-1 shadow-pop"
     >
       {completion.options.map((option, i) => (
@@ -381,7 +381,7 @@ function QuickAddForm({
     if (subject) {
       // The token is recognised as soon as the list knows the project.
       await queryClient.invalidateQueries({ queryKey: queryKeys.subjects });
-      announce(fr.quickAdd.projectCreated(subject.name));
+      announce(t.quickAdd.projectCreated(subject.name));
     }
     setCreating(false);
     titleRef.current?.focus();
@@ -404,13 +404,13 @@ function QuickAddForm({
         dueDate: dueDateOf(finalDraft.due, now),
         dueTime: dueTimeOf(finalDraft.due),
       }),
-      fr.errors.action.createTask,
+      t.errors.action.createTask,
     );
     if (task && final.priority !== undefined) {
       // The task exists even when this fails: the toast says so and the add goes on.
       await run(
         commands.setTaskPriority({ id: task.id, priority: final.priority }),
-        fr.errors.action.updateTask,
+        t.errors.action.updateTask,
       );
     }
     setBusy(false);
@@ -502,13 +502,13 @@ function QuickAddForm({
     : null;
   const agentLabel =
     parsed.launch === "shell"
-      ? fr.quickAdd.agentShell
+      ? t.quickAdd.agentShell
       : parsed.launch
-        ? fr.quickAdd.agentOnAdd(parsed.launch)
+        ? t.quickAdd.agentOnAdd(parsed.launch)
         : null;
   const priorityLabel =
     parsed.priority !== undefined
-      ? fr.quickAdd.priority(displayPriority(parsed.priority))
+      ? t.quickAdd.priority(displayPriority(parsed.priority))
       : null;
   const empty = parsed.title.length === 0;
 
@@ -527,7 +527,7 @@ function QuickAddForm({
           ref={titleRef}
           data-autofocus
           role="combobox"
-          aria-label={fr.quickAdd.titleLabel}
+          aria-label={t.quickAdd.titleLabel}
           aria-autocomplete="list"
           aria-expanded={completion !== null}
           aria-controls={completion ? listId : undefined}
@@ -536,7 +536,7 @@ function QuickAddForm({
           }
           autoComplete="off"
           spellCheck={false}
-          placeholder={fr.quickAdd.titlePlaceholder}
+          placeholder={t.quickAdd.titlePlaceholder}
           value={text}
           onChange={(e) => {
             setText(e.target.value.replace(/[\r\n]+/g, " "));
@@ -561,8 +561,8 @@ function QuickAddForm({
       )}
       <textarea
         ref={descriptionRef}
-        aria-label={fr.quickAdd.descriptionLabel}
-        placeholder={fr.quickAdd.descriptionLabel}
+        aria-label={t.quickAdd.descriptionLabel}
+        placeholder={t.quickAdd.descriptionLabel}
         value={description}
         rows={1}
         onChange={(e) => setDescription(e.target.value)}
@@ -571,28 +571,28 @@ function QuickAddForm({
       />
       {parsed.unknownProject !== undefined && !completion && (
         <p className="px-4 pb-2 text-[12.5px] text-text-2">
-          {fr.quickAdd.unknownProject} ·{" "}
+          {t.quickAdd.unknownProject} ·{" "}
           <button
             type="button"
             disabled={creating}
             onClick={() => void createUnknown()}
             className="rounded-sm font-medium text-accent hover:underline disabled:opacity-50"
           >
-            {fr.quickAdd.createProject(parsed.unknownProject)}
+            {t.quickAdd.createProject(parsed.unknownProject)}
           </button>
         </p>
       )}
       {/* biome-ignore lint/a11y/useSemanticElements: a group of chips, not a form fieldset */}
       <div
         role="group"
-        aria-label={fr.quickAdd.chips}
+        aria-label={t.quickAdd.chips}
         className="flex flex-wrap items-center gap-2 px-4 pb-3"
       >
         <Chip
           chipRef={dueRef}
           icon={<CalendarDays size={13} aria-hidden className="shrink-0" />}
-          label={dueLabel ?? fr.editor.noDue}
-          accessibleLabel={dueLabel ? fr.editor.due(dueLabel) : fr.editor.noDue}
+          label={dueLabel ?? t.editor.noDue}
+          accessibleLabel={dueLabel ? t.editor.due(dueLabel) : t.editor.noDue}
           dashed={!dueLabel}
           onOpen={() => setDueOpen((o) => !o)}
           onRemove={dueLabel ? removeDue : undefined}
@@ -606,7 +606,7 @@ function QuickAddForm({
             )
           }
           label={where}
-          accessibleLabel={fr.editor.destination(where)}
+          accessibleLabel={t.editor.destination(where)}
           onOpen={(anchor) =>
             openMenuAt(
               anchor,
@@ -618,7 +618,7 @@ function QuickAddForm({
                   sectionId: d.sectionId,
                 }));
               }),
-              fr.editor.projectMenu,
+              t.editor.projectMenu,
             )
           }
           onRemove={subject ? removeDestination : undefined}
@@ -670,24 +670,24 @@ function QuickAddForm({
       </div>
       <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2.5">
         <span className="truncate text-[12px] text-text-3">
-          {features.terminals ? fr.quickAdd.help : fr.quickAdd.helpMobile}
+          {features.terminals ? t.quickAdd.help : t.quickAdd.helpMobile}
         </span>
         <div className="flex shrink-0 items-center gap-2">
           <Button
             size="sm"
-            title={features.shortcuts ? fr.quickAdd.cancelHint : undefined}
+            title={features.shortcuts ? t.quickAdd.cancelHint : undefined}
             onClick={onClose}
           >
-            {fr.common.cancel}
+            {t.common.cancel}
           </Button>
           <Button
             size="sm"
             variant="primary"
-            title={features.shortcuts ? fr.quickAdd.submitHint : undefined}
+            title={features.shortcuts ? t.quickAdd.submitHint : undefined}
             disabled={empty || busy}
             onClick={() => void submit(false)}
           >
-            {parsed.launch ? fr.quickAdd.submitAndLaunch : fr.quickAdd.submit}
+            {parsed.launch ? t.quickAdd.submitAndLaunch : t.quickAdd.submit}
           </Button>
         </div>
       </div>
@@ -704,7 +704,7 @@ export function QuickAddDialog({
 }) {
   return (
     <Dialog
-      title={fr.addTask.dialogTitle}
+      title={t.addTask.dialogTitle}
       onClose={onClose}
       width={640}
       hideTitle

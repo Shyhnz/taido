@@ -21,7 +21,8 @@ import { TerminalsHost } from "./features/terminals/TerminalsHost";
 import { useTutorialAutoStart } from "./features/tutorial/TutorialDriver";
 import { TutorialLayer } from "./features/tutorial/TutorialLayer";
 import { ViewScreen } from "./features/views/ViewScreen";
-import { fr } from "./i18n/fr";
+import { t } from "./i18n";
+import { useLanguageSync } from "./i18n/useLanguageSync";
 import { useDay } from "./lib/clock";
 import {
   createQueryClient,
@@ -55,6 +56,7 @@ function Shell() {
   // Re-renders the whole tree at midnight: relative dates are computed at render (bug #13).
   useDay((s) => s.day);
   const settings = useSettings().data;
+  useLanguageSync(settings);
   const theme = settings?.theme ?? "system";
   const color = settings?.colorTheme ?? "taido";
   const firstLaunch = isFirstLaunch(useSubjects().data, useHasNoProjectTasks());
@@ -79,8 +81,8 @@ function Shell() {
         >
           {!sidebarOpen && (
             <IconButton
-              label={fr.sidebar.expand}
-              title={withShortcut(fr.sidebar.expand, "M")}
+              label={t.sidebar.expand}
+              title={withShortcut(t.sidebar.expand, "M")}
               className="absolute top-3 left-3 z-10"
               onClick={() => useUi.getState().toggleSidebar(true)}
             >

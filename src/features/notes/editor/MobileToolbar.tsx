@@ -17,7 +17,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { fr } from "../../../i18n/fr";
+import { t } from "../../../i18n";
 import { ACTIONS, type ActionId, activeActions } from "./actions";
 import { startWikiLink } from "./linkSuggest";
 import { ToolbarButton, useRovingToolbar } from "./Toolbar";
@@ -175,7 +175,7 @@ export function MobileToolbar({
     return (
       <ToolbarButton
         key={id}
-        label={heading ? fr.notes.editor.headingNow(level) : a.label}
+        label={heading ? t.notes.editor.headingNow(level) : a.label}
         title={heading ? a.label : undefined}
         pressed={on[id] === true}
         onPress={() => a.run(editor)}
@@ -200,7 +200,7 @@ export function MobileToolbar({
     <div
       ref={bar}
       role="toolbar"
-      aria-label={fr.notes.editor.toolbar}
+      aria-label={t.notes.editor.toolbar}
       aria-orientation="horizontal"
       onKeyDown={roving}
       style={{ bottom: `${inset}px` }}
@@ -221,7 +221,7 @@ export function MobileToolbar({
           {MAIN.map(button)}
           {onImage && (
             <ToolbarButton
-              label={fr.notes.image.add}
+              label={t.notes.image.add}
               onPress={onImage}
               className="h-11 min-w-11"
             >
@@ -229,14 +229,14 @@ export function MobileToolbar({
             </ToolbarButton>
           )}
           <ToolbarButton
-            label={fr.notes.editor.wikiLink}
+            label={t.notes.editor.wikiLink}
             onPress={() => startWikiLink(editor)}
             className="h-11 min-w-11"
           >
             <Brackets size={18} aria-hidden />
           </ToolbarButton>
           <ToolbarButton
-            label={fr.notes.editor.more}
+            label={t.notes.editor.more}
             pressed={more}
             onPress={() => setMore((m) => !m)}
             className="h-11 min-w-11 text-[15px] font-semibold"
@@ -246,14 +246,14 @@ export function MobileToolbar({
         </div>
         {/* Always in reach, whatever the row scrolled to. */}
         <ToolbarButton
-          label={fr.notes.editor.undo}
+          label={t.notes.editor.undo}
           onPress={() => editor.chain().focus().undo().run()}
           className="h-11 min-w-11 border-l border-border"
         >
           <Undo2 size={18} aria-hidden />
         </ToolbarButton>
         <ToolbarButton
-          label={fr.notes.editor.hideKeyboard}
+          label={t.notes.editor.hideKeyboard}
           onPress={() => {
             editor.commands.blur();
             (editor.view.dom as HTMLElement).blur();

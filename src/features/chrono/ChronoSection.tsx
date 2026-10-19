@@ -10,7 +10,7 @@ import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import type { Agent, TaskDetail, TimeSegment } from "../../bindings";
 import { Button } from "../../components/Button";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { formatSessionStart } from "../../lib/dates";
 import { commands } from "../../lib/ipc";
@@ -31,22 +31,22 @@ export function segmentEvent(
 ): string {
   if (segment.source === "manual") {
     return segment.note
-      ? `${fr.chrono.event.manual} (${segment.note})`
-      : fr.chrono.event.manual;
+      ? `${t.chrono.event.manual} (${segment.note})`
+      : t.chrono.event.manual;
   }
-  if (segment.endedAt === null) return fr.chrono.event.running;
+  if (segment.endedAt === null) return t.chrono.event.running;
   // No reason: stopped with « Arrêter » (every automatic stop records one).
   if (segment.stopReason === "turn_ended")
-    return fr.chrono.eventTurnEnded(agent);
+    return t.chrono.eventTurnEnded(agent);
   return segment.stopReason
-    ? fr.chrono.event[segment.stopReason]
-    : fr.chrono.event.stoppedByHand;
+    ? t.chrono.event[segment.stopReason]
+    : t.chrono.event.stoppedByHand;
 }
 
 /** « Arrêter »: stops a running segment, this device's or another one's (docs/SYNC.md § 0.8). */
 async function stopSegment(id: string) {
   if (await run(commands.stopTimeSegment(id))) {
-    showToast({ message: fr.chrono.stopped });
+    showToast({ message: t.chrono.stopped });
   }
 }
 
@@ -83,14 +83,14 @@ function SegmentLine({ segment }: { segment: TimeSegment }) {
           onClick={() => void stopSegment(segment.id)}
           className="shrink-0 rounded-md px-1.5 py-0.5 text-[12.5px] text-text-2 hover:bg-hover hover:text-text"
         >
-          {fr.chrono.stop}
+          {t.chrono.stop}
         </button>
       )}
       {segment.endedAt && (
         <button
           type="button"
-          aria-label={fr.chrono.deleteSegment}
-          title={fr.chrono.deleteSegment}
+          aria-label={t.chrono.deleteSegment}
+          title={t.chrono.deleteSegment}
           onClick={() => void run(commands.deleteTimeSegment(segment.id))}
           className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-text-3 opacity-0 hover:bg-hover hover:text-text group-hover/segment:opacity-100 focus-visible:opacity-100"
         >
@@ -137,7 +137,7 @@ function ManualForm({
           htmlFor={minutesId}
           className="flex flex-col gap-1 text-[12px] text-text-2"
         >
-          {fr.chrono.manualMinutes}
+          {t.chrono.manualMinutes}
           <input
             id={minutesId}
             ref={minutesRef}
@@ -155,11 +155,11 @@ function ManualForm({
           htmlFor={noteId}
           className="flex min-w-0 flex-1 flex-col gap-1 text-[12px] text-text-2"
         >
-          {fr.chrono.manualNote}
+          {t.chrono.manualNote}
           <input
             id={noteId}
             value={note}
-            placeholder={fr.chrono.manualNotePlaceholder}
+            placeholder={t.chrono.manualNotePlaceholder}
             onChange={(e) => setNote(e.target.value)}
             className="h-8 rounded-md border border-border bg-bg px-2 text-[13.5px] text-text"
           />
@@ -167,15 +167,15 @@ function ManualForm({
       </div>
       {invalid && (
         <p role="alert" className="text-[12px] text-due-overdue">
-          {fr.chrono.manualInvalid}
+          {t.chrono.manualInvalid}
         </p>
       )}
       <div className="flex gap-2">
         <Button type="submit" variant="primary" size="sm">
-          {fr.chrono.manualAdd}
+          {t.chrono.manualAdd}
         </Button>
         <Button variant="ghost" size="sm" onClick={onDone}>
-          {fr.chrono.manualCancel}
+          {t.chrono.manualCancel}
         </Button>
       </div>
     </form>
@@ -202,25 +202,25 @@ export function ChronoSection({
   const shown = allSegments ? segments : segments.slice(0, SEGMENTS_SHOWN);
   const lastAuto = segments.find((s) => s.source === "auto" && s.endedAt);
   const status = running
-    ? fr.chrono.running(agent)
+    ? t.chrono.running(agent)
     : segments.length === 0
-      ? fr.chrono.never(agent)
+      ? t.chrono.never(agent)
       : lastAuto?.stopReason
-        ? fr.chrono.paused(lastAuto.stopReason, agent)
+        ? t.chrono.paused(lastAuto.stopReason, agent)
         : lastAuto
-          ? fr.chrono.pausedByHand(agent)
+          ? t.chrono.pausedByHand(agent)
           : null;
 
   const seconds = chronoSeconds(chrono, now);
   return (
     <Fold
       id="chrono"
-      title={fr.chrono.title}
+      title={t.chrono.title}
       summary={
         segments.length > 0 && (
           <span>
             {formatHours(seconds)} ·{" "}
-            {running ? fr.folds.chronoRunning : fr.folds.chronoPaused}
+            {running ? t.folds.chronoRunning : t.folds.chronoPaused}
           </span>
         )
       }
@@ -241,7 +241,7 @@ export function ChronoSection({
         )}
         {segments.length > 0 && (
           <div className="mt-3">
-            <h3 className="text-[12px] text-text-3">{fr.chrono.journal}</h3>
+            <h3 className="text-[12px] text-text-3">{t.chrono.journal}</h3>
             <ol className="flex flex-col">
               {shown.map((s) => (
                 <SegmentLine key={s.id} segment={s} />
@@ -255,8 +255,8 @@ export function ChronoSection({
                 className="-ml-1 inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 text-[12.5px] text-text-2 hover:bg-hover hover:text-text"
               >
                 {allSegments
-                  ? fr.folds.showFewerSegments
-                  : fr.folds.showAllSegments(segments.length)}
+                  ? t.folds.showFewerSegments
+                  : t.folds.showAllSegments(segments.length)}
               </button>
             )}
           </div>
@@ -269,7 +269,7 @@ export function ChronoSection({
             onClick={() => setAdding(true)}
             className="-ml-1 mt-1.5 rounded-md px-1 py-1 text-[13px] text-text-2 hover:bg-hover hover:text-text"
           >
-            {fr.chrono.addManual}
+            {t.chrono.addManual}
           </button>
         )}
       </div>

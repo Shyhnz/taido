@@ -45,7 +45,7 @@ describe("phone feature set", () => {
   // The tab's name and content follow the build target (`IS_MOBILE`: « Synchro » and the login
   // form on the phone), which Vitest does not flip: here it is the Mac's « Compte ». The
   // phone's screen: src/mobile/SyncSettings.mobile.test.tsx.
-  it("keeps only Thème and the account tabs in Réglages", async () => {
+  it("keeps only Général (language), Thème and the account tabs in Réglages", async () => {
     const user = userEvent.setup();
     render(<App />);
     const gear = await screen.findByRole("button", { name: "Réglages" });
@@ -56,8 +56,8 @@ describe("phone feature set", () => {
       within(dialog)
         .getAllByRole("tab")
         .map((t) => t.textContent),
-    ).toEqual(["Thème", "Compte"]);
-    await user.keyboard("{ArrowDown}");
+    ).toEqual(["Général", "Thème", "Compte"]);
+    await user.keyboard("{ArrowDown}{ArrowDown}");
     expect(
       within(dialog).getByRole("tab", { name: "Compte", selected: true }),
     ).toHaveFocus();
@@ -74,7 +74,7 @@ describe("phone feature set", () => {
     });
     const dialog = await screen.findByRole("dialog", { name: "Réglages" });
     expect(
-      within(dialog).getByRole("tab", { name: "Thème", selected: true }),
+      within(dialog).getByRole("tab", { name: "Général", selected: true }),
     ).toBeInTheDocument();
   });
 

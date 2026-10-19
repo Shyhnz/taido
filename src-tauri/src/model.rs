@@ -1213,6 +1213,16 @@ pub enum ColorTheme {
     Lagoon,
 }
 
+/// UI language (Settings › General). `None` in `Settings` = not chosen yet: the UI follows the
+/// system language at first launch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum Language {
+    #[default]
+    En,
+    Fr,
+}
+
 /// Editor of « Ouvrir dans ». Since 2026-10-11 the
 /// ⋯ menu lists the installed ones (`installed_editors`), no longer a setting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, Type)]
@@ -1267,6 +1277,8 @@ pub struct Settings {
     /// Dictation: holding Space in a Claude or Codex terminal records (by design: on by default,
     /// can be turned off in Réglages › Agents). The mic button works either way.
     pub voice_space_hold: bool,
+    /// The UI language; `None` until chosen (the UI then follows the system language).
+    pub language: Option<Language>,
 }
 
 impl Default for Settings {
@@ -1288,6 +1300,7 @@ impl Default for Settings {
             codex_path: None,
             agent_chosen: false,
             voice_space_hold: true,
+            language: None,
         }
     }
 }
@@ -1952,6 +1965,7 @@ pub struct SettingsPatch {
     pub codex_path: Option<String>,
     pub agent_chosen: Option<bool>,
     pub voice_space_hold: Option<bool>,
+    pub language: Option<Language>,
 }
 
 /// Application `open_path` uses.

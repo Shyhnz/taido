@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "../../components/Button";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { errorMessage } from "../../lib/ipc";
 
 const COPIED_MS = 1500;
@@ -27,7 +27,7 @@ export function PromptBox({ text }: { text: string }) {
         {text}
       </code>
       <Button size="sm" onClick={copy} aria-live="polite">
-        {copied ? fr.tutorial.talk.copied : fr.tutorial.talk.copy}
+        {copied ? t.tutorial.talk.copied : t.tutorial.talk.copy}
       </Button>
     </div>
   );

@@ -1,7 +1,7 @@
 /** Actions of the task panel: deferred text saves, delete with undo, focus back to the row. */
 
 import { showError, showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands, errorMessage, isNotFound } from "../../lib/ipc";
 import { readableError, run } from "../../lib/run";
 import { useUi } from "../../stores/ui";
@@ -25,7 +25,7 @@ export async function saveTaskText(
   } catch (error) {
     console.error(errorMessage(error), error);
     if (!isNotFound(error)) {
-      showError(readableError(error, fr.errors.action.updateTask));
+      showError(readableError(error, t.errors.action.updateTask));
     }
   }
 }
@@ -35,17 +35,17 @@ export async function deleteTaskWithUndo(id: string): Promise<void> {
   // Pending title or note edits are saved first, so undo brings them back too.
   flushPanelEdits();
   if (!(await confirmStopSessions(id, "delete"))) return;
-  const done = await run(commands.deleteTask(id), fr.errors.action.deleteTask);
+  const done = await run(commands.deleteTask(id), t.errors.action.deleteTask);
   if (done === undefined) return;
   const ui = useUi.getState();
   if (ui.openTaskId === id) ui.openTask(null);
   if (ui.selectedTaskId === id) ui.selectTask(null);
   showToast({
-    message: fr.toast.deleted,
+    message: t.toast.deleted,
     action: {
-      label: fr.toast.undo,
+      label: t.toast.undo,
       onAction: () => {
-        void run(commands.restoreTask(id), fr.errors.action.deleteTask).then(
+        void run(commands.restoreTask(id), t.errors.action.deleteTask).then(
           (task) => {
             if (task) useUi.getState().openTask(task.id);
           },

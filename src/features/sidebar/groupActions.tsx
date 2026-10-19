@@ -9,7 +9,7 @@ import { create } from "zustand";
 import type { Subject } from "../../bindings";
 import { type MenuItem, useMenuStore } from "../../components/Menu";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { SUBJECT_COLORS } from "../../lib/format";
 import { commands } from "../../lib/ipc";
 import { run } from "../../lib/run";
@@ -65,7 +65,7 @@ export async function addToGroup(projectIds: string[], group: Subject | null) {
       groupId: group?.id ?? null,
       name: null,
     }),
-    fr.groups.error,
+    t.groups.error,
   );
   useProjectSelection.getState().clear();
   if (!id) return;
@@ -77,7 +77,7 @@ export async function addToGroup(projectIds: string[], group: Subject | null) {
 }
 
 export async function removeFromGroup(projectIds: string[]) {
-  await run(commands.ungroupProjects(projectIds), fr.groups.error);
+  await run(commands.ungroupProjects(projectIds), t.groups.error);
   useProjectSelection.getState().clear();
 }
 
@@ -90,12 +90,12 @@ function targetItems(projectIds: string[], subjects: Subject[]): MenuItem[] {
   const groups = groupsOf(subjects).filter((g) => !inside(g));
   return [
     {
-      label: fr.groups.newGroup,
+      label: t.groups.newGroup,
       onSelect: () => void addToGroup(projectIds, null),
     },
     ...(groups.length > 0 ? [{ separator: true } as MenuItem] : []),
     ...groups.map((g) => ({
-      label: fr.groups.into(g.name),
+      label: t.groups.into(g.name),
       icon: <ColorSwatch color={g.color} />,
       onSelect: () => void addToGroup(projectIds, g),
     })),
@@ -113,7 +113,7 @@ export function projectGroupItems(
   );
   return [
     {
-      label: fr.groups.addTo,
+      label: t.groups.addTo,
       hint: "›",
       onSelect: () => {
         // Opened right after the parent menu closes.
@@ -124,7 +124,7 @@ export function projectGroupItems(
               position.x,
               position.y,
               targetItems(projectIds, subjects),
-              fr.groups.addToLabel(projectIds.length),
+              t.groups.addToLabel(projectIds.length),
             );
         }, 0);
       },
@@ -132,7 +132,7 @@ export function projectGroupItems(
     ...(grouped
       ? [
           {
-            label: fr.groups.remove,
+            label: t.groups.remove,
             onSelect: () => void removeFromGroup(projectIds),
           },
         ]
@@ -147,13 +147,13 @@ export function groupMenuItems(
 ): MenuItem[] {
   return [
     {
-      label: fr.groups.rename,
+      label: t.groups.rename,
       onSelect: () => {
         setTimeout(() => useProjectRename.getState().start(group.id), 0);
       },
     },
     {
-      label: fr.groups.color,
+      label: t.groups.color,
       hint: "›",
       onSelect: () => {
         setTimeout(() => {
@@ -161,7 +161,7 @@ export function groupMenuItems(
             position.x,
             position.y,
             SUBJECT_COLORS.map((color) => ({
-              label: fr.subject.colors[color],
+              label: t.subject.colors[color],
               icon: <ColorSwatch color={color} />,
               checked: group.color === color ? true : undefined,
               onSelect: () => {
@@ -173,25 +173,25 @@ export function groupMenuItems(
                     rootPath: null,
                     parentId: null,
                   }),
-                  fr.groups.error,
+                  t.groups.error,
                 );
               },
             })),
-            fr.groups.color,
+            t.groups.color,
           );
         }, 0);
       },
     },
     { separator: true },
     {
-      label: fr.groups.dissolve,
+      label: t.groups.dissolve,
       onSelect: async () => {
         const done = await run(
           commands.dissolveGroup(group.id),
-          fr.groups.error,
+          t.groups.error,
         );
         if (done !== undefined) {
-          showToast({ message: fr.groups.dissolved(group.name) });
+          showToast({ message: t.groups.dissolved(group.name) });
         }
       },
     },

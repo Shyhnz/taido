@@ -6,7 +6,7 @@
  */
 
 import type { SessionSummary, TaskDetail, TerminalInfo } from "../../bindings";
-import { fr } from "../../i18n/fr";
+import { t as strings } from "../../i18n";
 import { useTaskSessions } from "../../lib/queries";
 import { terminalLabel } from "./terminalList";
 
@@ -40,10 +40,10 @@ export function terminalLabels(
     labels.set(
       t.id,
       recap
-        ? fr.terminals.claudeNamed(recap, t.agent ?? "claude")
+        ? strings.terminals.claudeNamed(recap, t.agent ?? "claude")
         : n === 1
-          ? fr.terminals.agent(t.agent ?? "claude")
-          : fr.terminals.claudeNumbered(n, t.agent ?? "claude"),
+          ? strings.terminals.agent(t.agent ?? "claude")
+          : strings.terminals.claudeNumbered(n, t.agent ?? "claude"),
     );
   }
   return labels;

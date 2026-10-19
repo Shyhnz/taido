@@ -38,7 +38,7 @@ import {
   openMenuAt,
   useMenuStore,
 } from "../../components/Menu";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { formatShortDate } from "../../lib/dates";
 import { features } from "../../lib/features";
 import { commands } from "../../lib/ipc";
@@ -71,9 +71,9 @@ import {
 
 function blockName(block: NoteBlock): string {
   if (block.group) return block.group.name;
-  if (block.place === "pinned") return fr.notes.pinned;
-  if (block.place === "summaries") return fr.notes.summaries;
-  return fr.notes.ungrouped;
+  if (block.place === "pinned") return t.notes.pinned;
+  if (block.place === "summaries") return t.notes.summaries;
+  return t.notes.ungrouped;
 }
 
 /** A stable key for a block's place. */
@@ -92,7 +92,7 @@ function foldKeyOf(subjectId: string, block: NoteBlock): string | null {
 function SummaryBadge() {
   return (
     <span className="shrink-0 rounded px-1 py-px text-[10px] font-semibold tracking-[0.04em] text-text-3 uppercase ring-1 ring-border">
-      {fr.notes.summaryBadge}
+      {t.notes.summaryBadge}
     </span>
   );
 }
@@ -113,7 +113,7 @@ async function movePageBy(drag: PageDrag, step: -1 | 1) {
   focusAfterMove = drag.pageId;
   const moved = await run(
     commands.moveNotePage({ id: drag.pageId, target: drag.place, index }),
-    fr.notes.errors.movePage,
+    t.notes.errors.movePage,
   );
   if (!moved && focusAfterMove === drag.pageId) focusAfterMove = null;
 }
@@ -190,7 +190,7 @@ function PageRow({
     kind: row.kind,
     place: block.place,
   };
-  const label = fr.notes.pageMenu(row.title);
+  const label = t.notes.pageMenu(row.title);
   const menuAt = (x: number, y: number) =>
     pageMenuItems(subjectId, ref, groups, { x, y });
   // A finger held still on the row, then lifted: the page's menu (§ 4.2).
@@ -225,7 +225,7 @@ function PageRow({
   if (!wide) {
     const second =
       row.kind === "summary"
-        ? fr.notes.summaryLine(formatShortDate(new Date(row.updatedAt)))
+        ? t.notes.summaryLine(formatShortDate(new Date(row.updatedAt)))
         : row.excerpt;
     return (
       <button
@@ -282,7 +282,7 @@ function PageRow({
       <button
         type="button"
         aria-label={label}
-        title={fr.common.more}
+        title={t.common.more}
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           openMenuAt(
@@ -385,15 +385,15 @@ function NewGroup({ subjectId }: { subjectId: string }) {
     return (
       <AddLine
         wide
-        label={fr.notes.newGroup}
+        label={t.notes.newGroup}
         onClick={() => useGroupRename.setState({ creatingIn: subjectId })}
       />
     );
   }
   return (
     <InlineNameInput
-      label={fr.notes.groupName}
-      placeholder={fr.notes.groupName}
+      label={t.notes.groupName}
+      placeholder={t.notes.groupName}
       onCancel={stop}
       onCommit={async (name) => {
         const ok = await createNoteGroup(subjectId, name);
@@ -437,7 +437,7 @@ export function NoteList({
   );
 
   return (
-    <nav aria-label={fr.notes.listLabel} className="flex min-w-0 flex-col">
+    <nav aria-label={t.notes.listLabel} className="flex min-w-0 flex-col">
       <div className="relative mb-2">
         <Search
           size={wide ? 14 : 17}
@@ -446,8 +446,8 @@ export function NoteList({
         />
         <input
           type="search"
-          aria-label={fr.notes.search}
-          placeholder={fr.notes.search}
+          aria-label={t.notes.search}
+          placeholder={t.notes.search}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -464,7 +464,7 @@ export function NoteList({
         {searching && (
           <button
             type="button"
-            aria-label={fr.notes.clearSearch}
+            aria-label={t.notes.clearSearch}
             onClick={() => setQuery("")}
             className={`absolute top-1/2 right-0.5 inline-flex -translate-y-1/2 items-center justify-center rounded-md text-text-3 hover:text-text ${
               wide ? "h-7 w-7" : "h-10 w-10"
@@ -480,7 +480,7 @@ export function NoteList({
           role="alert"
           className="flex flex-wrap items-center gap-x-2 px-2 py-3 text-[13.5px] text-text-2"
         >
-          {fr.notes.searchFailed}
+          {t.notes.searchFailed}
           <button
             type="button"
             onClick={retry}
@@ -488,14 +488,14 @@ export function NoteList({
               wide ? "h-7" : "h-11"
             }`}
           >
-            {fr.notes.searchRetry}
+            {t.notes.searchRetry}
           </button>
         </p>
       )}
 
       {searching && !failed && hits !== undefined && blocks.length === 0 && (
         <p role="status" className="px-2 py-3 text-[13.5px] text-text-2">
-          {fr.notes.noMatch(query.trim())}
+          {t.notes.noMatch(query.trim())}
         </p>
       )}
 
@@ -526,7 +526,7 @@ export function NoteList({
                   wide ? "h-8 text-[13px]" : "min-h-12 text-[15px]"
                 }`}
               >
-                {wide ? fr.notes.pinnedEmptyWide : fr.notes.pinnedEmptyPhone}
+                {wide ? t.notes.pinnedEmptyWide : t.notes.pinnedEmptyPhone}
               </p>
             )}
             <SortableContext
@@ -558,7 +558,7 @@ export function NoteList({
         {wide && (
           <AddLine
             wide
-            label={fr.notes.newPage}
+            label={t.notes.newPage}
             onClick={() => void createNotePage(subjectId, null, false)}
           />
         )}
@@ -567,7 +567,7 @@ export function NoteList({
         ) : (
           <AddLine
             wide={false}
-            label={fr.notes.newGroup}
+            label={t.notes.newGroup}
             onClick={() => promptNewGroup(subjectId)}
           />
         )}

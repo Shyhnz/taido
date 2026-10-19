@@ -14,8 +14,8 @@ import {
   agentInstallCommand,
   agentLoginCommand,
   agentProduct,
-  fr,
-} from "../../i18n/fr";
+  t as strings,
+} from "../../i18n";
 import { commands } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queries";
 import { run } from "../../lib/run";
@@ -35,15 +35,15 @@ function useStatus(agent: Agent) {
 }
 
 function statusLine(status: AgentStatus | undefined, failed: boolean): string {
-  if (failed) return fr.tutorial.agent.checkFailed;
-  if (!status) return fr.settings.agentCheckingShort;
-  if (!status.path) return fr.settings.agentMissingShort;
-  if (status.loggedIn === false) return fr.settings.agentLoggedOutShort;
-  return fr.settings.agentReady(status.version);
+  if (failed) return strings.tutorial.agent.checkFailed;
+  if (!status) return strings.settings.agentCheckingShort;
+  if (!status.path) return strings.settings.agentMissingShort;
+  if (status.loggedIn === false) return strings.settings.agentLoggedOutShort;
+  return strings.settings.agentReady(status.version);
 }
 
 export function AgentChoiceCard() {
-  const t = fr.tutorial.agent;
+  const t = strings.tutorial.agent;
   const client = useQueryClient();
   const claude = useStatus("claude");
   const codex = useStatus("codex");
@@ -67,7 +67,7 @@ export function AgentChoiceCard() {
       commands.updateSettings(
         settingsPatch({ defaultAgent: agent, agentChosen: true }),
       ),
-      fr.errors.action.settings,
+      strings.errors.action.settings,
     );
     setSaving(false);
     if (next) client.setQueryData<Settings>(queryKeys.settings, next);

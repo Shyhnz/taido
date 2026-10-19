@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { promptDialog } from "../../../components/Dialog";
-import { fr } from "../../../i18n/fr";
+import { t } from "../../../i18n";
 
 export type ActionId =
   | "bold"
@@ -69,14 +69,14 @@ export async function editWebLink(editor: Editor): Promise<void> {
   const current =
     (editor.getAttributes("link").href as string | undefined) ?? "";
   const values = await promptDialog({
-    title: fr.notes.editor.link,
+    title: t.notes.editor.link,
     fields: [
       {
         name: "url",
-        label: fr.notes.editor.linkUrl,
+        label: t.notes.editor.linkUrl,
         initial: current,
         placeholder: "https://",
-        help: fr.notes.editor.linkUrlHint,
+        help: t.notes.editor.linkUrlHint,
       },
     ],
   });
@@ -129,7 +129,7 @@ const mark = (
 export const ACTIONS: Record<ActionId, FormatAction> = {
   bold: mark(
     "bold",
-    fr.notes.editor.bold,
+    t.notes.editor.bold,
     "⌘B",
     <Bold size={ICON} />,
     "bold",
@@ -137,7 +137,7 @@ export const ACTIONS: Record<ActionId, FormatAction> = {
   ),
   italic: mark(
     "italic",
-    fr.notes.editor.italic,
+    t.notes.editor.italic,
     "⌘I",
     <Italic size={ICON} />,
     "italic",
@@ -145,7 +145,7 @@ export const ACTIONS: Record<ActionId, FormatAction> = {
   ),
   underline: mark(
     "underline",
-    fr.notes.editor.underline,
+    t.notes.editor.underline,
     "⌘U",
     <Underline size={ICON} />,
     "underline",
@@ -153,7 +153,7 @@ export const ACTIONS: Record<ActionId, FormatAction> = {
   ),
   strike: mark(
     "strike",
-    fr.notes.editor.strike,
+    t.notes.editor.strike,
     "⌘⇧S",
     <Strikethrough size={ICON} />,
     "strike",
@@ -161,7 +161,7 @@ export const ACTIONS: Record<ActionId, FormatAction> = {
   ),
   highlight: mark(
     "highlight",
-    fr.notes.editor.highlight,
+    t.notes.editor.highlight,
     "⌘⇧H",
     <Highlighter size={ICON} />,
     "highlight",
@@ -169,7 +169,7 @@ export const ACTIONS: Record<ActionId, FormatAction> = {
   ),
   heading1: {
     id: "heading1",
-    label: fr.notes.editor.heading1,
+    label: t.notes.editor.heading1,
     keys: "# ",
     icon: <Heading1 size={ICON} />,
     run: (e) => {
@@ -179,7 +179,7 @@ export const ACTIONS: Record<ActionId, FormatAction> = {
   },
   heading2: {
     id: "heading2",
-    label: fr.notes.editor.heading2,
+    label: t.notes.editor.heading2,
     keys: "## ",
     icon: <Heading2 size={ICON} />,
     run: (e) => {
@@ -189,14 +189,14 @@ export const ACTIONS: Record<ActionId, FormatAction> = {
   },
   heading: {
     id: "heading",
-    label: fr.notes.editor.heading,
+    label: t.notes.editor.heading,
     icon: <Heading size={ICON} />,
     run: cycleHeading,
     active: (e) => e.isActive("heading"),
   },
   bulletList: {
     id: "bulletList",
-    label: fr.notes.editor.bulletList,
+    label: t.notes.editor.bulletList,
     keys: "- ",
     icon: <List size={ICON} />,
     run: (e) => {
@@ -206,7 +206,7 @@ export const ACTIONS: Record<ActionId, FormatAction> = {
   },
   orderedList: {
     id: "orderedList",
-    label: fr.notes.editor.orderedList,
+    label: t.notes.editor.orderedList,
     keys: "1. ",
     icon: <ListOrdered size={ICON} />,
     run: (e) => {
@@ -216,7 +216,7 @@ export const ACTIONS: Record<ActionId, FormatAction> = {
   },
   taskList: {
     id: "taskList",
-    label: fr.notes.editor.taskList,
+    label: t.notes.editor.taskList,
     keys: "[ ] ",
     icon: <ListChecks size={ICON} />,
     run: (e) => {
@@ -226,7 +226,7 @@ export const ACTIONS: Record<ActionId, FormatAction> = {
   },
   quote: {
     id: "quote",
-    label: fr.notes.editor.quote,
+    label: t.notes.editor.quote,
     keys: "> ",
     icon: <Quote size={ICON} />,
     run: (e) => {
@@ -236,7 +236,7 @@ export const ACTIONS: Record<ActionId, FormatAction> = {
   },
   code: {
     id: "code",
-    label: fr.notes.editor.code,
+    label: t.notes.editor.code,
     keys: "⌘E",
     icon: <Code size={ICON} />,
     run: (e) => {
@@ -252,7 +252,7 @@ export const ACTIONS: Record<ActionId, FormatAction> = {
   },
   link: {
     id: "link",
-    label: fr.notes.editor.link,
+    label: t.notes.editor.link,
     // No shortcut: ⌘K is the search everywhere in Taido.
     icon: <Link size={ICON} />,
     run: (e) => {

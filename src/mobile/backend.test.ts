@@ -325,6 +325,7 @@ describe("persistence", () => {
       codexPath: null,
       agentChosen: null,
       voiceSpaceHold: null,
+      language: null,
     });
     await a.saveNow();
 

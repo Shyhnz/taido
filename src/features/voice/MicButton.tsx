@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import type { TerminalInfo, VoiceStatus } from "../../bindings";
 import { Button } from "../../components/Button";
 import { Popover } from "../../components/Popover";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands } from "../../lib/ipc";
 import { run } from "../../lib/run";
 import { useVoiceStatus } from "./useVoiceController";
@@ -70,7 +70,7 @@ export function MicButton(
         {phase === "transcribing" && (
           <span className="flex items-center gap-2 rounded-full border border-border bg-elevated px-2.5 py-1 text-[12px] text-text-2 shadow-sm">
             <Loader2 aria-hidden size={12} className="animate-spin" />
-            {fr.voice.transcribing}
+            {t.voice.transcribing}
           </span>
         )}
       </div>
@@ -79,9 +79,9 @@ export function MicButton(
         type="button"
         data-voice-button={id}
         data-listening={listening || undefined}
-        aria-label={listening ? fr.voice.stop : fr.voice.dictate}
+        aria-label={listening ? t.voice.stop : t.voice.dictate}
         aria-pressed={listening}
-        title={listening ? fr.voice.stop : fr.voice.dictateHint(spaceHold)}
+        title={listening ? t.voice.stop : t.voice.dictateHint(spaceHold)}
         disabled={busyElsewhere || phase === "transcribing"}
         // Keep the terminal (or the field) focused: Space must keep reaching it.
         onMouseDown={(e) => e.preventDefault()}
@@ -97,7 +97,7 @@ export function MicButton(
       {setupOpen && status && (
         <Popover
           anchorRef={anchor}
-          label={fr.voice.setupTitle}
+          label={t.voice.setupTitle}
           onClose={() => setSetupOpen(false)}
         >
           <Setup
@@ -145,9 +145,9 @@ function ListeningPill() {
         })}
       </span>
       <span className="tabular-nums">
-        {fr.voice.listening} {seconds.toFixed(1).replace(".", ",")} s
+        {t.voice.listening} {seconds.toFixed(1).replace(".", ",")} s
       </span>
-      <span className="text-text-3">· {fr.voice.cancelHint}</span>
+      <span className="text-text-3">· {t.voice.cancelHint}</span>
     </span>
   );
 }
@@ -168,11 +168,11 @@ function Setup({
       : 0;
   return (
     <div className="flex w-[300px] flex-col gap-2.5 p-3.5 text-[13px]">
-      <p className="font-medium text-text">{fr.voice.setupTitle}</p>
+      <p className="font-medium text-text">{t.voice.setupTitle}</p>
       {model.state === "ready" ? (
         <>
           <p className="text-text-2">
-            {spaceHold ? fr.voice.ready : fr.voice.readyNoSpace}
+            {spaceHold ? t.voice.ready : t.voice.readyNoSpace}
           </p>
           <div className="flex justify-end">
             <Button size="sm" variant="primary" onClick={onDone}>
@@ -183,11 +183,11 @@ function Setup({
       ) : (
         <>
           <p className="text-text-2">
-            {fr.voice.setupBody(megabytes(status.modelSize ?? 0))}
+            {t.voice.setupBody(megabytes(status.modelSize ?? 0))}
           </p>
-          <p className="text-[12px] text-text-3">{fr.voice.setupLanguages}</p>
+          <p className="text-[12px] text-text-3">{t.voice.setupLanguages}</p>
           {model.state === "failed" && (
-            <p className="text-[12px] text-due-overdue">{fr.voice.failed}</p>
+            <p className="text-[12px] text-due-overdue">{t.voice.failed}</p>
           )}
           {model.state === "downloading" ? (
             <div className="flex flex-col gap-1.5">
@@ -196,7 +196,7 @@ function Setup({
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={percent}
-                aria-label={fr.voice.downloading(percent)}
+                aria-label={t.voice.downloading(percent)}
                 className="h-1.5 overflow-hidden rounded-full bg-hover"
               >
                 <div
@@ -205,7 +205,7 @@ function Setup({
                 />
               </div>
               <span className="text-[12px] text-text-3 tabular-nums">
-                {fr.voice.downloading(percent)}
+                {t.voice.downloading(percent)}
               </span>
             </div>
           ) : (
@@ -216,7 +216,7 @@ function Setup({
                 data-autofocus
                 onClick={() => void run(commands.voiceDownloadModel())}
               >
-                {model.state === "failed" ? fr.voice.retry : fr.voice.download}
+                {model.state === "failed" ? t.voice.retry : t.voice.download}
               </Button>
             </div>
           )}

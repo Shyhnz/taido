@@ -6,7 +6,7 @@
 
 import type { Subject } from "../../bindings";
 import { Button } from "../../components/Button";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { useUi } from "../../stores/ui";
 
 /**
@@ -30,13 +30,13 @@ export function FirstLaunch() {
   return (
     <div className="flex flex-col items-center gap-3 pt-[22vh] text-center">
       <h1 className="text-title leading-8 font-bold">
-        {fr.views.firstLaunch.title}
+        {t.views.firstLaunch.title}
       </h1>
       <p className="max-w-[380px] text-body text-text-2">
-        {fr.views.firstLaunch.text}
+        {t.views.firstLaunch.text}
       </p>
       <Button variant="primary" className="mt-3" onClick={() => start()}>
-        {fr.views.firstLaunch.action}
+        {t.views.firstLaunch.action}
       </Button>
     </div>
   );

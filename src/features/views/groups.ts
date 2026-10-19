@@ -1,5 +1,5 @@
 import type { Agent, GroupKey, TaskGroup, ViewKind } from "../../bindings";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import type { DragData, Place } from "../dnd/DndProvider";
 import { dayTitle } from "./upcomingModel";
 
@@ -27,18 +27,18 @@ export function groupTitle(
     case "day":
       return dayTitle(key.date, now);
     case "today_waiting":
-      return fr.views.groups.claudeWaiting(agent);
+      return t.views.groups.claudeWaiting(agent);
     case "today_overdue":
-      return fr.views.groups.overdue;
+      return t.views.groups.overdue;
     case "today_rest":
-      return fr.views.groups.today;
+      return t.views.groups.today;
     // « À faire »: « Globex › Client » for a sub-project.
     case "project":
       return key.parent_name
-        ? fr.subProjects.path(key.parent_name, key.name)
+        ? t.subProjects.path(key.parent_name, key.name)
         : key.name;
     case "no_project":
-      return fr.sidebar.noProject;
+      return t.sidebar.noProject;
     default:
       return null;
   }

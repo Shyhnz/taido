@@ -46,7 +46,13 @@ import type {
 } from "../../bindings";
 import { Button } from "../../components/Button";
 import { Dialog } from "../../components/Dialog";
-import { agentProduct, fr } from "../../i18n/fr";
+import {
+  agentProduct,
+  currentLanguage,
+  type Language,
+  setLanguage,
+  t as strings,
+} from "../../i18n";
 import { features } from "../../lib/features";
 import { commands, errorKind, errorMessage } from "../../lib/ipc";
 import { queryKeys, useSettings } from "../../lib/queries";
@@ -63,14 +69,11 @@ import { HookEvents } from "./HookEvents";
 /**
  * Tabs, in order. « Synchro » right after « Général »; « Thème » right after
  * « Général » (2026-10-11). The Mac-only tabs (agents, diagnostic) only where terminals exist;
- * « Général » (the app's folder, the guide) only where there is a folder or a guide. So the
- * phone keeps Thème + Synchro.
+ * « Général » holds the language, plus the app's folder and the guide where they exist.
  */
 export function settingsTabs(): { tab: SettingsTab; icon: LucideIcon }[] {
   return [
-    ...(features.terminals || features.tutorial
-      ? [{ tab: "general" as const, icon: SlidersHorizontal }]
-      : []),
+    { tab: "general" as const, icon: SlidersHorizontal },
     { tab: "theme", icon: Palette },
     { tab: "sync", icon: RefreshCw },
     ...(features.terminals
@@ -85,8 +88,8 @@ export function settingsTabs(): { tab: SettingsTab; icon: LucideIcon }[] {
 /** The « sync » tab is « Compte » on the Mac (Taido V2.7), « Synchro » on the phone. */
 export function tabLabel(tab: SettingsTab): string {
   return tab === "sync" && !IS_MOBILE
-    ? fr.settings.tabs.account
-    : fr.settings.tabs[tab];
+    ? strings.settings.tabs.account
+    : strings.settings.tabs[tab];
 }
 
 /** Saves a setting and shows it at once (the `data-changed` refetch follows). */
@@ -95,7 +98,7 @@ function useSaveSetting() {
   return async (change: Partial<SettingsPatch>) => {
     const next = await run(
       commands.updateSettings(settingsPatch(change)),
-      fr.errors.action.settings,
+      strings.errors.action.settings,
     );
     if (next) client.setQueryData<Settings>(queryKeys.settings, next);
   };
@@ -177,23 +180,59 @@ function SectionTitle({
 // Tabs
 // ---------------------------------------------------------------------------
 
+/** Each language is written in itself, so it can be found from the wrong one. */
+const LANGUAGE_NAMES: Record<Language, string> = {
+  en: "English",
+  fr: "Français",
+};
+
+/** « Language / Langue »: saved here and in the core, then the window reloads. */
+function LanguageSelect() {
+  const id = useId();
+  const current = currentLanguage();
+  return (
+    <Choice
+      legend={strings.settings.language}
+      help={strings.settings.languageHelp}
+    >
+      <select
+        id={id}
+        aria-label={strings.settings.language}
+        value={current}
+        onChange={(e) => void setLanguage(e.target.value as Language)}
+        className="h-8 rounded-md border border-border bg-bg px-2 text-[13px] text-text focus-visible:outline-2 focus-visible:outline-[var(--focus)]"
+      >
+        {(Object.keys(LANGUAGE_NAMES) as Language[]).map((lang) => (
+          <option key={lang} value={lang}>
+            {LANGUAGE_NAMES[lang]}
+          </option>
+        ))}
+      </select>
+    </Choice>
+  );
+}
+
 function GeneralTab() {
   const workspace = useSettings().data?.workspaceRoot ?? null;
   return (
     <>
+      <LanguageSelect />
       {/* by design: every project's folder lives here, automatically. */}
       {workspace && (
         <div className="mb-6">
           <Facts>
-            <FolderFact label={fr.settings.workspace} path={workspace} />
+            <FolderFact label={strings.settings.workspace} path={workspace} />
           </Facts>
           <p className="mt-1.5 text-[12.5px] text-text-3">
-            {fr.settings.workspaceHelp}
+            {strings.settings.workspaceHelp}
           </p>
         </div>
       )}
       {features.tutorial && (
-        <Choice legend={fr.tutorial.replayLegend} help={fr.tutorial.replayHelp}>
+        <Choice
+          legend={strings.tutorial.replayLegend}
+          help={strings.tutorial.replayHelp}
+        >
           <Button
             size="sm"
             onClick={() => {
@@ -201,7 +240,7 @@ function GeneralTab() {
               useTutorial.getState().begin();
             }}
           >
-            {fr.tutorial.replay}
+            {strings.tutorial.replay}
           </Button>
         </Choice>
       )}
@@ -220,8 +259,12 @@ function ThemeTab() {
   return (
     <>
       <Choice
-        legend={fr.settings.theme}
-        help={IS_MOBILE ? fr.settings.themeHelpMobile : fr.settings.themeHelp}
+        legend={strings.settings.theme}
+        help={
+          IS_MOBILE
+            ? strings.settings.themeHelpMobile
+            : strings.settings.themeHelp
+        }
       >
         <div className="inline-flex rounded-md border border-border bg-aside p-0.5">
           {THEMES.map((t) => (
@@ -235,13 +278,13 @@ function ThemeTab() {
                 className="peer sr-only"
               />
               <span className="block cursor-pointer rounded-[5px] px-3.5 py-1 text-[13px] text-text-2 peer-checked:bg-bg peer-checked:font-medium peer-checked:text-text peer-checked:shadow-[0_1px_2px_rgba(0,0,0,0.08)] peer-focus-visible:outline-2 peer-focus-visible:outline-[var(--focus)]">
-                {fr.theme[t]}
+                {strings.theme[t]}
               </span>
             </label>
           ))}
         </div>
       </Choice>
-      <Choice legend={fr.settings.color} help={fr.settings.colorHelp}>
+      <Choice legend={strings.settings.color} help={strings.settings.colorHelp}>
         <div className="grid grid-cols-2 gap-x-3 gap-y-3.5 sm:grid-cols-5">
           {COLOR_THEMES.map((c) => (
             <label
@@ -258,7 +301,7 @@ function ThemeTab() {
               />
               <ThemePreview color={c} mode={shown} selected={color === c} />
               <span className="mt-1.5 block truncate text-[12.5px] text-text-2 peer-checked:font-medium peer-checked:text-text">
-                {fr.colorTheme[c]}
+                {strings.colorTheme[c]}
               </span>
             </label>
           ))}
@@ -267,11 +310,11 @@ function ThemeTab() {
       <div className="pt-4">
         <SettingSwitch
           on={syncTheme}
-          label={fr.settings.syncTheme}
+          label={strings.settings.syncTheme}
           help={
             IS_MOBILE
-              ? fr.settings.syncThemeHelpMobile
-              : fr.settings.syncThemeHelp
+              ? strings.settings.syncThemeHelpMobile
+              : strings.settings.syncThemeHelp
           }
           onToggle={() => void save({ syncTheme: !syncTheme })}
         />
@@ -352,7 +395,7 @@ function AgentPathForm({
     const path = value.trim();
     setNotice(null);
     if (path && !path.startsWith("/")) {
-      setError(fr.settings.agentPathInvalid(agent));
+      setError(strings.settings.agentPathInvalid(agent));
       return;
     }
     setBusy(true);
@@ -367,15 +410,17 @@ function AgentPathForm({
       const stored = agent === "codex" ? next.codexPath : next.claudePath;
       setValue(stored ?? "");
       setNotice(
-        stored ? fr.settings.claudePathSaved : fr.settings.claudePathCleared,
+        stored
+          ? strings.settings.claudePathSaved
+          : strings.settings.claudePathCleared,
       );
       onSaved();
     } catch (err) {
       console.error(errorMessage(err), err);
       setError(
         errorKind(err) === "invalid"
-          ? fr.settings.agentPathInvalid(agent)
-          : readableError(err, fr.errors.action.settings),
+          ? strings.settings.agentPathInvalid(agent)
+          : readableError(err, strings.errors.action.settings),
       );
     } finally {
       setBusy(false);
@@ -388,7 +433,7 @@ function AgentPathForm({
       className="border-b border-border-row pt-1 pb-4"
     >
       <label htmlFor={inputId} className="text-[13.5px] font-medium">
-        {fr.settings.agentPath(agent)}
+        {strings.settings.agentPath(agent)}
       </label>
       <div className="flex gap-2 pt-2">
         <input
@@ -399,7 +444,7 @@ function AgentPathForm({
             setError(null);
             setNotice(null);
           }}
-          placeholder={fr.settings.claudePathPlaceholder}
+          placeholder={strings.settings.claudePathPlaceholder}
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
@@ -408,7 +453,7 @@ function AgentPathForm({
           className="h-8 min-w-0 flex-1 rounded-md border border-border bg-bg px-2.5 font-mono text-[12.5px] outline-none placeholder:font-sans placeholder:text-[13px] placeholder:text-text-3 focus:border-accent"
         />
         <Button type="submit" disabled={!dirty || busy}>
-          {fr.common.save}
+          {strings.common.save}
         </Button>
       </div>
       {error && (
@@ -422,7 +467,7 @@ function AgentPathForm({
         </p>
       )}
       <p id={helpId} className="pt-1.5 text-[12.5px] text-text-2">
-        {fr.settings.claudePathHelp}
+        {strings.settings.claudePathHelp}
       </p>
       <p role="status" className="text-[12.5px] text-text-2">
         {notice}
@@ -491,10 +536,10 @@ function useAgentStatus(agent: Agent) {
 
 /** « Prête · 0.162.1 », « Pas connectée », « Pas installée »: one line under each choice. */
 function agentShortStatus(status: AgentStatus | undefined, pending: boolean) {
-  if (pending || !status) return fr.settings.agentCheckingShort;
-  if (!status.path) return fr.settings.agentMissingShort;
-  if (status.loggedIn === false) return fr.settings.agentLoggedOutShort;
-  return fr.settings.agentReady(status.version);
+  if (pending || !status) return strings.settings.agentCheckingShort;
+  if (!status.path) return strings.settings.agentMissingShort;
+  if (status.loggedIn === false) return strings.settings.agentLoggedOutShort;
+  return strings.settings.agentReady(status.version);
 }
 
 /** Réglages › Agents: the default agent, the session switches, then each agent's details. */
@@ -510,8 +555,8 @@ function AgentsTab() {
       {settings && (
         <>
           <Choice
-            legend={fr.settings.defaultAgent}
-            help={fr.settings.defaultAgentHelp}
+            legend={strings.settings.defaultAgent}
+            help={strings.settings.defaultAgentHelp}
           >
             <div className="flex flex-col gap-1.5 sm:flex-row">
               {AGENTS.map((agent) => (
@@ -543,32 +588,32 @@ function AgentsTab() {
           </Choice>
           <SettingSwitch
             on={settings.summarizeSessions}
-            label={fr.settings.summarize}
-            help={fr.settings.summarizeHelp}
+            label={strings.settings.summarize}
+            help={strings.settings.summarizeHelp}
             onToggle={() =>
               void save({ summarizeSessions: !settings.summarizeSessions })
             }
           />
           <SettingSwitch
             on={settings.notifications}
-            label={fr.settings.notify(settings.defaultAgent)}
-            help={fr.settings.notifyHelp}
+            label={strings.settings.notify(settings.defaultAgent)}
+            help={strings.settings.notifyHelp}
             onToggle={() =>
               void save({ notifications: !settings.notifications })
             }
           />
           <SettingSwitch
             on={settings.voiceSpaceHold}
-            label={fr.settings.voiceSpaceHold}
-            help={fr.settings.voiceSpaceHoldHelp}
+            label={strings.settings.voiceSpaceHold}
+            help={strings.settings.voiceSpaceHoldHelp}
             onToggle={() =>
               void save({ voiceSpaceHold: !settings.voiceSpaceHold })
             }
           />
           <SettingSwitch
             on={settings.chronoCountsWaiting}
-            label={fr.chrono.settingWaiting}
-            help={fr.chrono.settingWaitingHint(settings.defaultAgent)}
+            label={strings.chrono.settingWaiting}
+            help={strings.chrono.settingWaitingHint(settings.defaultAgent)}
             onToggle={() =>
               void save({ chronoCountsWaiting: !settings.chronoCountsWaiting })
             }
@@ -609,13 +654,13 @@ function AgentSection({
   if (status.isPending) {
     body = (
       <p role="status" className="text-[13px] text-text-2">
-        {fr.settings.claudeChecking}
+        {strings.settings.claudeChecking}
       </p>
     );
   } else if (status.isError) {
     body = (
       <p role="alert" className="text-[13px] text-text">
-        {fr.settings.agentCheckError(agent)}
+        {strings.settings.agentCheckError(agent)}
       </p>
     );
   } else if (s) {
@@ -623,39 +668,39 @@ function AgentSection({
       s.loggedIn === true ? (
         <span className="inline-flex items-center gap-1.5">
           <Check size={14} aria-hidden className="text-text-2" />
-          {fr.settings.claudeLoggedIn}
+          {strings.settings.claudeLoggedIn}
         </span>
       ) : s.loggedIn === false ? (
         <span className="inline-flex items-start gap-1.5 font-medium">
           <CircleAlert size={14} aria-hidden className="mt-0.5 shrink-0" />
-          {fr.settings.agentLoggedOut(agent)}
+          {strings.settings.agentLoggedOut(agent)}
         </span>
       ) : (
-        fr.settings.claudeLoginUnknown
+        strings.settings.claudeLoginUnknown
       );
     body = (
       <Facts>
-        <Fact label={fr.settings.claudeProgram}>
+        <Fact label={strings.settings.claudeProgram}>
           {s.path ? (
             <Mono>{s.path}</Mono>
           ) : (
             <span className="flex flex-col gap-0.5">
               <span className="inline-flex items-center gap-1.5 font-medium">
                 <CircleAlert size={14} aria-hidden />
-                {fr.settings.claudeNotFound}
+                {strings.settings.claudeNotFound}
               </span>
               <span className="text-[12.5px] text-text-2">
-                {fr.settings.agentInstall(agent)}
+                {strings.settings.agentInstall(agent)}
               </span>
             </span>
           )}
         </Fact>
         {s.path && (
           <>
-            <Fact label={fr.settings.claudeVersion}>
-              {s.version ?? fr.settings.unknown}
+            <Fact label={strings.settings.claudeVersion}>
+              {s.version ?? strings.settings.unknown}
             </Fact>
-            <Fact label={fr.settings.claudeLogin}>{login}</Fact>
+            <Fact label={strings.settings.claudeLogin}>{login}</Fact>
           </>
         )}
       </Facts>
@@ -668,7 +713,7 @@ function AgentSection({
         action={
           <Button
             size="sm"
-            aria-label={fr.settings.agentCheckLabel(agent)}
+            aria-label={strings.settings.agentCheckLabel(agent)}
             onClick={() => void status.refetch()}
             disabled={status.isFetching}
           >
@@ -677,7 +722,7 @@ function AgentSection({
               aria-hidden
               className={status.isFetching ? "motion-safe:animate-spin" : ""}
             />
-            {fr.settings.claudeCheck}
+            {strings.settings.claudeCheck}
           </Button>
         }
       >
@@ -705,16 +750,16 @@ function FolderFact({ label, path }: { label: string; path: string }) {
         <Button
           size="sm"
           variant="ghost"
-          aria-label={fr.settings.openFolderLabel(label)}
+          aria-label={strings.settings.openFolderLabel(label)}
           onClick={() =>
             void run(
               commands.openPath({ path, with: "finder", editor: null }),
-              fr.app.openFolderError,
+              strings.app.openFolderError,
             )
           }
         >
           <FolderOpen size={14} aria-hidden />
-          {fr.settings.openFolder}
+          {strings.settings.openFolder}
         </Button>
       </div>
     </Fact>
@@ -734,45 +779,45 @@ function DiagnosticTab() {
   if (query.isPending) {
     facts = (
       <p role="status" className="text-[13px] text-text-2">
-        {fr.settings.statusLoading}
+        {strings.settings.statusLoading}
       </p>
     );
   } else if (query.isError || !s) {
     facts = (
       <div role="alert" className="flex items-center justify-between gap-3">
-        <p className="text-[13px] text-text">{fr.settings.statusError}</p>
+        <p className="text-[13px] text-text">{strings.settings.statusError}</p>
         <Button size="sm" onClick={() => void query.refetch()}>
-          {fr.common.retry}
+          {strings.common.retry}
         </Button>
       </div>
     );
   } else {
     facts = (
       <Facts>
-        <Fact label={fr.settings.appVersion}>{s.appVersion}</Fact>
-        <Fact label={fr.terminals.agent("claude")}>
+        <Fact label={strings.settings.appVersion}>{s.appVersion}</Fact>
+        <Fact label={strings.terminals.agent("claude")}>
           {s.claude.path ? (
             <>
-              {s.claude.version ?? fr.settings.unknown} ·{" "}
+              {s.claude.version ?? strings.settings.unknown} ·{" "}
               <Mono>{s.claude.path}</Mono>
             </>
           ) : (
-            fr.settings.claudeNotFound
+            strings.settings.claudeNotFound
           )}
         </Fact>
-        <Fact label={fr.settings.hooksPort}>
+        <Fact label={strings.settings.hooksPort}>
           <Mono>{s.hooksPort}</Mono>
         </Fact>
-        <Fact label={fr.settings.envPath}>
+        <Fact label={strings.settings.envPath}>
           <Mono>{s.envPath}</Mono>
           {!s.envFromLoginShell && (
             <p className="pt-1 text-[12.5px] text-text-2">
-              {fr.settings.envFallback}
+              {strings.settings.envFallback}
             </p>
           )}
         </Fact>
-        <FolderFact label={fr.settings.logDir} path={s.logDir} />
-        <FolderFact label={fr.settings.dataDir} path={s.dataDir} />
+        <FolderFact label={strings.settings.logDir} path={s.logDir} />
+        <FolderFact label={strings.settings.dataDir} path={s.dataDir} />
       </Facts>
     );
   }
@@ -833,7 +878,7 @@ export function SettingsDialog({
   };
 
   return (
-    <Dialog title={fr.settings.title} onClose={onClose} width={780}>
+    <Dialog title={strings.settings.title} onClose={onClose} width={780}>
       <div
         className={
           horizontal
@@ -845,7 +890,7 @@ export function SettingsDialog({
           ref={listRef}
           role="tablist"
           aria-orientation={horizontal ? "horizontal" : "vertical"}
-          aria-label={fr.settings.tabsLabel}
+          aria-label={strings.settings.tabsLabel}
           onKeyDown={onTabKey}
           className={
             horizontal
@@ -898,7 +943,7 @@ export function SettingsDialog({
         </div>
       </div>
       <div className="flex justify-end border-t border-border px-5 py-3">
-        <Button onClick={onClose}>{fr.common.close}</Button>
+        <Button onClick={onClose}>{strings.common.close}</Button>
       </div>
     </Dialog>
   );

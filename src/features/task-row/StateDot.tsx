@@ -9,7 +9,7 @@
  */
 
 import type { Agent, Ring } from "../../bindings";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import "./stateDot.css";
 
 type DotLook = "working" | "waiting" | "done" | "error" | "idle";
@@ -30,9 +30,9 @@ export function hasStateDot(ring: Ring): boolean {
   return LOOK[ring] !== undefined;
 }
 
-/** « Claude travaille », « Codex attend ta réponse »… (the ring labels of fr.ts). */
+/** « Claude travaille », « Codex attend ta réponse »… (the ring labels of t.ts). */
 export function stateDotLabel(ring: Ring, agent: Agent = "claude"): string {
-  return fr.ring.state(ring, agent);
+  return t.ring.state(ring, agent);
 }
 
 export interface StateDotProps {

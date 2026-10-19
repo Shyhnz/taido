@@ -2,7 +2,7 @@
 
 import { confirmDialog, promptDialog } from "../../components/Dialog";
 import type { MenuItem } from "../../components/Menu";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { features } from "../../lib/features";
 import { commands } from "../../lib/ipc";
 import { run } from "../../lib/run";
@@ -15,11 +15,11 @@ interface SectionRef {
 
 export async function renameSection(section: SectionRef) {
   await promptDialog({
-    title: fr.section.renameTitle,
+    title: t.section.renameTitle,
     fields: [
       {
         name: "name",
-        label: fr.section.nameLabel,
+        label: t.section.nameLabel,
         initial: section.name,
         required: true,
       },
@@ -32,22 +32,22 @@ export async function renameSection(section: SectionRef) {
           name: values.name,
           subpath: null,
         }),
-      action: fr.errors.action.updateSection,
+      action: t.errors.action.updateSection,
     },
   });
 }
 
 async function editSubpath(section: SectionRef) {
   await promptDialog({
-    title: fr.section.subpathTitle,
+    title: t.section.subpathTitle,
     fields: [
       {
         name: "subpath",
-        label: fr.section.subpathLabel,
+        label: t.section.subpathLabel,
         initial: section.subpath ?? "",
-        placeholder: fr.section.subpathPlaceholder,
+        placeholder: t.section.subpathPlaceholder,
         mono: true,
-        help: fr.section.subpathHelp,
+        help: t.section.subpathHelp,
       },
     ],
     // An empty subfolder clears it (`Some("")`).
@@ -58,21 +58,21 @@ async function editSubpath(section: SectionRef) {
           name: null,
           subpath: values.subpath.trim(),
         }),
-      action: fr.errors.action.updateSection,
+      action: t.errors.action.updateSection,
     },
   });
 }
 
 export async function deleteSection(section: SectionRef) {
   const ok = await confirmDialog({
-    title: fr.section.deleteTitle(section.name),
-    message: fr.section.deleteMessage,
-    confirmLabel: fr.section.deleteConfirm,
+    title: t.section.deleteTitle(section.name),
+    message: t.section.deleteMessage,
+    confirmLabel: t.section.deleteConfirm,
   });
   if (ok) {
     await run(
       commands.deleteSection(section.id),
-      fr.errors.action.deleteSection,
+      t.errors.action.deleteSection,
     );
   }
 }
@@ -80,7 +80,7 @@ export async function deleteSection(section: SectionRef) {
 export function sectionMenuItems(section: SectionRef): MenuItem[] {
   return [
     {
-      label: fr.section.menuRename,
+      label: t.section.menuRename,
       onSelect: () => {
         void renameSection(section);
       },
@@ -89,7 +89,7 @@ export function sectionMenuItems(section: SectionRef): MenuItem[] {
     ...(features.terminals
       ? [
           {
-            label: fr.section.menuSubpath,
+            label: t.section.menuSubpath,
             onSelect: () => {
               void editSubpath(section);
             },
@@ -98,7 +98,7 @@ export function sectionMenuItems(section: SectionRef): MenuItem[] {
       : []),
     { separator: true },
     {
-      label: fr.section.menuDelete,
+      label: t.section.menuDelete,
       onSelect: () => {
         void deleteSection(section);
       },

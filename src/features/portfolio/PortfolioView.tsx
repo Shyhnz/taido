@@ -13,7 +13,7 @@ import { useState } from "react";
 import type { PortfolioRow } from "../../bindings";
 import { Button } from "../../components/Button";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { formatDue, formatRelative, toLocalDateString } from "../../lib/dates";
 import { subjectColorVar } from "../../lib/format";
 import { commands, webTimeCsv } from "../../lib/ipc";
@@ -123,16 +123,16 @@ export function PortfolioView() {
   });
 
   const exportCsv = async () => {
-    const fileName = fr.portfolio.fileName(toLocalDateString(new Date()), days);
+    const fileName = t.portfolio.fileName(toLocalDateString(new Date()), days);
     if (IS_MOBILE) {
       const csv = webTimeCsv(days);
       if (csv === null) return;
       saveBlob(new Blob([csv], { type: "text/csv" }), fileName);
-      showToast({ message: fr.portfolio.downloaded(fileName) });
+      showToast({ message: t.portfolio.downloaded(fileName) });
       return;
     }
     const path = await run(commands.exportTimeCsv(days, fileName));
-    if (path) showToast({ message: fr.portfolio.exported(path) });
+    if (path) showToast({ message: t.portfolio.exported(path) });
   };
   const open = (r: PortfolioRow) => {
     setView({ kind: "subject", subjectId: r.subjectId });
@@ -141,15 +141,15 @@ export function PortfolioView() {
   // No Claude on the web: its « Sessions » column would always say « aucune ».
   const sessions = !IS_MOBILE;
   const allColumns: { key: SortKey; label: string; numeric?: boolean }[] = [
-    { key: "project", label: fr.portfolio.cols.project },
-    { key: "open", label: fr.portfolio.cols.open, numeric: true },
-    { key: "done", label: fr.portfolio.cols.done(days), numeric: true },
-    { key: "overdue", label: fr.portfolio.cols.overdue, numeric: true },
-    { key: "blocked", label: fr.portfolio.cols.blocked, numeric: true },
-    { key: "next", label: fr.portfolio.cols.next },
-    { key: "sessions", label: fr.portfolio.cols.sessions },
-    { key: "time", label: fr.portfolio.cols.time(days), numeric: true },
-    { key: "last", label: fr.portfolio.cols.last },
+    { key: "project", label: t.portfolio.cols.project },
+    { key: "open", label: t.portfolio.cols.open, numeric: true },
+    { key: "done", label: t.portfolio.cols.done(days), numeric: true },
+    { key: "overdue", label: t.portfolio.cols.overdue, numeric: true },
+    { key: "blocked", label: t.portfolio.cols.blocked, numeric: true },
+    { key: "next", label: t.portfolio.cols.next },
+    { key: "sessions", label: t.portfolio.cols.sessions },
+    { key: "time", label: t.portfolio.cols.time(days), numeric: true },
+    { key: "last", label: t.portfolio.cols.last },
   ];
   const columns = sessions
     ? allColumns
@@ -160,56 +160,56 @@ export function PortfolioView() {
       <header className="flex flex-wrap items-end gap-3 pt-10 pb-4">
         <div className="min-w-0 flex-1">
           <h1 className="text-title leading-8 font-bold">
-            {fr.portfolio.title}
+            {t.portfolio.title}
           </h1>
           <p className="mt-0.5 text-[13px] text-text-2">
-            {fr.portfolio.subtitle}
+            {t.portfolio.subtitle}
           </p>
         </div>
         <PeriodPicker />
         <Button size="sm" onClick={() => void exportCsv()}>
           <Download size={14} aria-hidden />
-          {fr.portfolio.export}
+          {t.portfolio.export}
         </Button>
       </header>
       {!p ? (
         <p className="py-6 text-[13.5px] text-text-2">
           {error ? (
             <span className="flex items-center gap-3">
-              {fr.portfolio.error}
+              {t.portfolio.error}
               <Button size="sm" onClick={() => void refetch()}>
-                {fr.dashboard.retry}
+                {t.dashboard.retry}
               </Button>
             </span>
           ) : (
-            fr.portfolio.loading
+            t.portfolio.loading
           )}
         </p>
       ) : (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
             <Figure
-              label={fr.portfolio.open}
+              label={t.portfolio.open}
               value={String(p.open + p.openSubtasks)}
-              hint={fr.dashboard.withSubtasks(p.openSubtasks)}
+              hint={t.dashboard.withSubtasks(p.openSubtasks)}
             />
-            <Figure label={fr.portfolio.done(p.days)} value={String(p.done)} />
+            <Figure label={t.portfolio.done(p.days)} value={String(p.done)} />
             <Figure
-              label={fr.portfolio.overdue}
+              label={t.portfolio.overdue}
               value={String(p.overdue)}
               tone={p.overdue > 0 ? "text-due-overdue" : undefined}
             />
             <Figure
-              label={fr.portfolio.time(p.days)}
+              label={t.portfolio.time(p.days)}
               value={formatHours(p.seconds)}
             />
           </div>
           {p.rows.length === 0 ? (
-            <p className="text-[13.5px] text-text-2">{fr.portfolio.empty}</p>
+            <p className="text-[13.5px] text-text-2">{t.portfolio.empty}</p>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-border">
               <table className="w-full min-w-[860px] border-collapse text-[13px]">
-                <caption className="sr-only">{fr.portfolio.table}</caption>
+                <caption className="sr-only">{t.portfolio.table}</caption>
                 <thead>
                   <tr className="border-b border-border text-left text-[12px] text-text-2">
                     {columns.map((c) => {
@@ -230,7 +230,7 @@ export function PortfolioView() {
                         >
                           <button
                             type="button"
-                            title={fr.portfolio.sortBy(c.label)}
+                            title={t.portfolio.sortBy(c.label)}
                             onClick={() =>
                               setSort((s) => ({
                                 key: c.key,
@@ -261,7 +261,7 @@ export function PortfolioView() {
                         <button
                           type="button"
                           onClick={() => open(r)}
-                          title={fr.portfolio.openDashboard(r.name)}
+                          title={t.portfolio.openDashboard(r.name)}
                           className="inline-flex max-w-[240px] items-center gap-2 text-left hover:underline"
                         >
                           <span
@@ -311,7 +311,7 @@ export function PortfolioView() {
                           </span>
                         ) : (
                           <span className="text-text-3">
-                            {fr.portfolio.noDated}
+                            {t.portfolio.noDated}
                           </span>
                         )}
                       </td>
@@ -319,35 +319,31 @@ export function PortfolioView() {
                         <td className="px-3 py-2">
                           {r.sessionsRunning + r.sessionsWaiting === 0 ? (
                             <span className="text-text-3">
-                              {fr.portfolio.noSession}
+                              {t.portfolio.noSession}
                             </span>
                           ) : (
                             <span className="inline-flex gap-1">
                               {r.sessionsRunning > 0 && (
                                 <span
-                                  title={fr.portfolio.running(
-                                    r.sessionsRunning,
-                                  )}
+                                  title={t.portfolio.running(r.sessionsRunning)}
                                   className="min-w-[20px] rounded-full bg-accent px-1.5 text-center text-[11.5px] leading-[18px] font-semibold text-on-accent tabular-nums"
                                 >
                                   {r.sessionsRunning}
                                   <span className="sr-only">
                                     {" "}
-                                    {fr.portfolio.running(r.sessionsRunning)}
+                                    {t.portfolio.running(r.sessionsRunning)}
                                   </span>
                                 </span>
                               )}
                               {r.sessionsWaiting > 0 && (
                                 <span
-                                  title={fr.portfolio.waiting(
-                                    r.sessionsWaiting,
-                                  )}
+                                  title={t.portfolio.waiting(r.sessionsWaiting)}
                                   className="min-w-[20px] rounded-full bg-waiting px-1.5 text-center text-[11.5px] leading-[18px] font-semibold text-on-waiting tabular-nums"
                                 >
                                   {r.sessionsWaiting}
                                   <span className="sr-only">
                                     {" "}
-                                    {fr.portfolio.waiting(r.sessionsWaiting)}
+                                    {t.portfolio.waiting(r.sessionsWaiting)}
                                   </span>
                                 </span>
                               )}
@@ -361,13 +357,13 @@ export function PortfolioView() {
                       <td className="px-3 py-2 whitespace-nowrap">
                         {r.inactiveDays !== null ? (
                           <span className="rounded-md bg-hover px-1.5 py-0.5 text-[12px] text-text-2">
-                            {fr.portfolio.inactive(r.inactiveDays)}
+                            {t.portfolio.inactive(r.inactiveDays)}
                           </span>
                         ) : (
                           <span className="text-text-2">
                             {r.lastActivity
                               ? formatRelative(r.lastActivity)
-                              : fr.portfolio.never}
+                              : t.portfolio.never}
                           </span>
                         )}
                       </td>
@@ -377,9 +373,7 @@ export function PortfolioView() {
               </table>
             </div>
           )}
-          <p className="mt-2 text-[12px] text-text-3">
-            {fr.portfolio.footnote}
-          </p>
+          <p className="mt-2 text-[12px] text-text-3">{t.portfolio.footnote}</p>
         </>
       )}
     </div>

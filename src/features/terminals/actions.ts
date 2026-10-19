@@ -13,7 +13,7 @@ import type {
 } from "../../bindings";
 import { confirmDialog, promptDialog } from "../../components/Dialog";
 import { showError } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands, errorKind, errorMessage } from "../../lib/ipc";
 import { readableError, run } from "../../lib/run";
 import { useUi } from "../../stores/ui";
@@ -38,11 +38,11 @@ export interface OpenOptions {
 
 /** Asks for a folder and stores it at the right level. False when cancelled or failed. */
 async function chooseFolder(taskId: string): Promise<boolean> {
-  const path = await run(commands.pickFolder(fr.terminals.pickFolderTitle));
+  const path = await run(commands.pickFolder(t.terminals.pickFolderTitle));
   if (!path) return false;
   const saved = await run(
     commands.setTaskFolder({ taskId, path }),
-    fr.terminals.openError,
+    t.terminals.openError,
   );
   return saved !== undefined;
 }
@@ -67,7 +67,7 @@ export async function openTaskFolderIn(
   if (!path) return;
   await run(
     commands.openPath({ path, with: app, editor }),
-    fr.terminals.openInError,
+    t.terminals.openInError,
   );
 }
 
@@ -98,11 +98,11 @@ async function startInPanel(
       if (kindOf === "folder_missing") {
         const task = await commands.getTask(taskId).catch(() => null);
         const ok = await confirmDialog({
-          title: fr.terminals.folderMissingTitle,
-          message: fr.terminals.folderMissingMessage(
+          title: t.terminals.folderMissingTitle,
+          message: t.terminals.folderMissingMessage(
             task?.workdir?.path ?? null,
           ),
-          confirmLabel: fr.terminals.chooseFolder,
+          confirmLabel: t.terminals.chooseFolder,
           danger: false,
         });
         if (!ok || !(await chooseFolder(taskId))) return undefined;
@@ -192,7 +192,7 @@ export function openTerminal(
         cols: size.cols,
         rows: size.rows,
       }),
-    fr.terminals.openError,
+    t.terminals.openError,
   );
 }
 
@@ -219,7 +219,7 @@ export async function resumeSession(
           cols: size.cols,
           rows: size.rows,
         }),
-      fr.sessions.resumeError,
+      t.sessions.resumeError,
     );
   } finally {
     resuming.delete(agentSessionId);
@@ -232,17 +232,17 @@ const resuming = new Set<string>();
 /** « Lancer une commande… »: asks for the command line, then opens it. */
 export async function promptCommand(taskId: string): Promise<void> {
   const values = await promptDialog({
-    title: fr.terminals.commandTitle,
+    title: t.terminals.commandTitle,
     fields: [
       {
         name: "command",
-        label: fr.terminals.commandLabel,
-        placeholder: fr.terminals.commandPlaceholder,
+        label: t.terminals.commandLabel,
+        placeholder: t.terminals.commandPlaceholder,
         mono: true,
         required: true,
       },
     ],
-    confirmLabel: fr.terminals.launch,
+    confirmLabel: t.terminals.launch,
   });
   const command = values?.command?.trim();
   if (command) await openTerminal(taskId, "command", { command });
@@ -265,12 +265,12 @@ export async function launchAgent(
   const blockers = task?.relations.blockedBy.filter((t) => !t.completed) ?? [];
   if (blockers.length > 0) {
     const ok = await confirmDialog({
-      title: fr.relations.warnTitle,
-      message: fr.relations.warnMessage(
+      title: t.relations.warnTitle,
+      message: t.relations.warnMessage(
         blockers.map((t) => `« ${t.title} »`).join(", "),
         chosen ?? "claude",
       ),
-      confirmLabel: fr.relations.warnConfirm,
+      confirmLabel: t.relations.warnConfirm,
       danger: false,
     });
     if (!ok) return undefined;
@@ -287,15 +287,15 @@ export async function launchAgent(
 export async function closeTerminal(info: TerminalInfo): Promise<boolean> {
   if (info.running && info.kind === "agent") {
     const ok = await confirmDialog({
-      title: fr.terminals.closeClaudeTitle(info.agent ?? "claude"),
-      message: fr.terminals.closeClaudeMessage(info.agent ?? "claude"),
-      confirmLabel: fr.terminals.closeClaudeConfirm,
+      title: t.terminals.closeClaudeTitle(info.agent ?? "claude"),
+      message: t.terminals.closeClaudeMessage(info.agent ?? "claude"),
+      confirmLabel: t.terminals.closeClaudeConfirm,
     });
     if (!ok) return false;
   }
   const done = await run(
     commands.closeTerminal(info.id),
-    fr.errors.action.closeTerminal,
+    t.errors.action.closeTerminal,
   );
   return done !== undefined;
 }
@@ -331,15 +331,15 @@ export async function confirmStopSessions(
   const sessions = await sessionsStoppedWith(taskId);
   if (sessions.length === 0) return true;
   return confirmDialog({
-    title: fr.terminals.stopSessionsTitle(sessions.length),
+    title: t.terminals.stopSessionsTitle(sessions.length),
     message:
       action === "complete"
-        ? fr.terminals.completeMessage
-        : fr.terminals.deleteMessage,
+        ? t.terminals.completeMessage
+        : t.terminals.deleteMessage,
     confirmLabel:
       action === "complete"
-        ? fr.terminals.completeConfirm
-        : fr.terminals.deleteConfirm,
+        ? t.terminals.completeConfirm
+        : t.terminals.deleteConfirm,
   });
 }
 
@@ -353,12 +353,12 @@ export async function requestQuit(): Promise<void> {
   const others = running.length - sessions;
   if (running.length > 0) {
     const ok = await confirmDialog({
-      title: fr.terminals.quitTitle,
+      title: t.terminals.quitTitle,
       message:
         sessions > 0
-          ? fr.terminals.quitSessions(sessions)
-          : fr.terminals.quitTerminals(others),
-      confirmLabel: fr.terminals.quitConfirm,
+          ? t.terminals.quitSessions(sessions)
+          : t.terminals.quitTerminals(others),
+      confirmLabel: t.terminals.quitConfirm,
     });
     if (!ok) return;
   }

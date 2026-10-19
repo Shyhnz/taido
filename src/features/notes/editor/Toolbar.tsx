@@ -15,7 +15,7 @@ import {
   useLayoutEffect,
   useRef,
 } from "react";
-import { fr } from "../../../i18n/fr";
+import { t } from "../../../i18n";
 import { ACTIONS, type ActionId, activeActions } from "./actions";
 import { startWikiLink } from "./linkSuggest";
 
@@ -132,7 +132,7 @@ export function Toolbar({
     <div
       ref={bar}
       role="toolbar"
-      aria-label={fr.notes.editor.toolbar}
+      aria-label={t.notes.editor.toolbar}
       aria-orientation="horizontal"
       onKeyDown={roving}
       className="sticky top-0 z-10 -mx-1 mb-3 flex flex-wrap items-center gap-0.5 border-b border-border bg-bg px-1 py-1.5"
@@ -159,7 +159,7 @@ export function Toolbar({
       ))}
       {onImage && (
         <ToolbarButton
-          label={fr.notes.image.add}
+          label={t.notes.image.add}
           onPress={onImage}
           className="h-7 w-7"
         >
@@ -168,8 +168,8 @@ export function Toolbar({
       )}
       <span aria-hidden className="mx-1 h-4 w-px bg-border" />
       <ToolbarButton
-        label={fr.notes.editor.wikiLink}
-        title={`${fr.notes.editor.wikiLink} ([[)`}
+        label={t.notes.editor.wikiLink}
+        title={`${t.notes.editor.wikiLink} ([[)`}
         onPress={() => startWikiLink(editor)}
         className="h-7 w-7"
       >

@@ -14,7 +14,7 @@ import { GripVertical } from "lucide-react";
 import { type KeyboardEvent, type MouseEvent, useEffect, useRef } from "react";
 import type { TaskRow as TaskRowData, ViewKind } from "../../bindings";
 import { openContextMenu, openMenuAt } from "../../components/Menu";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { features } from "../../lib/features";
 import { useSubjects } from "../../lib/queries";
@@ -222,7 +222,7 @@ function useRowWiring({ row, reorder, canFile, animated }: RowWiring) {
     onFile:
       canFile && subjects.length > 0
         ? (anchor: HTMLElement) =>
-            openMenuAt(anchor, fileMenuItems(row, subjects), fr.list.file, true)
+            openMenuAt(anchor, fileMenuItems(row, subjects), t.list.file, true)
         : undefined,
     childrenOpen,
     onToggleChildren: hasChildren ? () => toggleChildren(row.id) : undefined,
@@ -268,7 +268,7 @@ export function TaskChildren({
   return (
     <ul
       data-subtasks={row.id}
-      aria-label={fr.nesting.childrenLabel(row.title)}
+      aria-label={t.nesting.childrenLabel(row.title)}
       className="ml-[30px] flex flex-col"
     >
       {row.children.map((child) => (
@@ -423,7 +423,7 @@ export function SortableTaskRow({
               {...gripListeners}
               // Keyboard users reorder with ⌥↑/⌥↓ on the row: the handle leaves the tab order.
               tabIndex={-1}
-              aria-label={`${fr.row.dragHandle} · ${row.title}`}
+              aria-label={`${t.row.dragHandle} · ${row.title}`}
               onClick={(e) => e.stopPropagation()}
               className="drag-grip flex h-6 w-4 cursor-grab items-center justify-center rounded text-text-3 hover:text-text-2"
             >

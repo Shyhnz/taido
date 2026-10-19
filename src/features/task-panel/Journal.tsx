@@ -4,7 +4,7 @@
  */
 
 import type { JournalEntry, JournalKind } from "../../bindings";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { formatJournalDate } from "../../lib/dates";
 import { useJournal } from "../../lib/queries";
 import { Fold } from "./PanelFold";
@@ -28,7 +28,7 @@ export function taskEntries(entries: JournalEntry[]): JournalEntry[] {
 /** Text of an entry: the core leaves `created`, `completed`, `reopened` empty. */
 export function journalText(entry: JournalEntry): string {
   if (entry.text.trim().length > 0) return entry.text;
-  return fr.journal[entry.kind];
+  return t.journal[entry.kind];
 }
 
 function JournalList({ taskId }: { taskId: string }) {
@@ -37,7 +37,7 @@ function JournalList({ taskId }: { taskId: string }) {
   return (
     <div className="pt-1">
       {entries.length === 0 ? (
-        <p className="py-2 text-[13px] text-text-3">{fr.panel.emptyJournal}</p>
+        <p className="py-2 text-[13px] text-text-3">{t.panel.emptyJournal}</p>
       ) : (
         <ol className="flex flex-col">
           {entries.map((entry) => (
@@ -74,8 +74,8 @@ export function Journal({ taskId }: { taskId: string }) {
   return (
     <Fold
       id="journal"
-      title={fr.panel.journal}
-      summary={count > 0 && fr.folds.journalCount(count)}
+      title={t.panel.journal}
+      summary={count > 0 && t.folds.journalCount(count)}
     >
       <JournalList taskId={taskId} />
     </Fold>

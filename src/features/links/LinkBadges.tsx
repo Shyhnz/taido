@@ -15,7 +15,7 @@ import {
   Paperclip,
 } from "lucide-react";
 import type { TaskRow } from "../../bindings";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 
 export function LinkBadges({
   row,
@@ -31,7 +31,7 @@ export function LinkBadges({
         <Badge
           Icon={Lock}
           count={row.blockedByCount}
-          label={fr.relations.rowBlockedBy(row.blockedBy, row.blockedByCount)}
+          label={t.relations.rowBlockedBy(row.blockedBy, row.blockedByCount)}
           className={`text-due-overdue ${first}`}
           data-blocked
           data-relation
@@ -41,7 +41,7 @@ export function LinkBadges({
         <Badge
           Icon={OctagonMinus}
           count={row.blocksCount}
-          label={fr.relations.rowBlocks(row.blocksCount)}
+          label={t.relations.rowBlocks(row.blocksCount)}
           className={`text-relation-blocks ${first}`}
           data-relation
         />
@@ -50,7 +50,7 @@ export function LinkBadges({
         <Badge
           Icon={Link2}
           count={row.relatedCount}
-          label={fr.relations.rowRelated(row.relatedCount)}
+          label={t.relations.rowRelated(row.relatedCount)}
           className={`text-relation-related ${first}`}
           data-relation
         />
@@ -59,7 +59,7 @@ export function LinkBadges({
         <Badge
           Icon={Paperclip}
           count={row.attachmentCount}
-          label={fr.attachments.rowCount(row.attachmentCount)}
+          label={t.attachments.rowCount(row.attachmentCount)}
           className=""
         />
       )}

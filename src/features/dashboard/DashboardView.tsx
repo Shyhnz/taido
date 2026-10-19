@@ -15,7 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import type { Dashboard, DashboardTask, DayTime } from "../../bindings";
 import { Button } from "../../components/Button";
-import { fr } from "../../i18n/fr";
+import { t as strings } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { formatDue, formatLongDate } from "../../lib/dates";
 import { commands } from "../../lib/ipc";
@@ -129,7 +129,7 @@ function TimeChart({ days }: { days: DayTime[] }) {
             className="h-2.5 w-2.5 rounded-sm"
             style={{ background: "var(--chart-auto)" }}
           />
-          {fr.dashboard.auto(agent)}
+          {strings.dashboard.auto(agent)}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span
@@ -137,7 +137,7 @@ function TimeChart({ days }: { days: DayTime[] }) {
             className="h-2.5 w-2.5 rounded-sm"
             style={{ background: "var(--chart-manual)" }}
           />
-          {fr.dashboard.manual}
+          {strings.dashboard.manual}
         </span>
       </div>
       <div className="relative">
@@ -187,7 +187,7 @@ function TimeChart({ days }: { days: DayTime[] }) {
             role="tooltip"
             className="pointer-events-none absolute -top-2 left-1/2 z-10 -translate-x-1/2 -translate-y-full rounded-md border border-border bg-elevated px-2 py-1 text-[12px] whitespace-nowrap text-text shadow-pop"
           >
-            {fr.dashboard.dayTip(
+            {strings.dashboard.dayTip(
               formatLongDate(tip.date),
               formatHours(tip.autoSeconds),
               formatHours(tip.manualSeconds),
@@ -207,7 +207,7 @@ function TimeChart({ days }: { days: DayTime[] }) {
       </div>
       {/* The same figures for screen readers (the chart's table view). */}
       <table className="sr-only">
-        <caption>{fr.dashboard.timeByDay}</caption>
+        <caption>{strings.dashboard.timeByDay}</caption>
         <tbody>
           {days.map((d) => (
             <tr key={d.date}>
@@ -228,7 +228,7 @@ export function PeriodPicker() {
   return (
     <div
       role="radiogroup"
-      aria-label={fr.dashboard.period}
+      aria-label={strings.dashboard.period}
       className="inline-flex rounded-lg bg-hover p-0.5"
     >
       {([7, 30] as const).map((n) => (
@@ -243,7 +243,7 @@ export function PeriodPicker() {
               : "text-text-2 hover:text-text"
           }`}
         >
-          {fr.dashboard.days(n)}
+          {strings.dashboard.days(n)}
         </button>
       ))}
     </div>
@@ -261,44 +261,49 @@ function Figures({ d }: { d: Dashboard }) {
       data-dashboard-figures
     >
       <Tile
-        label={fr.dashboard.open}
+        label={strings.dashboard.open}
         value={String(d.open + d.openSubtasks)}
-        hint={`${fr.dashboard.withSubtasks(d.openSubtasks)} · ${fr.dashboard.openDelta(d.openDelta, d.days)}`}
+        hint={`${strings.dashboard.withSubtasks(d.openSubtasks)} · ${strings.dashboard.openDelta(d.openDelta, d.days)}`}
       />
       <Tile
-        label={fr.dashboard.done}
+        label={strings.dashboard.done}
         value={String(d.done)}
-        hint={fr.dashboard.doneBefore(d.doneBefore)}
+        hint={strings.dashboard.doneBefore(d.doneBefore)}
       />
       <Tile
-        label={fr.dashboard.overdue}
+        label={strings.dashboard.overdue}
         value={String(d.overdue)}
-        hint={fr.dashboard.overdueHint}
+        hint={strings.dashboard.overdueHint}
         tone={d.overdue > 0 ? "late" : undefined}
       />
       <Tile
-        label={fr.dashboard.blocked}
+        label={strings.dashboard.blocked}
         value={String(d.blocked)}
         hint={
           IS_MOBILE
-            ? fr.dashboard.blockedHintWeb(d.blockedByRelation)
-            : fr.dashboard.blockedHint(d.blockedByRelation, d.blockedWaiting)
+            ? strings.dashboard.blockedHintWeb(d.blockedByRelation)
+            : strings.dashboard.blockedHint(
+                d.blockedByRelation,
+                d.blockedWaiting,
+              )
         }
         tone={d.blocked > 0 ? "blocked" : undefined}
       />
       <Tile
-        label={fr.dashboard.time}
+        label={strings.dashboard.time}
         value={formatHours(d.seconds)}
         hint={
           d.secondsPerDone === null
-            ? fr.dashboard.noneDone
-            : fr.dashboard.perDone(formatHours(d.secondsPerDone))
+            ? strings.dashboard.noneDone
+            : strings.dashboard.perDone(formatHours(d.secondsPerDone))
         }
       />
       <Tile
-        label={fr.dashboard.oldest}
-        value={d.oldest ? fr.dashboard.oldestValue(d.oldest.days ?? 0) : "—"}
-        hint={d.oldest?.title ?? fr.dashboard.noOpen}
+        label={strings.dashboard.oldest}
+        value={
+          d.oldest ? strings.dashboard.oldestValue(d.oldest.days ?? 0) : "—"
+        }
+        hint={d.oldest?.title ?? strings.dashboard.noOpen}
       />
     </div>
   );
@@ -312,13 +317,13 @@ export function DashboardView({ subjectId }: { subjectId: string | null }) {
       <div className="py-6 text-[13.5px] text-text-2">
         {error ? (
           <span className="flex items-center gap-3">
-            {fr.dashboard.error}
+            {strings.dashboard.error}
             <Button size="sm" onClick={() => void refetch()}>
-              {fr.dashboard.retry}
+              {strings.dashboard.retry}
             </Button>
           </span>
         ) : (
-          fr.dashboard.loading
+          strings.dashboard.loading
         )}
       </div>
     );
@@ -330,9 +335,9 @@ export function DashboardView({ subjectId }: { subjectId: string | null }) {
   const reason = (t: DashboardTask): string => {
     const r = t.reason;
     if (!r) return "";
-    if (r.kind === "overdue") return fr.dashboard.late(r.days);
-    if (r.kind === "blocked_by") return fr.dashboard.blockedBy(r.title);
-    return fr.dashboard.waiting;
+    if (r.kind === "overdue") return strings.dashboard.late(r.days);
+    if (r.kind === "blocked_by") return strings.dashboard.blockedBy(r.title);
+    return strings.dashboard.waiting;
   };
   return (
     <div className="flex flex-col gap-3 pb-16">
@@ -341,12 +346,12 @@ export function DashboardView({ subjectId }: { subjectId: string | null }) {
       </div>
       <Figures d={d} />
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-[2fr_1fr]">
-        <Block title={fr.dashboard.timeByDay}>
+        <Block title={strings.dashboard.timeByDay}>
           <TimeChart days={d.timeByDay} />
         </Block>
-        <Block title={fr.dashboard.upcoming}>
+        <Block title={strings.dashboard.upcoming}>
           {d.upcoming.length === 0 ? (
-            <Empty text={fr.dashboard.noUpcoming} />
+            <Empty text={strings.dashboard.noUpcoming} />
           ) : (
             <ul>
               {d.upcoming.map((t) => (
@@ -359,14 +364,14 @@ export function DashboardView({ subjectId }: { subjectId: string | null }) {
             </ul>
           )}
           <p className="mt-1 text-[12px] text-text-3">
-            {fr.dashboard.undated(d.undated)}
+            {strings.dashboard.undated(d.undated)}
           </p>
         </Block>
       </div>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <Block title={fr.dashboard.lateOrBlocked}>
+        <Block title={strings.dashboard.lateOrBlocked}>
           {lateOrBlocked.length === 0 ? (
-            <Empty text={fr.dashboard.nothingLate} />
+            <Empty text={strings.dashboard.nothingLate} />
           ) : (
             <ul>
               {lateOrBlocked.map((t) => (
@@ -384,24 +389,24 @@ export function DashboardView({ subjectId }: { subjectId: string | null }) {
             </ul>
           )}
         </Block>
-        <Block title={fr.dashboard.lingering}>
+        <Block title={strings.dashboard.lingering}>
           {d.lingering.length === 0 ? (
-            <Empty text={fr.dashboard.noOpen} />
+            <Empty text={strings.dashboard.noOpen} />
           ) : (
             <ul>
               {d.lingering.map((t) => (
                 <TaskLine
                   key={t.id}
                   task={t}
-                  meta={fr.dashboard.age(t.days ?? 0)}
+                  meta={strings.dashboard.age(t.days ?? 0)}
                 />
               ))}
             </ul>
           )}
         </Block>
-        <Block title={fr.dashboard.timeByTask(d.days)}>
+        <Block title={strings.dashboard.timeByTask(d.days)}>
           {d.timeByTask.length === 0 ? (
-            <Empty text={fr.dashboard.noTime} />
+            <Empty text={strings.dashboard.noTime} />
           ) : (
             <ul>
               {d.timeByTask.map((t) => (
@@ -425,17 +430,17 @@ export function ProjectStrip({ subjectId }: { subjectId: string | null }) {
   const setTab = useUi((s) => s.setProjectTab);
   if (!d) return null;
   const parts = [
-    fr.dashboard.stripOpen(d.open),
-    fr.dashboard.stripDone(d.done),
-    fr.dashboard.stripLate(d.overdue),
-    fr.dashboard.stripBlocked(d.blocked),
-    fr.dashboard.stripTime(formatHours(d.seconds)),
+    strings.dashboard.stripOpen(d.open),
+    strings.dashboard.stripDone(d.done),
+    strings.dashboard.stripLate(d.overdue),
+    strings.dashboard.stripBlocked(d.blocked),
+    strings.dashboard.stripTime(formatHours(d.seconds)),
   ];
   return (
     <button
       type="button"
-      aria-label={`${fr.dashboard.strip} : ${parts.join(", ")}. ${fr.dashboard.stripOpenDashboard}`}
-      title={fr.dashboard.stripOpenDashboard}
+      aria-label={`${strings.dashboard.strip} : ${parts.join(", ")}. ${strings.dashboard.stripOpenDashboard}`}
+      title={strings.dashboard.stripOpenDashboard}
       onClick={() => setTab("dashboard")}
       className="mb-2 flex flex-wrap gap-x-3 gap-y-0.5 rounded-md text-left text-[12.5px] text-text-3 hover:text-text-2"
       data-project-strip

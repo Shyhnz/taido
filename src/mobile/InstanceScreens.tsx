@@ -5,7 +5,7 @@
  */
 
 import { useState } from "react";
-import { fr } from "../i18n/fr";
+import { t } from "../i18n";
 
 const buttonClass =
   "h-11 rounded-md bg-accent px-4 text-[15px] font-medium text-on-accent disabled:opacity-60";
@@ -46,9 +46,9 @@ function Screen({
 export function OtherPageScreen({ onUseHere }: { onUseHere: () => void }) {
   return (
     <Screen
-      title={fr.mobile.otherPage}
-      help={fr.mobile.otherPageHelp}
-      action={fr.mobile.useHere}
+      title={t.mobile.otherPage}
+      help={t.mobile.otherPageHelp}
+      action={t.mobile.useHere}
       onAction={onUseHere}
     />
   );
@@ -57,8 +57,8 @@ export function OtherPageScreen({ onUseHere }: { onUseHere: () => void }) {
 export function TakenOverScreen({ onReload }: { onReload: () => void }) {
   return (
     <Screen
-      title={fr.mobile.pageTakenOver}
-      action={fr.mobile.reload}
+      title={t.mobile.pageTakenOver}
+      action={t.mobile.reload}
       onAction={onReload}
     />
   );

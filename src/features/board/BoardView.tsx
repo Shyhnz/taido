@@ -33,7 +33,7 @@ import { Button } from "../../components/Button";
 import { confirmDialog } from "../../components/Dialog";
 import { type MenuItem, openMenuAt } from "../../components/Menu";
 import { showError } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { formatDue, formatDueMeta } from "../../lib/dates";
 import { features } from "../../lib/features";
@@ -122,7 +122,7 @@ function Card({
         type="button"
         {...attributes}
         {...listeners}
-        aria-roledescription={fr.board.dragLabel(card.title)}
+        aria-roledescription={t.board.dragLabel(card.title)}
         onClick={() => openTask(card.id)}
         // A long press picks the card up (web app): no context menu under the finger.
         onContextMenu={(e) => {
@@ -153,23 +153,20 @@ function Card({
           {card.due && (
             <span
               className={`inline-flex items-center gap-1 ${overdue ? "text-due-overdue" : ""}`}
-              title={fr.row.dueLabel(formatDue(card.due))}
+              title={t.row.dueLabel(formatDue(card.due))}
               data-overdue={overdue || undefined}
             >
               {card.due.time && <Clock size={12} aria-hidden />}
-              {overdue ? fr.row.overdue : formatDueMeta(card.due)}
+              {overdue ? t.row.overdue : formatDueMeta(card.due)}
               {overdue && ` · ${formatDueMeta(card.due)}`}
             </span>
           )}
           {card.subtasksTotal > 0 && (
             <span
               className="tabular-nums"
-              title={fr.row.subtasksLabel(
-                card.subtasksDone,
-                card.subtasksTotal,
-              )}
+              title={t.row.subtasksLabel(card.subtasksDone, card.subtasksTotal)}
             >
-              {fr.row.subtasks(card.subtasksDone, card.subtasksTotal)}
+              {t.row.subtasks(card.subtasksDone, card.subtasksTotal)}
             </span>
           )}
           <LinkBadges row={card} />
@@ -179,8 +176,8 @@ function Card({
       {phone && (
         <button
           type="button"
-          aria-label={fr.board.moveToLabel(card.title)}
-          title={fr.board.moveTo}
+          aria-label={t.board.moveToLabel(card.title)}
+          title={t.board.moveTo}
           onClick={(e) =>
             openMenuAt(
               e.currentTarget,
@@ -190,7 +187,7 @@ function Card({
                   label: to.name,
                   onSelect: () => void drop(card, column, to),
                 })),
-              fr.board.moveToLabel(card.title),
+              t.board.moveToLabel(card.title),
               true,
             )
           }
@@ -229,8 +226,8 @@ function NameField({
       <input
         ref={ref}
         value={name}
-        aria-label={fr.board.newColumnPlaceholder}
-        placeholder={fr.board.newColumnPlaceholder}
+        aria-label={t.board.newColumnPlaceholder}
+        placeholder={t.board.newColumnPlaceholder}
         onChange={(e) => setName(e.target.value)}
         onBlur={onCancel}
         onKeyDown={(e) => {
@@ -269,12 +266,12 @@ function Column({
 
   const menu = (anchor: HTMLElement) => {
     const items: MenuItem[] = [
-      { label: fr.board.rename, onSelect: () => setRenaming(true) },
+      { label: t.board.rename, onSelect: () => setRenaming(true) },
     ];
     if (!column.isDone) {
       items.push(
         {
-          label: fr.board.moveLeft,
+          label: t.board.moveLeft,
           disabled: index === 0,
           onSelect: () =>
             void run(
@@ -282,7 +279,7 @@ function Column({
             ),
         },
         {
-          label: fr.board.moveRight,
+          label: t.board.moveRight,
           disabled: index >= work.length - 1,
           onSelect: () =>
             void run(
@@ -291,28 +288,28 @@ function Column({
         },
         { separator: true },
         {
-          label: fr.board.delete,
+          label: t.board.delete,
           danger: true,
           disabled: work.length <= 1,
           onSelect: async () => {
             const first = work.find((c) => c.id !== column.id) ?? work[0];
             const ok = await confirmDialog({
-              title: fr.board.deleteTitle(column.name),
-              message: fr.board.deleteMessage(first.name),
-              confirmLabel: fr.board.delete,
+              title: t.board.deleteTitle(column.name),
+              message: t.board.deleteMessage(first.name),
+              confirmLabel: t.board.delete,
             });
             if (ok) void run(commands.deleteBoardColumn(column.id));
           },
         },
       );
     }
-    openMenuAt(anchor, items, fr.board.columnMenu(column.name), true);
+    openMenuAt(anchor, items, t.board.columnMenu(column.name), true);
   };
 
   return (
     <section
       ref={setNodeRef}
-      aria-label={fr.board.columnLabel(column.name, column.total)}
+      aria-label={t.board.columnLabel(column.name, column.total)}
       data-column={column.isDone ? "done" : column.id}
       className={`group/column flex flex-col rounded-xl p-2 ${
         phone
@@ -341,8 +338,8 @@ function Column({
               </span>
               <button
                 type="button"
-                aria-label={fr.board.columnMenu(column.name)}
-                title={fr.common.more}
+                aria-label={t.board.columnMenu(column.name)}
+                title={t.common.more}
                 onClick={(e) => menu(e.currentTarget)}
                 className="inline-flex h-6 w-6 items-center justify-center rounded text-text-3 opacity-0 hover:bg-hover hover:text-text focus-visible:opacity-100 group-hover/column:opacity-100"
               >
@@ -364,7 +361,7 @@ function Column({
         ))}
         {column.cards.length === 0 && (
           <li className="px-1.5 py-2 text-[12.5px] text-text-3">
-            {fr.board.empty}
+            {t.board.empty}
           </li>
         )}
       </ul>
@@ -384,7 +381,7 @@ function Column({
           }
           className="mt-2 rounded-md px-1.5 py-1 text-left text-[13px] text-text-2 hover:bg-hover hover:text-text"
         >
-          {fr.board.addTask}
+          {t.board.addTask}
         </button>
       )}
       {column.isDone && hidden > 0 && (
@@ -398,7 +395,7 @@ function Column({
           }}
           className="mt-2 rounded-md px-1.5 py-1 text-left text-[13px] text-text-2 hover:bg-hover hover:text-text"
         >
-          {fr.board.more(hidden)}
+          {t.board.more(hidden)}
         </button>
       )}
     </section>
@@ -419,8 +416,8 @@ function AddColumn({ subjectId }: { subjectId: string | null }) {
               // `invalid` with a name given: a linked device before its first full sync.
               showError(
                 errorKind(e) === "invalid"
-                  ? fr.board.notReadyError
-                  : readableError(e, fr.errors.action.createColumn),
+                  ? t.board.notReadyError
+                  : readableError(e, t.errors.action.createColumn),
               );
             });
           }}
@@ -434,7 +431,7 @@ function AddColumn({ subjectId }: { subjectId: string | null }) {
       onClick={() => setOpen(true)}
       className="h-9 shrink-0 rounded-xl px-3 text-[13px] whitespace-nowrap text-text-2 hover:bg-hover hover:text-text"
     >
-      {fr.board.addColumn}
+      {t.board.addColumn}
     </button>
   );
 }
@@ -453,7 +450,7 @@ function ColumnTabs({
 }) {
   return (
     <nav
-      aria-label={fr.board.columnsNav}
+      aria-label={t.board.columnsNav}
       className="-mx-1 mb-2 flex items-center gap-1 overflow-x-auto px-1 pb-1"
     >
       {columns.map((column, i) => (
@@ -461,7 +458,7 @@ function ColumnTabs({
           key={column.id}
           type="button"
           aria-current={active === i ? "true" : undefined}
-          aria-label={fr.board.columnTab(column.name, column.total)}
+          aria-label={t.board.columnTab(column.name, column.total)}
           onClick={() => onPick(i)}
           className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] whitespace-nowrap ${
             active === i
@@ -518,13 +515,13 @@ export function BoardView({ subjectId }: { subjectId: string | null }) {
       <div className="py-6 text-[13.5px] text-text-2">
         {error ? (
           <span className="flex items-center gap-3">
-            {fr.board.error}
+            {t.board.error}
             <Button size="sm" onClick={() => void refetch()}>
-              {fr.board.retry}
+              {t.board.retry}
             </Button>
           </span>
         ) : (
-          fr.board.loading
+          t.board.loading
         )}
       </div>
     );
@@ -534,7 +531,7 @@ export function BoardView({ subjectId }: { subjectId: string | null }) {
   if (board.columns.length === 0) {
     return (
       <p role="status" className="py-6 text-[13.5px] text-text-2">
-        {fr.board.notReady}
+        {t.board.notReady}
       </p>
     );
   }
@@ -624,7 +621,7 @@ export function BoardView({ subjectId }: { subjectId: string | null }) {
       {/* Launching Claude moves a card: not on the web, which has no Claude. */}
       {!IS_MOBILE && first && second && !second.isDone && (
         <p className="mb-3 text-[12.5px] text-text-3">
-          {fr.board.hint(first.name, second.name, agent)}
+          {t.board.hint(first.name, second.name, agent)}
         </p>
       )}
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>

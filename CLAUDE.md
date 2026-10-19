@@ -25,7 +25,7 @@ Rust toolchain via rustup; package manager pnpm.
 ## Architecture
 
 ```text
-src/                 React 19 + TS strict + Vite (UI only, strings in src/i18n/fr.ts)
+src/                 React 19 + TS strict + Vite (UI only, strings in src/i18n/, English default and French)
 src-tauri/src/       Rust core
   db/ pty/ agents/ hooks/ state/ views/ notify/ commands/ sync/ env.rs   (agents/ = Claude Code and Codex)
 tools/fake-claude/   fake `claude` binary for tests (no tokens)

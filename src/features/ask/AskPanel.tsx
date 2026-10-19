@@ -10,7 +10,7 @@ import { RotateCcw, Search, SquarePen, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TerminalInfo } from "../../bindings";
 import { Button, IconButton } from "../../components/Button";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands } from "../../lib/ipc";
 import { useSubjects, useTerminals } from "../../lib/queries";
 import { run } from "../../lib/run";
@@ -60,7 +60,7 @@ export function AskPanel({ subjectId }: { subjectId: string }) {
     const info = ready
       ? await run(
           commands.openAskTerminal(subjectId, size.cols, size.rows),
-          fr.ask.openError,
+          t.ask.openError,
         )
       : undefined;
     setOpening(false);
@@ -94,7 +94,7 @@ export function AskPanel({ subjectId }: { subjectId: string }) {
   /** Another conversation: the current terminal (running or ended) goes first. */
   const fresh = async () => {
     if (terminal) {
-      await run(commands.closeTerminal(terminal.id), fr.ask.openError);
+      await run(commands.closeTerminal(terminal.id), t.ask.openError);
     }
     setOpened(null);
     await open();
@@ -104,7 +104,7 @@ export function AskPanel({ subjectId }: { subjectId: string }) {
 
   return (
     <section
-      aria-label={fr.ask.title}
+      aria-label={t.ask.title}
       className="relative flex h-full shrink-0 flex-col border-l border-border bg-bg"
       style={{ width }}
     >
@@ -113,17 +113,17 @@ export function AskPanel({ subjectId }: { subjectId: string }) {
         max={max}
         onResize={setWidth}
         onCommit={commit}
-        label={fr.ask.resize}
+        label={t.ask.resize}
       />
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4">
         <Search size={15} aria-hidden className="text-text-2" />
-        <h2 className="mr-auto text-[14px] font-semibold">{fr.ask.title}</h2>
+        <h2 className="mr-auto text-[14px] font-semibold">{t.ask.title}</h2>
         {terminal && !opening && (
-          <IconButton label={fr.ask.newConversation} onClick={fresh}>
+          <IconButton label={t.ask.newConversation} onClick={fresh}>
             <SquarePen size={15} aria-hidden />
           </IconButton>
         )}
-        <IconButton label={fr.ask.close} onClick={closeAsk}>
+        <IconButton label={t.ask.close} onClick={closeAsk}>
           <X size={16} aria-hidden />
         </IconButton>
       </header>
@@ -136,7 +136,7 @@ export function AskPanel({ subjectId }: { subjectId: string }) {
             <div className="relative min-h-0 flex-1">
               <TerminalView
                 terminalId={terminal.id}
-                label={fr.terminals.view(fr.terminals.agent("claude"))}
+                label={t.terminals.view(t.terminals.agent("claude"))}
               />
               <MicButton terminal={terminal} />
             </div>
@@ -148,12 +148,12 @@ export function AskPanel({ subjectId }: { subjectId: string }) {
               role="status"
             >
               {opening
-                ? fr.ask.opening
+                ? t.ask.opening
                 : terminal
-                  ? fr.ask.ended
+                  ? t.ask.ended
                   : failed
-                    ? fr.ask.failedToOpen
-                    : fr.ask.opening}
+                    ? t.ask.failedToOpen
+                    : t.ask.opening}
             </p>
             {!opening && (terminal || failed) && (
               <Button
@@ -161,7 +161,7 @@ export function AskPanel({ subjectId }: { subjectId: string }) {
                 onClick={() => void (terminal ? fresh() : open())}
               >
                 <RotateCcw size={14} aria-hidden />
-                {terminal ? fr.ask.restart : fr.ask.retry}
+                {terminal ? t.ask.restart : t.ask.retry}
               </Button>
             )}
           </div>

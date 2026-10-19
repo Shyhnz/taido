@@ -14,7 +14,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { fr } from "../i18n/fr";
+import { t } from "../i18n";
 import { parseLocalDate } from "../lib/dates";
 import { IconButton } from "./Button";
 import {
@@ -149,7 +149,7 @@ export function DatePicker({
           data-autofocus={value.date === null ? true : undefined}
         >
           <CalendarDays size={15} aria-hidden className="text-text-2" />
-          <span className="flex-1">{fr.datePicker.today}</span>
+          <span className="flex-1">{t.datePicker.today}</span>
           <span className="text-[12px] text-text-2">
             {quickHint(quick.today, clock)}
           </span>
@@ -160,7 +160,7 @@ export function DatePicker({
           onClick={() => pick(quick.tomorrow)}
         >
           <CalendarDays size={15} aria-hidden className="text-text-2" />
-          <span className="flex-1">{fr.datePicker.tomorrow}</span>
+          <span className="flex-1">{t.datePicker.tomorrow}</span>
           <span className="text-[12px] text-text-2">
             {quickHint(quick.tomorrow, clock)}
           </span>
@@ -171,7 +171,7 @@ export function DatePicker({
           onClick={() => pick(quick.nextMonday)}
         >
           <CalendarDays size={15} aria-hidden className="text-text-2" />
-          <span className="flex-1">{fr.datePicker.nextMonday}</span>
+          <span className="flex-1">{t.datePicker.nextMonday}</span>
           <span className="text-[12px] text-text-2">
             {quickHint(quick.nextMonday, clock)}
           </span>
@@ -185,14 +185,14 @@ export function DatePicker({
           </span>
           <div className="flex gap-0.5">
             <IconButton
-              label={fr.datePicker.previousMonth}
+              label={t.datePicker.previousMonth}
               size={26}
               onClick={() => setMonth(shiftMonth(month, -1))}
             >
               <ChevronLeft size={15} aria-hidden />
             </IconButton>
             <IconButton
-              label={fr.datePicker.nextMonth}
+              label={t.datePicker.nextMonth}
               size={26}
               onClick={() => setMonth(shiftMonth(month, 1))}
             >
@@ -221,7 +221,7 @@ export function DatePicker({
             const selected = d.date === value.date;
             const isToday = d.date === quick.today;
             const label = isToday
-              ? `${dayLabel(d.date)}, ${fr.datePicker.isToday}`
+              ? `${dayLabel(d.date)}, ${t.datePicker.isToday}`
               : dayLabel(d.date);
             return (
               <button
@@ -255,10 +255,10 @@ export function DatePicker({
         <div className="mt-2 flex flex-col gap-1 border-t border-border pt-2">
           <div className="flex items-center gap-1.5">
             <input
-              aria-label={fr.datePicker.time}
+              aria-label={t.datePicker.time}
               aria-describedby={timeHelpId}
               aria-invalid={timeError || undefined}
-              placeholder={fr.datePicker.timePlaceholder}
+              placeholder={t.datePicker.timePlaceholder}
               value={timeText}
               inputMode="numeric"
               onChange={(e) => {
@@ -278,7 +278,7 @@ export function DatePicker({
             />
             {value.time !== null && (
               <IconButton
-                label={fr.datePicker.clearTime}
+                label={t.datePicker.clearTime}
                 size={28}
                 onClick={() => {
                   setTimeText("");
@@ -294,7 +294,7 @@ export function DatePicker({
             id={timeHelpId}
             className={`px-0.5 text-[12px] ${timeError ? "text-due-overdue" : "text-text-2"}`}
           >
-            {timeError ? fr.datePicker.timeInvalid : fr.datePicker.timeHelp}
+            {timeError ? t.datePicker.timeInvalid : t.datePicker.timeHelp}
           </p>
         </div>
       )}
@@ -307,7 +307,7 @@ export function DatePicker({
             onClick={() => onChange({ date: null, time: null })}
           >
             <X size={15} aria-hidden />
-            {fr.datePicker.clear}
+            {t.datePicker.clear}
           </button>
         </div>
       )}
@@ -323,7 +323,7 @@ export function DatePickerPopover({
   onClose,
   now,
   dateOnly,
-  label = fr.datePicker.label,
+  label = t.datePicker.label,
 }: DatePickerProps & {
   anchorRef: RefObject<HTMLElement | null>;
   onClose: (restoreFocus: boolean) => void;

@@ -25,7 +25,8 @@ import { Sidebar } from "../features/sidebar/Sidebar";
 import { TaskPanel } from "../features/task-panel/TaskPanel";
 import { openAddTaskForView } from "../features/views/addTarget";
 import { ViewScreen } from "../features/views/ViewScreen";
-import { fr } from "../i18n/fr";
+import { t } from "../i18n";
+import { useLanguageSync } from "../i18n/useLanguageSync";
 import { useDay } from "../lib/clock";
 import { useHasNoProjectTasks, useSettings, useSubjects } from "../lib/queries";
 import { useMediaQuery } from "../lib/screen";
@@ -49,17 +50,17 @@ function useViewTitle(): string {
   const subjects = useSubjects().data;
   switch (view.kind) {
     case "today":
-      return fr.sidebar.today;
+      return t.sidebar.today;
     case "upcoming":
-      return fr.upcoming.title;
+      return t.upcoming.title;
     case "all":
-      return fr.all.title;
+      return t.all.title;
     case "inbox":
-      return fr.sidebar.noProject;
+      return t.sidebar.noProject;
     case "subject":
       return subjects?.find((s) => s.id === view.subjectId)?.name ?? "";
     case "portfolio":
-      return fr.portfolio.title;
+      return t.portfolio.title;
   }
 }
 
@@ -97,7 +98,7 @@ function Banners({ backend }: { backend: MobileBackend }) {
   return (
     <>
       {backend.storageBroken && (
-        <Banner tone="alert">{fr.mobile.storageError}</Banner>
+        <Banner tone="alert">{t.mobile.storageError}</Banner>
       )}
       {held > 0 && (
         <Banner
@@ -109,24 +110,22 @@ function Banners({ backend }: { backend: MobileBackend }) {
                 className={bannerButton}
                 onClick={() => backend.restoreHeldDeletions()}
               >
-                {fr.mobile.deletionsHeldRestore}
+                {t.mobile.deletionsHeldRestore}
               </button>
               <button
                 type="button"
                 className={bannerButton}
                 onClick={() => backend.confirmHeldDeletions()}
               >
-                {fr.mobile.deletionsHeldConfirm}
+                {t.mobile.deletionsHeldConfirm}
               </button>
             </>
           }
         >
-          {fr.mobile.deletionsHeld(held)}
+          {t.mobile.deletionsHeld(held)}
         </Banner>
       )}
-      {status?.state === "offline" && (
-        <Banner>{fr.mobile.offlineBanner}</Banner>
-      )}
+      {status?.state === "offline" && <Banner>{t.mobile.offlineBanner}</Banner>}
       {status?.state === "unlinked" && !backend.storageBroken && (
         <Banner
           actions={
@@ -135,11 +134,11 @@ function Banners({ backend }: { backend: MobileBackend }) {
               className={bannerButton}
               onClick={() => openDialog({ type: "settings", tab: "sync" })}
             >
-              {fr.sync.link}
+              {t.sync.link}
             </button>
           }
         >
-          {fr.mobile.linkFirst}
+          {t.mobile.linkFirst}
         </Banner>
       )}
       {waiting && (
@@ -150,11 +149,11 @@ function Banners({ backend }: { backend: MobileBackend }) {
               className={bannerButton}
               onClick={applyUpdate}
             >
-              {fr.mobile.reload}
+              {t.mobile.reload}
             </button>
           }
         >
-          {fr.mobile.updateReady}
+          {t.mobile.updateReady}
         </Banner>
       )}
     </>
@@ -184,6 +183,7 @@ export function MobileShell({ backend }: { backend: MobileBackend }) {
       : null;
   useDay((s) => s.day);
   const settings = useSettings().data;
+  useLanguageSync(settings);
   const theme = settings?.theme ?? "system";
   const color = settings?.colorTheme ?? "taido";
   const firstLaunch = isFirstLaunch(useSubjects().data, useHasNoProjectTasks());
@@ -231,7 +231,7 @@ export function MobileShell({ backend }: { backend: MobileBackend }) {
           <header className="mobile-topbar flex h-14 shrink-0 items-center gap-1 border-b border-border px-1">
             <button
               type="button"
-              aria-label={fr.mobile.menu}
+              aria-label={t.mobile.menu}
               aria-expanded={sidebarOpen}
               onClick={() => toggleSidebar()}
               className="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-2"
@@ -254,7 +254,7 @@ export function MobileShell({ backend }: { backend: MobileBackend }) {
             >
               {wide && !sidebarOpen && (
                 <IconButton
-                  label={fr.sidebar.expand}
+                  label={t.sidebar.expand}
                   className="absolute top-3 left-3 z-10"
                   onClick={() => toggleSidebar(true)}
                 >
@@ -271,7 +271,7 @@ export function MobileShell({ backend }: { backend: MobileBackend }) {
         {!openTaskId && notesOf === null && (
           <button
             type="button"
-            aria-label={fr.sidebar.newTask}
+            aria-label={t.sidebar.newTask}
             onClick={openAddTaskForView}
             className="mobile-fab fixed right-4 bottom-4 z-20 inline-flex h-14 w-14 items-center justify-center rounded-full bg-accent text-on-accent shadow-pop"
           >
@@ -283,14 +283,14 @@ export function MobileShell({ backend }: { backend: MobileBackend }) {
             <div
               role="dialog"
               aria-modal="true"
-              aria-label={fr.sidebar.navLabel}
+              aria-label={t.sidebar.navLabel}
               className="mobile-drawer relative h-full max-w-[85vw] shadow-pop"
             >
               <Sidebar />
             </div>
             <button
               type="button"
-              aria-label={fr.mobile.closeMenu}
+              aria-label={t.mobile.closeMenu}
               onClick={() => toggleSidebar(false)}
               className="h-full flex-1 bg-overlay"
             />

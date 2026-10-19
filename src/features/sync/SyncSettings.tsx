@@ -22,7 +22,7 @@ import { type FormEvent, useId, useState } from "react";
 import type { SyncStatus } from "../../bindings";
 import { Button } from "../../components/Button";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands, errorMessage } from "../../lib/ipc";
 import { run } from "../../lib/run";
 import { IS_MOBILE } from "../../lib/target";
@@ -89,7 +89,7 @@ function LinkForm({
       });
       setPassword("");
       setSyncStatus(client, next);
-      showToast({ message: fr.sync.linkedToast });
+      showToast({ message: t.sync.linkedToast });
     } catch (err) {
       console.error(errorMessage(err), err);
       setError(linkErrorText(err));
@@ -103,13 +103,13 @@ function LinkForm({
     <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <p className="text-[13.5px]">
-          {IS_MOBILE ? fr.sync.introMobile : fr.sync.intro}
+          {IS_MOBILE ? t.sync.introMobile : t.sync.intro}
         </p>
-        <p className="text-[12.5px] text-text-2">{fr.sync.privacy}</p>
+        <p className="text-[12.5px] text-text-2">{t.sync.privacy}</p>
       </div>
       <div className="flex max-w-[420px] flex-col gap-1.5">
         <label htmlFor={emailId} className="text-[13.5px] font-medium">
-          {fr.sync.email}
+          {t.sync.email}
         </label>
         <input
           id={emailId}
@@ -119,7 +119,7 @@ function LinkForm({
             setEmail(e.target.value);
             setError(null);
           }}
-          placeholder={fr.sync.emailPlaceholder}
+          placeholder={t.sync.emailPlaceholder}
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
@@ -131,7 +131,7 @@ function LinkForm({
       </div>
       <div className="flex max-w-[420px] flex-col gap-1.5">
         <label htmlFor={passwordId} className="text-[13.5px] font-medium">
-          {fr.sync.password}
+          {t.sync.password}
         </label>
         <input
           id={passwordId}
@@ -149,12 +149,12 @@ function LinkForm({
           className={inputClass}
         />
         <p id={forgotId} className="text-[12.5px] text-text-2">
-          {fr.sync.forgotOnMac}
+          {t.sync.forgotOnMac}
         </p>
       </div>
       <div className="flex max-w-[420px] flex-col gap-1.5">
         <label htmlFor={urlId} className="text-[13.5px] font-medium">
-          {fr.sync.serverUrl}
+          {t.sync.serverUrl}
         </label>
         <input
           id={urlId}
@@ -165,7 +165,7 @@ function LinkForm({
             setServerUrl(e.target.value);
             setError(null);
           }}
-          placeholder={fr.sync.serverUrlPlaceholder}
+          placeholder={t.sync.serverUrlPlaceholder}
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
@@ -192,9 +192,9 @@ function LinkForm({
           disabled={!ready || busy}
           aria-busy={busy || undefined}
         >
-          {busy ? fr.sync.linking : fr.sync.link}
+          {busy ? t.sync.linking : t.sync.link}
         </Button>
-        <p className="text-[12.5px] text-text-2">{fr.sync.signupOnMac}</p>
+        <p className="text-[12.5px] text-text-2">{t.sync.signupOnMac}</p>
       </div>
     </form>
   );
@@ -233,7 +233,7 @@ function LinkedView({ status }: { status: SyncStatus }) {
                 : "text-[13.5px] font-medium break-all"
             }
           >
-            {fr.sync.linkedTo(status.serverUrl ?? "")}
+            {t.sync.linkedTo(status.serverUrl ?? "")}
           </p>
         </div>
         <StateLine status={status} />
@@ -252,7 +252,7 @@ function LinkedView({ status }: { status: SyncStatus }) {
               aria-hidden
               className={syncing ? "motion-safe:animate-spin" : undefined}
             />
-            {fr.sync.syncNow}
+            {t.sync.syncNow}
           </Button>
         </div>
       </div>
@@ -263,7 +263,7 @@ function LinkedView({ status }: { status: SyncStatus }) {
           disabled={syncing || leaving}
           aria-busy={leaving || undefined}
         >
-          {leaving ? fr.account.loggingOut : fr.account.logout}
+          {leaving ? t.account.loggingOut : t.account.logout}
         </Button>
       </div>
     </div>
@@ -277,16 +277,16 @@ export function SyncSettings({ defaultServerUrl }: SyncSettingsProps) {
   if (query.isPending) {
     return (
       <p role="status" className="pt-1 text-[13px] text-text-2">
-        {fr.sync.loading}
+        {t.sync.loading}
       </p>
     );
   }
   if (query.isError || !status) {
     return (
       <div role="alert" className="flex items-center justify-between gap-3">
-        <p className="text-[13px] text-text">{fr.sync.loadError}</p>
+        <p className="text-[13px] text-text">{t.sync.loadError}</p>
         <Button size="sm" onClick={() => void query.refetch()}>
-          {fr.common.retry}
+          {t.common.retry}
         </Button>
       </div>
     );

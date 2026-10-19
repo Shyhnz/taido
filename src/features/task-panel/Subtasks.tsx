@@ -16,7 +16,7 @@ import { GripVertical, Pencil, Plus, X } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { Subtask } from "../../bindings";
 import { IconButton } from "../../components/Button";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { formatDue } from "../../lib/dates";
 import { features } from "../../lib/features";
@@ -37,7 +37,7 @@ async function toggleSubtask(subtask: Subtask): Promise<void> {
   if (!subtask.done && !(await confirmStopSessions(subtask.id, "complete"))) {
     return;
   }
-  await run(commands.toggleSubtask(subtask.id), fr.errors.action.subtask);
+  await run(commands.toggleSubtask(subtask.id), t.errors.action.subtask);
 }
 
 /** Deletes a subtask (its terminals close: a running Claude asks first). */
@@ -101,7 +101,7 @@ function RenameField({
       // biome-ignore lint/a11y/noAutofocus: opened on an explicit user action
       autoFocus
       value={text}
-      aria-label={fr.panel.subtaskLabel}
+      aria-label={t.panel.subtaskLabel}
       onChange={(e) => setText(e.target.value)}
       onFocus={(e) => e.currentTarget.select()}
       onBlur={save}
@@ -145,7 +145,7 @@ function SubtaskItem({ subtask }: { subtask: Subtask }) {
           ref={setActivatorNodeRef}
           {...attributes}
           {...gripListeners}
-          aria-label={`${fr.panel.dragSubtask} · ${subtask.text}`}
+          aria-label={`${t.panel.dragSubtask} · ${subtask.text}`}
           className="drag-grip absolute -left-5 flex h-6 w-4 cursor-grab items-center justify-center text-text-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
         >
           <GripVertical size={13} aria-hidden />
@@ -157,7 +157,7 @@ function SubtaskItem({ subtask }: { subtask: Subtask }) {
         role="checkbox"
         aria-checked={subtask.done}
         aria-label={subtask.text}
-        title={fr.panelBis.priorityName(subtask.priority)}
+        title={t.panelBis.priorityName(subtask.priority)}
         onClick={() => void toggleSubtask(subtask)}
         className="-m-1 inline-flex h-[23px] w-[23px] shrink-0 items-center justify-center rounded-full"
       >
@@ -172,7 +172,7 @@ function SubtaskItem({ subtask }: { subtask: Subtask }) {
       ) : (
         <button
           type="button"
-          aria-label={fr.panelBis.openSubtask(subtask.text)}
+          aria-label={t.panelBis.openSubtask(subtask.text)}
           onClick={() => openTask(subtask.id)}
           className="flex h-full min-w-0 flex-1 items-center gap-2 text-left"
         >
@@ -187,7 +187,7 @@ function SubtaskItem({ subtask }: { subtask: Subtask }) {
           {!subtask.done && <StateDot ring={subtask.ring} agent={agent} />}
           {due && (
             <span
-              title={fr.panelBis.subtaskDue(due)}
+              title={t.panelBis.subtaskDue(due)}
               className={`ml-auto shrink-0 text-[12px] ${
                 overdue ? "text-due-overdue" : "text-text-2"
               }`}
@@ -199,7 +199,7 @@ function SubtaskItem({ subtask }: { subtask: Subtask }) {
       )}
       {!editing && (
         <IconButton
-          label={`${fr.panelBis.renameSubtask} · ${subtask.text}`}
+          label={`${t.panelBis.renameSubtask} · ${subtask.text}`}
           size={24}
           className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
           onClick={() => setEditing(true)}
@@ -208,7 +208,7 @@ function SubtaskItem({ subtask }: { subtask: Subtask }) {
         </IconButton>
       )}
       <IconButton
-        label={`${fr.panel.deleteSubtask} · ${subtask.text}`}
+        label={`${t.panel.deleteSubtask} · ${subtask.text}`}
         size={24}
         className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
         onClick={() => void deleteSubtask(subtask)}
@@ -245,7 +245,7 @@ function AddSubtask({
         className="flex h-8 items-center gap-2.5 text-[14px] text-text-2 hover:text-text"
       >
         <Plus size={15} aria-hidden />
-        {fr.panel.addSubtask}
+        {t.panel.addSubtask}
       </button>
     );
   }
@@ -255,8 +255,8 @@ function AddSubtask({
       <input
         // biome-ignore lint/a11y/noAutofocus: opened on an explicit user action
         autoFocus
-        aria-label={fr.panel.addSubtask}
-        placeholder={fr.panel.subtaskPlaceholder}
+        aria-label={t.panel.addSubtask}
+        placeholder={t.panel.subtaskPlaceholder}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onBlur={() => {
@@ -303,14 +303,14 @@ export function Subtasks({
   return (
     <Fold
       id="subtasks"
-      title={fr.panel.subtasks}
+      title={t.panel.subtasks}
       // A long list starts folded: its summary says enough (layout C).
       defaultOpen={subtasks.length <= SUBTASKS_OPEN_MAX}
       summary={
         subtasks.length > 0 && (
           <span
             className="flex items-center gap-2"
-            title={fr.row.subtasksLabel(done, subtasks.length)}
+            title={t.row.subtasksLabel(done, subtasks.length)}
           >
             <FoldProgress done={done} total={subtasks.length} />
             {done}/{subtasks.length}

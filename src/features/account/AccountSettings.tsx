@@ -14,7 +14,7 @@ import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 import type { SyncStatus } from "../../bindings";
 import { Button } from "../../components/Button";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands } from "../../lib/ipc";
 import { run } from "../../lib/run";
 import {
@@ -42,15 +42,15 @@ function SignedOut() {
   return (
     <div className="flex max-w-[420px] flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <p className="text-[13.5px]">{fr.account.intro}</p>
-        <p className="text-[12.5px] text-text-2">{fr.account.privacy}</p>
+        <p className="text-[13.5px]">{t.account.intro}</p>
+        <p className="text-[12.5px] text-text-2">{t.account.privacy}</p>
       </div>
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" onClick={() => setMode("signup")}>
-          {fr.account.start.signup}
+          {t.account.start.signup}
         </Button>
         <Button onClick={() => setMode("login")}>
-          {fr.account.start.login}
+          {t.account.start.login}
         </Button>
       </div>
     </div>
@@ -82,7 +82,7 @@ function SignedIn({ status }: { status: SyncStatus }) {
           <UnconfirmedLine account={account} />
           {status.serverUrl && (
             <p className="text-[12.5px] break-all text-text-3">
-              {fr.account.server(status.serverUrl)}
+              {t.account.server(status.serverUrl)}
             </p>
           )}
         </div>
@@ -106,7 +106,7 @@ function SignedIn({ status }: { status: SyncStatus }) {
                   : undefined
               }
             />
-            {fr.account.syncNow}
+            {t.account.syncNow}
           </Button>
         </div>
       </div>
@@ -117,7 +117,7 @@ function SignedIn({ status }: { status: SyncStatus }) {
           disabled={busy}
           aria-busy={leaving || undefined}
         >
-          {leaving ? fr.account.loggingOut : fr.account.logout}
+          {leaving ? t.account.loggingOut : t.account.logout}
         </Button>
       </div>
     </div>

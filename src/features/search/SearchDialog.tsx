@@ -21,7 +21,7 @@ import {
 import type { NoteHit, TaskHit } from "../../bindings";
 import { Button } from "../../components/Button";
 import { Dialog } from "../../components/Dialog";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { features } from "../../lib/features";
 import { subjectColorVar } from "../../lib/format";
@@ -128,9 +128,7 @@ function NoteRow({
           className="h-2 w-2 shrink-0 rounded-full"
           style={{ background: subjectColorVar(hit.subject.color) }}
         />
-        <span className="truncate">
-          {fr.search.noteWhere(hit.subject.name)}
-        </span>
+        <span className="truncate">{t.search.noteWhere(hit.subject.name)}</span>
       </span>
     </div>
   );
@@ -151,8 +149,8 @@ function HitRow({
 }) {
   const agent = useDefaultAgent();
   const where = hit.subject
-    ? fr.search.where(hit.subject.name, hit.section?.name ?? null)
-    : fr.search.noProject;
+    ? t.search.where(hit.subject.name, hit.section?.name ?? null)
+    : t.search.noProject;
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: the field drives the keyboard (aria-activedescendant)
     <div
@@ -180,7 +178,7 @@ function HitRow({
         >
           {hit.title}
           {hit.completed && (
-            <span className="sr-only">, {fr.search.completed}</span>
+            <span className="sr-only">, {t.search.completed}</span>
           )}
         </span>
         {features.states && (
@@ -286,16 +284,16 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
 
   let body: ReactNode;
   if (text.trim().length === 0) {
-    body = <Note>{fr.search.hint}</Note>;
+    body = <Note>{t.search.hint}</Note>;
   } else if (search.isError) {
     body = (
       <div
         role="alert"
         className="flex items-center justify-between gap-3 px-2.5 py-3"
       >
-        <p className="text-[13px] text-text">{fr.search.error}</p>
+        <p className="text-[13px] text-text">{t.search.error}</p>
         <Button size="sm" onClick={() => void search.refetch()}>
-          {fr.common.retry}
+          {t.common.retry}
         </Button>
       </div>
     );
@@ -305,20 +303,20 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
     query !== text.trim()
   ) {
     // Typing, or the first answer is on its way: the previous hits stay shown meanwhile.
-    body = hits.length > 0 ? null : <Note status>{fr.search.loading}</Note>;
+    body = hits.length > 0 ? null : <Note status>{t.search.loading}</Note>;
   } else if (hits.length === 0) {
-    body = <Note status>{fr.search.none(query)}</Note>;
+    body = <Note status>{t.search.none(query)}</Note>;
   }
 
   const showList = hits.length > 0 && !search.isError;
 
   return (
-    <Dialog title={fr.search.title} onClose={onClose} width={600} hideTitle>
+    <Dialog title={t.search.title} onClose={onClose} width={600} hideTitle>
       <div className="flex h-12 items-center gap-2.5 border-b border-border px-4">
         <Search size={17} aria-hidden className="shrink-0 text-text-3" />
         <input
           role="combobox"
-          aria-label={fr.search.label}
+          aria-label={t.search.label}
           aria-expanded={showList}
           aria-controls={listId}
           aria-autocomplete="list"
@@ -329,7 +327,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
             setEnterPending(false);
           }}
           onKeyDown={onKeyDown}
-          placeholder={fr.search.placeholder}
+          placeholder={t.search.placeholder}
           spellCheck={false}
           autoComplete="off"
           className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-text-3"
@@ -341,7 +339,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           ref={listRef}
           id={listId}
           role="listbox"
-          aria-label={fr.search.results}
+          aria-label={t.search.results}
           hidden={!showList}
         >
           {showList &&
@@ -370,7 +368,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
         {body}
       </div>
       <p className="border-t border-border px-4 py-2 text-[12px] text-text-3">
-        {fr.search.footer}
+        {t.search.footer}
       </p>
     </Dialog>
   );

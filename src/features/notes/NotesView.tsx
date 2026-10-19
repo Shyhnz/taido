@@ -9,7 +9,7 @@ import { Plus } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Button } from "../../components/Button";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { features } from "../../lib/features";
 import { noteFoldKey, useUi } from "../../stores/ui";
 import { NoteList } from "./NoteList";
@@ -34,7 +34,7 @@ export function NewNotePageFab({ subjectId }: { subjectId: string }) {
   return (
     <button
       type="button"
-      aria-label={fr.notes.newPage}
+      aria-label={t.notes.newPage}
       onClick={onClick}
       className="mobile-fab fixed right-4 bottom-4 z-20 inline-flex h-14 w-14 items-center justify-center rounded-full bg-accent text-on-accent shadow-pop"
     >
@@ -52,14 +52,14 @@ function EmptyNotebook({
 }) {
   return (
     <div className="flex flex-col items-center gap-1.5 py-12 text-center">
-      <p className="text-[15px] font-semibold">{fr.notes.emptyTitle}</p>
+      <p className="text-[15px] font-semibold">{t.notes.emptyTitle}</p>
       <p className="max-w-[360px] text-[13.5px] text-text-2">
-        {fr.notes.emptyText}
+        {t.notes.emptyText}
       </p>
       {/* Claude writes in the notebook from the Mac only. */}
       {features.terminals && (
         <p className="max-w-[360px] text-[13px] text-text-3">
-          {fr.notes.emptyClaude}
+          {t.notes.emptyClaude}
         </p>
       )}
       {/* On the phone the floating « + » is the one way to add a page. */}
@@ -69,7 +69,7 @@ function EmptyNotebook({
           className="mt-3"
           onClick={() => void createNotePage(subjectId, null, false)}
         >
-          {fr.notes.newPage}
+          {t.notes.newPage}
         </Button>
       )}
     </div>
@@ -91,7 +91,7 @@ function ListSkeleton({ wide }: { wide: boolean }) {
     </div>
   );
   return (
-    <div role="status" aria-label={fr.common.loading}>
+    <div role="status" aria-label={t.common.loading}>
       {wide ? (
         <div className="flex items-start gap-10">
           <div className="w-[260px] shrink-0">{list}</div>
@@ -139,7 +139,7 @@ export function NotesView({ subjectId }: { subjectId: string }) {
       !pages.some((p) => p.id === before) &&
       !wasDeletedHere(before)
     ) {
-      showToast({ message: fr.notes.deletedElsewhere });
+      showToast({ message: t.notes.deletedElsewhere });
     }
     shown.current = selectedId;
   });
@@ -147,8 +147,8 @@ export function NotesView({ subjectId }: { subjectId: string }) {
   if (error) {
     return (
       <div role="alert" className="flex flex-col items-center gap-3 pt-16">
-        <p className="text-[14px] text-text-2">{fr.notes.loadError}</p>
-        <Button onClick={() => void refetch()}>{fr.list.retry}</Button>
+        <p className="text-[14px] text-text-2">{t.notes.loadError}</p>
+        <Button onClick={() => void refetch()}>{t.list.retry}</Button>
       </div>
     );
   }
@@ -183,12 +183,12 @@ export function NotesView({ subjectId }: { subjectId: string }) {
         ) : (
           // Groups but no page yet: the right side says what to do instead of staying blank.
           <div className="flex flex-col items-start gap-3 pt-6">
-            <p className="text-[14px] text-text-2">{fr.notes.noPageOpen}</p>
+            <p className="text-[14px] text-text-2">{t.notes.noPageOpen}</p>
             <Button
               variant="primary"
               onClick={() => void createNotePage(subjectId, null, false)}
             >
-              {fr.notes.newPage}
+              {t.notes.newPage}
             </Button>
           </div>
         )}

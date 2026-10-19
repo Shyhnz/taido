@@ -6,7 +6,7 @@ import type { Agent, Due, Subject } from "../../bindings";
 import { announce } from "../../components/LiveRegion";
 import type { MenuItem } from "../../components/Menu";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { features } from "../../lib/features";
 import { projectPath } from "../../lib/format";
 import { commands } from "../../lib/ipc";
@@ -141,28 +141,28 @@ export async function setCompleted(
       : null;
   const result = await run(
     commands.setTaskCompleted({ id, completed }),
-    fr.errors.action.completeTask,
+    t.errors.action.completeTask,
   );
   if (result === undefined) return undefined;
   if (completed) {
     if (next) focusTaskRow(next);
     showToast({
-      message: fr.toast.completed,
+      message: t.toast.completed,
       action: {
-        label: fr.toast.undo,
+        label: t.toast.undo,
         onAction: () => {
           cancelCompletion(id);
           void run(
             commands.setTaskCompleted({ id, completed: false }),
-            fr.errors.action.completeTask,
+            t.errors.action.completeTask,
           ).then((task) => {
-            if (task) announce(fr.list.announce.reopened(task.title));
+            if (task) announce(t.list.announce.reopened(task.title));
           });
         },
       },
     });
   } else {
-    announce(fr.list.announce.reopened(result.title));
+    announce(t.list.announce.reopened(result.title));
   }
   return result;
 }
@@ -245,18 +245,18 @@ export async function deleteTask(id: string, _title: string) {
   flushPanelEdits();
   if (!(await confirmStopSessions(id, "delete"))) return;
   const next = rowHasFocus(id) ? neighbourRowId(id) : null;
-  const done = await run(commands.deleteTask(id), fr.errors.action.deleteTask);
+  const done = await run(commands.deleteTask(id), t.errors.action.deleteTask);
   if (done === undefined) return;
   const ui = useUi.getState();
   if (ui.openTaskId === id) ui.openTask(null);
   if (ui.selectedTaskId === id) ui.selectTask(null);
   if (next) focusTaskRow(next);
   showToast({
-    message: fr.toast.deleted,
+    message: t.toast.deleted,
     action: {
-      label: fr.toast.undo,
+      label: t.toast.undo,
       onAction: () => {
-        void run(commands.restoreTask(id), fr.errors.action.deleteTask);
+        void run(commands.restoreTask(id), t.errors.action.deleteTask);
       },
     },
   });
@@ -265,10 +265,10 @@ export async function deleteTask(id: string, _title: string) {
 export async function duplicateTask(id: string) {
   const copy = await run(
     commands.duplicateTask(id),
-    fr.errors.action.duplicateTask,
+    t.errors.action.duplicateTask,
   );
   if (copy) {
-    showToast({ message: fr.toast.duplicated });
+    showToast({ message: t.toast.duplicated });
     useUi.getState().openTask(copy.id);
   }
 }
@@ -287,11 +287,11 @@ export async function fileTask(
       sectionId: null,
       index: null,
     }),
-    fr.errors.action.moveTask,
+    t.errors.action.moveTask,
   );
   if (!moved) return;
   if (next) focusTaskRow(next);
-  showToast({ message: fr.toast.moved(label) });
+  showToast({ message: t.toast.moved(label) });
 }
 
 /** Menu of projects for « Ranger dans… »: a sub-project is named with its parent. */
@@ -330,14 +330,14 @@ export async function moveTaskBy(
       sectionId: place.sectionId,
       index: target,
     }),
-    fr.errors.action.moveTask,
+    t.errors.action.moveTask,
   );
   if (!moved) return;
   focusTaskRow(task.id);
   announce(
     delta === -1
-      ? fr.list.announce.movedUp(task.title)
-      : fr.list.announce.movedDown(task.title),
+      ? t.list.announce.movedUp(task.title)
+      : t.list.announce.movedDown(task.title),
   );
 }
 
@@ -345,7 +345,7 @@ export async function moveTaskBy(
 export async function setPriority(id: string, priority: number) {
   return run(
     commands.setTaskPriority({ id, priority }),
-    fr.errors.action.updateTask,
+    t.errors.action.updateTask,
   );
 }
 
@@ -358,13 +358,13 @@ export function priorityMenuItems(task: {
   priority: number;
 }): MenuItem[] {
   return [4, 3, 2, 1].map((p) => ({
-    label: fr.priorityRing.menu(displayPriority(p)),
+    label: t.priorityRing.menu(displayPriority(p)),
     icon: createElement(PriorityRingSvg, {
       priority: p,
       completed: false,
       size: 15,
     }),
-    hint: fr.panelBis.priorityShort(displayPriority(p)),
+    hint: t.panelBis.priorityShort(displayPriority(p)),
     checked: clampPriority(task.priority) === p,
     onSelect: () => {
       if (task.priority !== p) void setPriority(task.id, p);
@@ -389,16 +389,16 @@ export function taskMenuItems(
   const ui = useUi.getState();
   const priority = task.priority;
   return [
-    { label: fr.row.menuOpen, onSelect: () => ui.openTask(task.id) },
+    { label: t.row.menuOpen, onSelect: () => ui.openTask(task.id) },
     { separator: true },
     ...(features.terminals
       ? [
           {
-            label: fr.row.menuLaunchAgent(agent),
+            label: t.row.menuLaunchAgent(agent),
             onSelect: () => void launchAgent(task.id, agent),
           },
           {
-            label: fr.row.menuOpenShell,
+            label: t.row.menuOpenShell,
             onSelect: () => void openTerminal(task.id, "shell"),
           },
           { separator: true } as const,
@@ -409,7 +409,7 @@ export function taskMenuItems(
       : [
           {
             // A task of « Sans projet » is filed; any other one is moved.
-            label: task.subjectId === null ? fr.row.menuFile : fr.row.menuMove,
+            label: task.subjectId === null ? t.row.menuFile : t.row.menuMove,
             onSelect: () =>
               ui.openDialog({
                 type: "moveTask",
@@ -419,7 +419,7 @@ export function taskMenuItems(
           },
         ]),
     {
-      label: fr.row.menuDue,
+      label: t.row.menuDue,
       onSelect: () =>
         ui.openDialog({ type: "due", taskId: task.id, due: task.due }),
     },
@@ -431,7 +431,7 @@ export function taskMenuItems(
       : []),
     { separator: true },
     {
-      label: fr.row.menuDelete,
+      label: t.row.menuDelete,
       onSelect: () => {
         void deleteTask(task.id, task.title);
       },

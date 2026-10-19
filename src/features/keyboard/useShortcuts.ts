@@ -14,7 +14,7 @@ import { useEffect } from "react";
 import { isPromiseDialogOpen } from "../../components/Dialog";
 import { isMenuOpen } from "../../components/Menu";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { features } from "../../lib/features";
 import { commands } from "../../lib/ipc";
 import { run } from "../../lib/run";
@@ -121,7 +121,7 @@ export async function toggleTaskCompleted(id: string): Promise<void> {
   if (toggling.has(id)) return;
   toggling.add(id);
   try {
-    const task = await run(commands.getTask(id), fr.errors.action.completeTask);
+    const task = await run(commands.getTask(id), t.errors.action.completeTask);
     if (!task) return;
     if (task.completedAt === null) {
       await setCompleted(id, true);
@@ -129,9 +129,9 @@ export async function toggleTaskCompleted(id: string): Promise<void> {
     }
     const reopened = await run(
       commands.setTaskCompleted({ id, completed: false }),
-      fr.errors.action.completeTask,
+      t.errors.action.completeTask,
     );
-    if (reopened) showToast({ message: fr.app.reopened });
+    if (reopened) showToast({ message: t.app.reopened });
   } finally {
     toggling.delete(id);
   }

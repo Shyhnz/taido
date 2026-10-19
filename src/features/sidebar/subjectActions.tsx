@@ -11,7 +11,7 @@ import { confirmDialog } from "../../components/Dialog";
 import { announce } from "../../components/LiveRegion";
 import { type MenuItem, useMenuStore } from "../../components/Menu";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { features } from "../../lib/features";
 import { SUBJECT_COLORS } from "../../lib/format";
 import { commands, openFolder } from "../../lib/ipc";
@@ -46,14 +46,14 @@ export async function moveSubjectBy(
   if (target < 0 || target >= count) return;
   const done = await run(
     commands.reorderSubject({ id: subject.id, index: target }),
-    fr.errors.action.reorder,
+    t.errors.action.reorder,
   );
   if (done === undefined) return;
   useProjectFocus.setState({ focusId: subject.id });
   announce(
     delta === -1
-      ? fr.sidebar.announce.movedUp(subject.name)
-      : fr.sidebar.announce.movedDown(subject.name),
+      ? t.sidebar.announce.movedUp(subject.name)
+      : t.sidebar.announce.movedDown(subject.name),
   );
 }
 
@@ -66,14 +66,14 @@ export async function moveInboxBy(index: number, count: number, delta: 1 | -1) {
   if (target < 0 || target >= count) return;
   const done = await run(
     commands.reorderInbox(target),
-    fr.errors.action.reorder,
+    t.errors.action.reorder,
   );
   if (done === undefined) return;
   useProjectFocus.setState({ focusId: INBOX_FOCUS_ID });
   announce(
     delta === -1
-      ? fr.sidebar.announce.inboxMovedUp
-      : fr.sidebar.announce.inboxMovedDown,
+      ? t.sidebar.announce.inboxMovedUp
+      : t.sidebar.announce.inboxMovedDown,
   );
 }
 
@@ -156,7 +156,7 @@ export async function createProject(
       rootPath: null,
       parentId,
     }),
-    fr.errors.action.createSubject,
+    t.errors.action.createSubject,
   );
   // Shows the project with the cursor in its add-task line.
   if (subject && open) requestAddTask(subject.id);
@@ -169,20 +169,20 @@ export async function saveSubjectName(subject: Subject, name: string) {
   if (!trimmed || trimmed === subject.name) return;
   await run(
     commands.updateSubject({ ...patch(subject.id), name: trimmed }),
-    fr.errors.action.updateSubject,
+    t.errors.action.updateSubject,
   );
 }
 
 export async function changeSubjectFolder(subject: Subject) {
   // A sub-project without folder uses its parent's.
   const title = subject.parentId
-    ? fr.subProjects.pickFolderTitle
-    : fr.subject.pickFolderTitle;
+    ? t.subProjects.pickFolderTitle
+    : t.subject.pickFolderTitle;
   const path = await run(commands.pickFolder(title));
   if (!path) return;
   await run(
     commands.updateSubject({ ...patch(subject.id), rootPath: path }),
-    fr.errors.action.updateSubject,
+    t.errors.action.updateSubject,
   );
 }
 
@@ -193,7 +193,7 @@ export async function changeSubjectFolder(subject: Subject) {
 async function restoreSubject(id: string, reopenId: string | null) {
   const restored = await run(
     commands.restoreSubject(id),
-    fr.projectNav.restoreError,
+    t.projectNav.restoreError,
   );
   if (restored && reopenId !== null) {
     useUi.getState().setView({ kind: "subject", subjectId: reopenId });
@@ -208,19 +208,19 @@ export async function deleteSubject(
   subject: Subject,
   subProjects: Subject[] = [],
 ) {
-  const message = fr.subject.deleteMessage(subject.openCount);
+  const message = t.subject.deleteMessage(subject.openCount);
   const ok = await confirmDialog({
-    title: fr.subject.deleteTitle(subject.name),
+    title: t.subject.deleteTitle(subject.name),
     message:
       subProjects.length > 0
-        ? `${message} ${fr.subProjects.deleteChildren(subProjects.length)}`
+        ? `${message} ${t.subProjects.deleteChildren(subProjects.length)}`
         : message,
-    confirmLabel: fr.subject.deleteConfirm,
+    confirmLabel: t.subject.deleteConfirm,
   });
   if (!ok) return;
   const done = await run(
     commands.deleteSubject(subject.id),
-    fr.errors.action.deleteSubject,
+    t.errors.action.deleteSubject,
   );
   if (done === undefined) return;
   const ui = useUi.getState();
@@ -234,9 +234,9 @@ export async function deleteSubject(
       : null;
   if (openId !== null) ui.setView({ kind: "today", subjectId: null });
   showToast({
-    message: fr.toast.subjectDeleted(subject.name),
+    message: t.toast.subjectDeleted(subject.name),
     action: {
-      label: fr.toast.undo,
+      label: t.toast.undo,
       onAction: () => {
         void restoreSubject(subject.id, openId);
       },
@@ -246,13 +246,13 @@ export async function deleteSubject(
 
 function colorItems(subject: Subject): MenuItem[] {
   return SUBJECT_COLORS.map((color) => ({
-    label: fr.subject.colors[color],
+    label: t.subject.colors[color],
     icon: <ColorSwatch color={color} />,
     checked: subject.color === color ? true : undefined,
     onSelect: () => {
       void run(
         commands.updateSubject({ ...patch(subject.id), color }),
-        fr.errors.action.updateSubject,
+        t.errors.action.updateSubject,
       );
     },
   }));
@@ -268,14 +268,14 @@ export function subjectMenuItems(
   const folder = effectiveFolder(subject, subjects);
   return [
     {
-      label: fr.subject.menuRename,
+      label: t.subject.menuRename,
       onSelect: () => {
         // After the menu has closed and given the focus back, so the input keeps it.
         setTimeout(() => useProjectRename.getState().start(subject.id), 0);
       },
     },
     {
-      label: fr.subject.menuColor,
+      label: t.subject.menuColor,
       hint: "›",
       onSelect: () => {
         // Opened right after the parent menu closes.
@@ -286,13 +286,13 @@ export function subjectMenuItems(
               position.x,
               position.y,
               colorItems(subject),
-              fr.subject.menuColor,
+              t.subject.menuColor,
             );
         }, 0);
       },
     },
     {
-      label: fr.subject.menuAddSection,
+      label: t.subject.menuAddSection,
       // Opens the view's in-place « Nouvelle section » field.
       onSelect: () => requestAddSection(subject.id),
     },
@@ -303,7 +303,7 @@ export function subjectMenuItems(
     ...(features.terminals && features.folders
       ? [
           {
-            label: fr.subject.menuLinkFolder,
+            label: t.subject.menuLinkFolder,
             onSelect: () => {
               void changeSubjectFolder(subject);
             },
@@ -311,9 +311,9 @@ export function subjectMenuItems(
           ...(folder
             ? [
                 {
-                  label: fr.subject.menuOpenFolder,
+                  label: t.subject.menuOpenFolder,
                   onSelect: () => {
-                    void run(openFolder(folder), fr.app.openFolderError);
+                    void run(openFolder(folder), t.app.openFolderError);
                   },
                 },
               ]
@@ -322,7 +322,7 @@ export function subjectMenuItems(
       : []),
     { separator: true },
     {
-      label: fr.subject.menuDelete,
+      label: t.subject.menuDelete,
       danger: true,
       onSelect: () => {
         void deleteSubject(subject, subProjects);

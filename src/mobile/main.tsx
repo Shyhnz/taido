@@ -10,7 +10,7 @@ import "./mobile.css";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { showToast } from "../components/Toast";
-import { fr } from "../i18n/fr";
+import { t } from "../i18n";
 import { guardStrayDrops } from "../lib/web-files";
 import { createMobileBackend, type MobileBackend } from "./backend";
 import { OtherPageScreen, TakenOverScreen } from "./InstanceScreens";
@@ -57,7 +57,7 @@ async function boot(): Promise<void> {
 
   // Loaded only once the lock is held: the set the previous page saved last.
   backend = await createMobileBackend({
-    onStorageError: () => showToast({ message: fr.mobile.storageError }),
+    onStorageError: () => showToast({ message: t.mobile.storageError }),
   });
   globalThis.__TODO_BACKEND__ = backend;
 

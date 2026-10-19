@@ -15,20 +15,20 @@ import type {
   RelationKind,
   TaskDetail,
 } from "../../bindings";
-import { fr } from "../../i18n/fr";
+import { t as strings } from "../../i18n";
 import { formatDueDate } from "../../lib/dates";
 import { commands } from "../../lib/ipc";
 import { run } from "../../lib/run";
 import { hasStateDot, StateDot } from "../task-row/StateDot";
 
 const KINDS: { kind: RelationKind; label: string }[] = [
-  { kind: "blocks", label: fr.relations.blocks },
-  { kind: "blocked_by", label: fr.relations.blockedBy },
-  { kind: "relates_to", label: fr.relations.related },
+  { kind: "blocks", label: strings.relations.blocks },
+  { kind: "blocked_by", label: strings.relations.blockedBy },
+  { kind: "relates_to", label: strings.relations.related },
 ];
 
-type Filter = keyof typeof fr.relations.filter;
-const FILTERS = Object.keys(fr.relations.filter) as Filter[];
+type Filter = keyof typeof strings.relations.filter;
+const FILTERS = Object.keys(strings.relations.filter) as Filter[];
 
 /** Case and accent insensitive. */
 function fold(text: string): string {
@@ -157,12 +157,12 @@ export function LinkMenu({
   const listId = `${baseId}-list`;
   return (
     <section
-      aria-label={fr.relations.menu}
+      aria-label={strings.relations.menu}
       className="mt-1 mb-2 overflow-hidden rounded-lg border border-border bg-elevated shadow-[var(--shadow-popover)]"
     >
       <div className="flex flex-col gap-2 border-b border-border p-2.5">
         <fieldset className="inline-flex self-start rounded-md bg-hover p-0.5">
-          <legend className="sr-only">{fr.relations.kind}</legend>
+          <legend className="sr-only">{strings.relations.kind}</legend>
           {KINDS.map((k) => (
             <label key={k.kind} className="relative">
               <input
@@ -192,8 +192,8 @@ export function LinkMenu({
           aria-activedescendant={
             current ? optionId(current.item.id) : undefined
           }
-          aria-label={fr.relations.searchLabel}
-          placeholder={fr.relations.search}
+          aria-label={strings.relations.searchLabel}
+          placeholder={strings.relations.search}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -203,7 +203,7 @@ export function LinkMenu({
           className="h-8 w-full rounded-md border border-border-input bg-bg px-2.5 text-[13px] text-text"
         />
         <fieldset className="flex flex-wrap gap-1">
-          <legend className="sr-only">{fr.relations.filters}</legend>
+          <legend className="sr-only">{strings.relations.filters}</legend>
           {FILTERS.map((f) => (
             <button
               key={f}
@@ -220,7 +220,7 @@ export function LinkMenu({
                   : "border-border text-text-2 hover:bg-hover"
               }`}
             >
-              {fr.relations.filter[f]}
+              {strings.relations.filter[f]}
             </button>
           ))}
         </fieldset>
@@ -229,16 +229,16 @@ export function LinkMenu({
         ref={listRef}
         id={listId}
         role="listbox"
-        aria-label={fr.relations.menu}
+        aria-label={strings.relations.menu}
         className="max-h-[320px] overflow-y-auto p-1"
       >
         {!data ? (
           <p className="px-2.5 py-2 text-[12.5px] text-text-3">
-            {fr.relations.loading}
+            {strings.relations.loading}
           </p>
         ) : lines.length === 0 && groups.every((g) => g.open) ? (
           <p className="px-2.5 py-2 text-[12.5px] text-text-3">
-            {fr.relations.noResult}
+            {strings.relations.noResult}
           </p>
         ) : (
           groups.map((g) => (
@@ -248,7 +248,7 @@ export function LinkMenu({
                 type="button"
                 tabIndex={-1}
                 aria-expanded={g.open}
-                aria-label={fr.relations.groupLabel(
+                aria-label={strings.relations.groupLabel(
                   g.label,
                   g.lines.filter((l) => l.depth === 0).length,
                 )}
@@ -296,11 +296,11 @@ export function LinkMenu({
         )}
       </div>
       <p className="flex flex-wrap gap-x-3 gap-y-0.5 border-t border-border px-2.5 py-1.5 text-[11.5px] text-text-3">
-        <span>↑↓ {fr.relations.hints.move}</span>
-        <span>→ ← {fr.relations.hints.subtasks}</span>
-        <span>Entrée {fr.relations.hints.pick}</span>
-        <span>Tab {fr.relations.hints.kind}</span>
-        <span>Échap {fr.relations.hints.close}</span>
+        <span>↑↓ {strings.relations.hints.move}</span>
+        <span>→ ← {strings.relations.hints.subtasks}</span>
+        <span>Entrée {strings.relations.hints.pick}</span>
+        <span>Tab {strings.relations.hints.kind}</span>
+        <span>Échap {strings.relations.hints.close}</span>
       </p>
     </section>
   );
@@ -330,7 +330,7 @@ function Option({
   const { item, depth } = line;
   const meta = [
     linked
-      ? fr.relations.alreadyLinked
+      ? strings.relations.alreadyLinked
       : depth === 0
         ? item.section?.name
         : null,
@@ -377,8 +377,8 @@ function Option({
           aria-expanded={expanded}
           aria-label={
             expanded
-              ? fr.relations.hideSubtasks(item.title)
-              : fr.relations.showSubtasks(line.kids, item.title)
+              ? strings.relations.hideSubtasks(item.title)
+              : strings.relations.showSubtasks(line.kids, item.title)
           }
           onClick={(e) => {
             e.stopPropagation();
@@ -443,7 +443,12 @@ export function buildGroups(
         kids: 0,
       }));
     return [
-      { key: "recent", label: fr.relations.recentGroup, open: true, lines },
+      {
+        key: "recent",
+        label: strings.relations.recentGroup,
+        open: true,
+        lines,
+      },
     ];
   }
 
@@ -470,7 +475,7 @@ export function buildGroups(
     if (!group) {
       group = {
         key,
-        label: t.project ?? fr.relations.noProject,
+        label: t.project ?? strings.relations.noProject,
         // Everything open while searching or filtering; else the task's own project only.
         open: searching || filter !== "all" || openGroups.has(key),
         lines: [],

@@ -19,7 +19,7 @@ import { useCallback } from "react";
 import type { Subject, TaskGroup, TaskRow, ViewKind } from "../../bindings";
 import { openContextMenu, openMenuAt } from "../../components/Menu";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { todayString } from "../../lib/dates";
 import { features } from "../../lib/features";
@@ -46,19 +46,16 @@ export function AddTaskRow({ onClick }: { onClick: () => void }) {
       <span className="flex h-5 w-5 items-center justify-center">
         <Plus size={15} aria-hidden />
       </span>
-      {fr.addTask.row}
+      {t.addTask.row}
     </button>
   );
 }
 
 /** « Reporter à aujourd'hui » (Today, « En retard » group). */
 export async function postponeOverdue() {
-  const n = await run(
-    commands.rescheduleOverdue(),
-    fr.errors.action.updateTask,
-  );
+  const n = await run(commands.rescheduleOverdue(), t.errors.action.updateTask);
   if (n === undefined || n === 0) return;
-  const message = fr.list.rescheduled(n);
+  const message = t.list.rescheduled(n);
   showToast({ message });
 }
 
@@ -87,7 +84,7 @@ function ProjectGroupTitle({
       <button
         type="button"
         onClick={open}
-        title={fr.all.openProject(title)}
+        title={t.all.openProject(title)}
         className="-mx-1 flex min-w-0 items-center gap-2 rounded-md px-1 text-left hover:bg-hover"
       >
         {key.type === "project" && (
@@ -120,7 +117,7 @@ function GroupHeader({
 }) {
   const key = group.key;
   const section = key.type === "section" ? key : null;
-  const menuLabel = section ? fr.section.menu(section.name) : "";
+  const menuLabel = section ? t.section.menu(section.name) : "";
   const count = group.tasks.length;
   const projectGroup = key.type === "project" || key.type === "no_project";
   // No keyboard drag of a group: keyboard users reorder projects in the sidebar (⌥↑ / ⌥↓),
@@ -161,7 +158,7 @@ function GroupHeader({
               : ""
           }`}
         >
-          {fr.list.sectionCount(count)}
+          {t.list.sectionCount(count)}
         </span>
       )}
       <span className="flex-1" />
@@ -176,14 +173,14 @@ function GroupHeader({
           onClick={() => void postponeOverdue()}
           className="rounded-md px-1.5 py-0.5 text-[12.5px] font-medium text-text-2 hover:bg-hover hover:text-text"
         >
-          {fr.views.groups.postponeToToday}
+          {t.views.groups.postponeToToday}
         </button>
       )}
       {section && (
         <button
           type="button"
           aria-label={menuLabel}
-          title={fr.common.more}
+          title={t.common.more}
           onClick={(e) =>
             openMenuAt(
               e.currentTarget,
@@ -298,13 +295,13 @@ export function TaskGroupBlock({
             {title}
           </h2>
           <span className="flex-1 truncate text-[13px] text-text-3">
-            {fr.upcoming.nothingPlanned}
+            {t.upcoming.nothingPlanned}
           </span>
           {group.addTarget && (
             <button
               type="button"
-              aria-label={fr.upcoming.addOnDay(title)}
-              title={fr.upcoming.addOnDay(title)}
+              aria-label={t.upcoming.addOnDay(title)}
+              title={t.upcoming.addOnDay(title)}
               onClick={() => openEditor(key)}
               className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-3 hover:bg-hover hover:text-text"
             >
@@ -396,7 +393,7 @@ export function CompletedGroup({
   if (rows.length === 0) return null;
   const Chevron = expanded ? ChevronDown : ChevronRight;
   return (
-    <section aria-label={fr.views.completed} className="mt-8">
+    <section aria-label={t.views.completed} className="mt-8">
       <h2>
         <button
           type="button"
@@ -405,7 +402,7 @@ export function CompletedGroup({
           className="flex h-8 items-center gap-1.5 rounded-md px-2 text-left text-[13px] font-medium text-text-2 hover:text-text"
         >
           <Chevron size={15} aria-hidden />
-          {fr.views.completed}
+          {t.views.completed}
           <span className="font-normal tabular-nums">{rows.length}</span>
         </button>
       </h2>

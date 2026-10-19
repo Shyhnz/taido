@@ -1,5 +1,5 @@
 /**
- * Date formatting for the UI, with date-fns in French.
+ * Date formatting for the UI, with date-fns in the active language (English or French).
  * Every function takes an optional `now` so tests can pin the clock.
  * Timestamps are ISO UTC strings; due dates are local `YYYY-MM-DD` / `HH:MM`.
  */
@@ -12,8 +12,11 @@ import {
   isSameYear,
   parseISO,
 } from "date-fns";
-import { fr as frLocale } from "date-fns/locale";
-import { fr } from "../i18n/fr";
+import { enUS, fr as frLocale } from "date-fns/locale";
+import { currentLanguage, t } from "../i18n";
+
+/** date-fns locale of the active language. */
+const locale = () => (currentLanguage() === "fr" ? frLocale : enUS);
 
 const capitalize = (s: string) =>
   s.length === 0 ? s : s[0].toUpperCase() + s.slice(1);
@@ -41,13 +44,13 @@ export function formatLongDate(
 ): string {
   const d = typeof date === "string" ? parseLocalDate(date) : date;
   const pattern = isSameYear(d, now) ? "EEEE d MMMM" : "EEEE d MMMM yyyy";
-  return capitalize(format(d, pattern, { locale: frLocale }));
+  return capitalize(format(d, pattern, { locale: locale() }));
 }
 
 /** "12 oct." (year added when not the current one). */
 export function formatShortDate(date: Date, now: Date = new Date()): string {
   const pattern = isSameYear(date, now) ? "d MMM" : "d MMM yyyy";
-  return format(date, pattern, { locale: frLocale });
+  return format(date, pattern, { locale: locale() });
 }
 
 /**
@@ -58,13 +61,13 @@ export function formatRelative(iso: string, now: Date = new Date()): string {
   const at = parseISO(iso);
   const minutes = differenceInMinutes(now, at);
   const days = differenceInCalendarDays(now, at);
-  if (minutes < 1 && minutes > -1) return fr.dates.justNow;
-  if (minutes >= 1 && minutes < 60) return fr.dates.minutesAgo(minutes);
+  if (minutes < 1 && minutes > -1) return t.dates.justNow;
+  if (minutes >= 1 && minutes < 60) return t.dates.minutesAgo(minutes);
   if (days === 0 && minutes >= 60) {
-    return fr.dates.hoursAgo(Math.floor(minutes / 60));
+    return t.dates.hoursAgo(Math.floor(minutes / 60));
   }
   const time = toLocalTimeString(at);
-  if (days === 1) return fr.dates.yesterdayAt(time);
+  if (days === 1) return t.dates.yesterdayAt(time);
   return `${formatShortDate(at, now)} ${time}`;
 }
 
@@ -76,13 +79,13 @@ export function formatJournalDate(iso: string, now: Date = new Date()): string {
   const at = parseISO(iso);
   const minutes = differenceInMinutes(now, at);
   const days = differenceInCalendarDays(now, at);
-  if (minutes < 1 && minutes > -1) return capitalize(fr.dates.justNow);
+  if (minutes < 1 && minutes > -1) return capitalize(t.dates.justNow);
   if (minutes >= 1 && minutes < 60) {
-    return capitalize(fr.dates.minutesAgo(minutes));
+    return capitalize(t.dates.minutesAgo(minutes));
   }
   const time = toLocalTimeString(at);
-  if (days === 0) return capitalize(fr.dates.todayAt(time));
-  if (days === 1) return capitalize(fr.dates.yesterdayAt(time));
+  if (days === 0) return capitalize(t.dates.todayAt(time));
+  if (days === 1) return capitalize(t.dates.yesterdayAt(time));
   return `${formatShortDate(at, now)} ${time}`;
 }
 
@@ -97,8 +100,8 @@ export function formatSessionStart(
   const at = parseISO(iso);
   const days = differenceInCalendarDays(now, at);
   const time = toLocalTimeString(at);
-  if (days === 0) return fr.dates.todayAt(time);
-  if (days === 1) return fr.dates.yesterdayAt(time);
+  if (days === 0) return t.dates.todayAt(time);
+  if (days === 1) return t.dates.yesterdayAt(time);
   return `${formatShortDate(at, now)} ${time}`;
 }
 
@@ -111,10 +114,10 @@ export function formatSessionDuration(
     0,
     differenceInMinutes(parseISO(endIso), parseISO(startIso)),
   );
-  if (minutes < 1) return fr.sessions.durationUnderMinute;
-  if (minutes < 60) return fr.sessions.durationMinutes(minutes);
+  if (minutes < 1) return t.sessions.durationUnderMinute;
+  if (minutes < 60) return t.sessions.durationMinutes(minutes);
   const h = Math.floor(minutes / 60);
-  return fr.sessions.durationHours(h, minutes - h * 60);
+  return t.sessions.durationHours(h, minutes - h * 60);
 }
 
 /**
@@ -124,11 +127,11 @@ export function formatSessionDuration(
 export function formatDueDate(date: string, now: Date = new Date()): string {
   const d = parseLocalDate(date);
   const diff = differenceInCalendarDays(d, now);
-  if (diff === 0) return fr.dates.today;
-  if (diff === 1) return fr.dates.tomorrow;
-  if (diff === -1) return fr.dates.yesterday;
+  if (diff === 0) return t.dates.today;
+  if (diff === 1) return t.dates.tomorrow;
+  if (diff === -1) return t.dates.yesterday;
   if (diff > 1 && diff < 7) {
-    return capitalize(format(d, "EEEE", { locale: frLocale }));
+    return capitalize(format(d, "EEEE", { locale: locale() }));
   }
   return formatShortDate(d, now);
 }

@@ -31,7 +31,7 @@ import type {
   TaskLine,
   TaskRow as TaskRowData,
 } from "../../bindings";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { formatDue, formatDueMeta, formatRelative } from "../../lib/dates";
 import { features } from "../../lib/features";
 import { subjectColorVar } from "../../lib/format";
@@ -58,11 +58,11 @@ export function lineText(line: TaskLine, now: Date = new Date()): string {
   const when = line.at ? formatRelative(line.at, now) : null;
   switch (line.kind) {
     case "completed":
-      return fr.line.completed(when);
+      return t.line.completed(when);
     case "paused":
-      return fr.line.paused(when);
+      return t.line.paused(when);
     default:
-      return fr.line[line.kind](line.text, line.agent ?? "claude");
+      return t.line[line.kind](line.text, line.agent ?? "claude");
   }
 }
 
@@ -216,13 +216,13 @@ export function TaskRow({
             aria-expanded={childrenOpen}
             aria-label={
               childrenOpen
-                ? fr.nesting.collapse(row.title)
-                : fr.nesting.expand(row.title)
+                ? t.nesting.collapse(row.title)
+                : t.nesting.expand(row.title)
             }
             title={
               childrenOpen
-                ? fr.nesting.collapse(row.title)
-                : fr.nesting.expand(row.title)
+                ? t.nesting.collapse(row.title)
+                : t.nesting.expand(row.title)
             }
             onClick={(e) => {
               e.stopPropagation();
@@ -271,29 +271,29 @@ export function TaskRow({
           className="flex shrink-0 items-center gap-3 whitespace-nowrap text-[12px] leading-4 text-text-2"
         >
           {row.hasDescription && (
-            <span className="inline-flex items-center" title={fr.list.hasNote}>
+            <span className="inline-flex items-center" title={t.list.hasNote}>
               <NoteIcon />
-              <span className="sr-only">{fr.list.hasNote}</span>
+              <span className="sr-only">{t.list.hasNote}</span>
             </span>
           )}
           {row.subtasksTotal > 0 && (
             <span
               className="tabular-nums"
-              title={fr.row.subtasksLabel(row.subtasksDone, row.subtasksTotal)}
+              title={t.row.subtasksLabel(row.subtasksDone, row.subtasksTotal)}
             >
-              {fr.row.subtasks(row.subtasksDone, row.subtasksTotal)}
+              {t.row.subtasks(row.subtasksDone, row.subtasksTotal)}
             </span>
           )}
           {showDue && row.due && (
             <span
               className={`inline-flex items-center gap-1 ${overdue ? "text-due-overdue" : ""}`}
-              title={fr.row.dueLabel(formatDue(row.due, clock))}
+              title={t.row.dueLabel(formatDue(row.due, clock))}
               data-overdue={overdue || undefined}
             >
               {row.due.time && <Clock size={12} aria-hidden />}
               {/* Taido V2.4 (wireframe V2·1): « En retard · 7 oct. », like the kanban card. */}
               {overdue
-                ? `${fr.row.overdue} · ${formatDueMeta(row.due, clock)}`
+                ? `${t.row.overdue} · ${formatDueMeta(row.due, clock)}`
                 : dateShown
                   ? row.due.time
                   : formatDueMeta(row.due, clock)}
@@ -304,7 +304,7 @@ export function TaskRow({
           {showTerminals && (
             <span className="inline-flex items-center gap-1">
               <SquareTerminal size={13} aria-hidden />
-              {fr.row.sessions(row.openTerminals)}
+              {t.row.sessions(row.openTerminals)}
             </span>
           )}
           {row.subject && (
@@ -321,8 +321,8 @@ export function TaskRow({
               <button
                 type="button"
                 tabIndex={inner}
-                aria-label={fr.list.fileLabel(row.title)}
-                title={fr.list.file}
+                aria-label={t.list.fileLabel(row.title)}
+                title={t.list.file}
                 onClick={(e) => {
                   e.stopPropagation();
                   onFile(e.currentTarget);
@@ -336,8 +336,8 @@ export function TaskRow({
               <button
                 type="button"
                 tabIndex={inner}
-                aria-label={fr.list.more(row.title)}
-                title={fr.common.more}
+                aria-label={t.list.more(row.title)}
+                title={t.common.more}
                 onClick={(e) => {
                   e.stopPropagation();
                   onMenu(e.currentTarget);

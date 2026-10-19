@@ -16,7 +16,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import type { Agent, ContextUsage } from "../../bindings";
-import { agentName, fr } from "../../i18n/fr";
+import { agentName, t as strings } from "../../i18n";
 
 /** From here the gauge turns orange and keeps its percentage. */
 export const CONTEXT_HIGH = 70;
@@ -82,7 +82,7 @@ export function ContextPeek({
         {usage.percent} %
       </span>
       <span className="sr-only">
-        , {fr.terminals.context.label(agent, usage.percent)}
+        , {strings.terminals.context.label(agent, usage.percent)}
       </span>
     </>
   );
@@ -99,7 +99,7 @@ function Bubble({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
-  const t = fr.terminals.context;
+  const t = strings.terminals.context;
 
   useLayoutEffect(() => {
     const a = anchor.getBoundingClientRect();

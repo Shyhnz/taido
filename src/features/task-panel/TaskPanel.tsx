@@ -51,7 +51,7 @@ import type { Editor, TaskDetail } from "../../bindings";
 import { IconButton } from "../../components/Button";
 import { DatePickerPopover } from "../../components/DatePicker";
 import { type MenuItem, openMenuAt } from "../../components/Menu";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { features } from "../../lib/features";
 import { commands, isNotFound } from "../../lib/ipc";
 import { queryKeys, useInstalledEditors, useSettings } from "../../lib/queries";
@@ -227,7 +227,7 @@ function TitleAndNote({
         <textarea
           ref={titleRef}
           rows={1}
-          aria-label={fr.panel.titleLabel}
+          aria-label={t.panel.titleLabel}
           value={title.value}
           onFocus={title.onFocus}
           onChange={(e) => {
@@ -272,8 +272,8 @@ function TitleAndNote({
         <textarea
           ref={noteRef}
           rows={1}
-          aria-label={fr.panel.noteTitle}
-          placeholder={fr.panel.descriptionPlaceholder}
+          aria-label={t.panel.noteTitle}
+          placeholder={t.panel.descriptionPlaceholder}
           value={note.value}
           onFocus={note.onFocus}
           onChange={(e) => {
@@ -296,7 +296,7 @@ function TitleAndNote({
             onClick={() => setNoteOpen((o) => !o)}
             className="-ml-1 mt-0.5 rounded-md px-1 py-0.5 text-[12.5px] text-text-2 hover:bg-hover hover:text-text"
           >
-            {noteOpen ? fr.folds.hideNote : fr.folds.showNote}
+            {noteOpen ? t.folds.hideNote : t.folds.showNote}
           </button>
         )}
       </div>
@@ -317,14 +317,14 @@ export function terminalMenuItems(
 ): MenuItem[] {
   return [
     {
-      label: fr.terminals.runCommand,
+      label: t.terminals.runCommand,
       onSelect: () => void promptCommand(taskId),
     },
     {
-      label: fr.terminals.openIn,
+      label: t.terminals.openIn,
       hint: "›",
       onSelect: () =>
-        openSubmenu(openInItems(taskId, editors), fr.terminals.openIn),
+        openSubmenu(openInItems(taskId, editors), t.terminals.openIn),
     },
     { separator: true },
   ];
@@ -341,17 +341,17 @@ export function openInItems(
   return [
     ...editors.map(
       (editor): MenuItem => ({
-        label: fr.editors[editor],
+        label: t.editors[editor],
         onSelect: () => void openTaskFolderIn(taskId, "editor", editor),
       }),
     ),
     ...(editors.length > 0 ? [{ separator: true } as const] : []),
     {
-      label: fr.terminals.finder,
+      label: t.terminals.finder,
       onSelect: () => void openTaskFolderIn(taskId, "finder"),
     },
     {
-      label: fr.terminals.terminal,
+      label: t.terminals.terminal,
       onSelect: () => void openTaskFolderIn(taskId, "terminal"),
     },
   ];
@@ -373,7 +373,7 @@ function ParentLink({ id, title }: { id: string; title: string }) {
   return (
     <button
       type="button"
-      aria-label={fr.panelBis.backToParent(title)}
+      aria-label={t.panelBis.backToParent(title)}
       title={title}
       onClick={() => openTask(id)}
       className="-ml-1 mb-2 inline-flex max-w-full items-center gap-0.5 rounded-md px-1 py-0.5 text-[13px] text-text-2 hover:bg-hover hover:text-text"
@@ -407,20 +407,20 @@ function PanelActions({ task }: { task: TaskDetail | undefined }) {
         ...(focusMode
           ? [
               {
-                label: fr.terminals.due,
+                label: t.terminals.due,
                 onSelect: () => setDueOpen(true),
               },
             ]
           : []),
         {
-          label: fr.panelBis.priorityMenuItem,
-          hint: fr.panelBis.priorityShort(displayPriority(task.priority)),
+          label: t.panelBis.priorityMenuItem,
+          hint: t.panelBis.priorityShort(displayPriority(task.priority)),
           // A submenu in place: the four priorities under the same button.
           onSelect: () =>
             openMenuAt(
               anchor,
               priorityMenuItems(task),
-              fr.panelBis.priority,
+              t.panelBis.priority,
               true,
             ),
         },
@@ -429,7 +429,7 @@ function PanelActions({ task }: { task: TaskDetail | undefined }) {
           ? []
           : [
               {
-                label: fr.panel.move,
+                label: t.panel.move,
                 onSelect: () =>
                   openDialog({ type: "moveTask", taskId: task.id }),
               },
@@ -437,8 +437,8 @@ function PanelActions({ task }: { task: TaskDetail | undefined }) {
         ...(focusMode
           ? [
               {
-                label: fr.terminals.noteAndSubtasks,
-                hint: fr.terminals.leavesFocus,
+                label: t.terminals.noteAndSubtasks,
+                hint: t.terminals.leavesFocus,
                 onSelect: () => setFocusMode(false),
               },
             ]
@@ -450,17 +450,17 @@ function PanelActions({ task }: { task: TaskDetail | undefined }) {
             )
           : []),
         {
-          label: fr.panel.duplicate,
+          label: t.panel.duplicate,
           onSelect: () => void duplicateTask(task.id),
         },
         { separator: true },
         {
-          label: fr.panel.delete,
+          label: t.panel.delete,
           danger: true,
           onSelect: () => void deleteTaskWithUndo(task.id),
         },
       ],
-      fr.panel.more,
+      t.panel.more,
       true,
     );
   };
@@ -469,11 +469,9 @@ function PanelActions({ task }: { task: TaskDetail | undefined }) {
     <>
       {features.focusMode && !IS_MOBILE && (
         <IconButton
-          label={
-            focusMode ? fr.terminals.leaveFullWidth : fr.terminals.fullWidth
-          }
+          label={focusMode ? t.terminals.leaveFullWidth : t.terminals.fullWidth}
           title={`${
-            focusMode ? fr.terminals.leaveFullWidth : fr.terminals.fullWidth
+            focusMode ? t.terminals.leaveFullWidth : t.terminals.fullWidth
           } (⌘⇧F${focusMode ? ", Échap" : ""})`}
           aria-pressed={focusMode}
           onClick={() => setFocusMode(!focusMode)}
@@ -487,7 +485,7 @@ function PanelActions({ task }: { task: TaskDetail | undefined }) {
       )}
       <span ref={moreRef} className="inline-flex">
         <IconButton
-          label={fr.panel.more}
+          label={t.panel.more}
           aria-haspopup="menu"
           disabled={!task}
           onClick={(e) => openMore(e.currentTarget)}
@@ -496,7 +494,7 @@ function PanelActions({ task }: { task: TaskDetail | undefined }) {
         </IconButton>
       </span>
       {!IS_MOBILE && (
-        <IconButton label={fr.panel.close} onClick={() => openTask(null)}>
+        <IconButton label={t.panel.close} onClick={() => openTask(null)}>
           <X size={17} aria-hidden />
         </IconButton>
       )}
@@ -543,7 +541,7 @@ function FocusTitle({ task }: { task: TaskDetail }) {
         <input
           // biome-ignore lint/a11y/noAutofocus: the field replaces the title the user clicked
           autoFocus
-          aria-label={fr.panel.titleLabel}
+          aria-label={t.panel.titleLabel}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onFocus={(e) => e.currentTarget.select()}
@@ -565,7 +563,7 @@ function FocusTitle({ task }: { task: TaskDetail }) {
       ) : (
         <button
           type="button"
-          title={`${task.title} · ${fr.terminals.editTitle}`}
+          title={`${task.title} · ${t.terminals.editTitle}`}
           onClick={() => {
             done.current = false;
             setValue(task.title);
@@ -603,7 +601,7 @@ function NoteMentions({ taskId }: { taskId: string }) {
   return (
     <Fold
       id="mentions"
-      title={fr.notes.mentionedInNotes}
+      title={t.notes.mentionedInNotes}
       summary={items.length}
       defaultOpen
     >
@@ -664,7 +662,7 @@ function PanelSections({ task }: { task: TaskDetail }) {
         {features.journal && <Journal taskId={task.id} />}
         {empty.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 border-t border-border py-1.5 text-[13px]">
-            <span className="mr-1 text-text-3">{fr.folds.addLabel}</span>
+            <span className="mr-1 text-text-3">{t.folds.addLabel}</span>
             {empty.map((k) => (
               <button
                 key={k}
@@ -675,7 +673,7 @@ function PanelSections({ task }: { task: TaskDetail }) {
                 className="inline-flex h-7 items-center gap-1.5 rounded-md px-1.5 text-text-2 hover:bg-hover hover:text-text"
               >
                 {ADD_ICONS[k]}
-                {fr.folds.add[k]}
+                {t.folds.add[k]}
               </button>
             ))}
           </div>
@@ -730,7 +728,7 @@ export function TaskPanel({ taskId }: { taskId: string }) {
           </div>
         )}
         <p className="p-6 text-[13.5px] text-text-2">
-          {error ? fr.panel.notFound : fr.panel.loading}
+          {error ? t.panel.notFound : t.panel.loading}
         </p>
       </>
     );
@@ -761,7 +759,7 @@ export function TaskPanel({ taskId }: { taskId: string }) {
 
   return (
     <section
-      aria-label={fr.panel.label}
+      aria-label={t.panel.label}
       className={`relative flex h-full flex-col bg-bg ${
         focus || IS_MOBILE
           ? "min-w-0 flex-1"
@@ -786,7 +784,7 @@ export function TaskPanel({ taskId }: { taskId: string }) {
             className="order-first mr-auto inline-flex h-11 items-center gap-1 rounded-md px-2 text-[15px] text-text-2"
           >
             <ChevronLeft size={18} aria-hidden />
-            {fr.mobile.back}
+            {t.mobile.back}
           </button>
           {actions}
         </header>

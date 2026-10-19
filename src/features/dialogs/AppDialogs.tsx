@@ -9,7 +9,7 @@ import type { Due } from "../../bindings";
 import { DatePicker, type DueValue } from "../../components/DatePicker";
 import { Dialog } from "../../components/Dialog";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { projectPath, sectionPath, subjectColorVar } from "../../lib/format";
 import { commands } from "../../lib/ipc";
 import { useSubjects } from "../../lib/queries";
@@ -40,9 +40,9 @@ function MoveTaskDialog({
     onClose();
     const moved = await run(
       commands.moveTask({ id: taskId, subjectId, sectionId, index: null }),
-      fr.errors.action.moveTask,
+      t.errors.action.moveTask,
     );
-    if (moved) showToast({ message: fr.toast.moved(label) });
+    if (moved) showToast({ message: t.toast.moved(label) });
   };
 
   const item =
@@ -50,7 +50,7 @@ function MoveTaskDialog({
 
   return (
     <Dialog
-      title={file ? fr.move.fileTitle : fr.move.title}
+      title={file ? t.move.fileTitle : t.move.title}
       onClose={onClose}
       width={380}
     >
@@ -58,10 +58,10 @@ function MoveTaskDialog({
         <button
           type="button"
           className={item}
-          onClick={() => void move(null, null, fr.move.noProject)}
+          onClick={() => void move(null, null, t.move.noProject)}
         >
           <Inbox size={15} aria-hidden className="text-text-2" />
-          {fr.move.noProject}
+          {t.move.noProject}
         </button>
         {subjects.map((s) =>
           s.isGroup ? (
@@ -130,12 +130,12 @@ function DueDialog({
         date: value.date,
         time: value.date ? value.time : null,
       }),
-      fr.errors.action.updateTask,
+      t.errors.action.updateTask,
     );
   };
 
   return (
-    <Dialog title={fr.due.title} onClose={onClose} width={296}>
+    <Dialog title={t.due.title} onClose={onClose} width={296}>
       <div className="flex justify-center px-1 pt-1 pb-2">
         <DatePicker
           value={{ date: due?.date ?? null, time: due?.time ?? null }}

@@ -8,7 +8,7 @@ import { useState } from "react";
 import type { Agent, AgentStatus } from "../../bindings";
 import { Button } from "../../components/Button";
 import { Dialog } from "../../components/Dialog";
-import { fr } from "../../i18n/fr";
+import { t as strings } from "../../i18n";
 import { errorMessage } from "../../lib/ipc";
 import { type ClaudeProblem, useUi } from "../../stores/ui";
 import {
@@ -31,7 +31,7 @@ export function ClaudeCheckDialog({
   const [busy, setBusy] = useState(false);
   /** Set after a « Réessayer » that found the same or another problem. */
   const [retried, setRetried] = useState(false);
-  const t = fr.claudeCheck;
+  const t = strings.claudeCheck;
 
   const retry = async () => {
     setBusy(true);

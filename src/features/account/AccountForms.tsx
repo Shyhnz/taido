@@ -28,7 +28,7 @@ import {
 import type { SyncStatus } from "../../bindings";
 import { Button, IconButton } from "../../components/Button";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands, errorKind, errorMessage } from "../../lib/ipc";
 import { ALREADY_LINKED } from "../../lib/mock-sync";
 import {
@@ -227,14 +227,14 @@ export function AccountForm({
     switch (mode) {
       case "signup": {
         const next = await commands.syncSignup(account);
-        linked(client, next, fr.account.signedUpToast);
+        linked(client, next, t.account.signedUpToast);
         onDone?.();
         return;
       }
       case "login": {
         if (!(await mergeAccepted())) return;
         const next = await commands.syncLogin(account);
-        linked(client, next, fr.account.loggedInToast);
+        linked(client, next, t.account.loggedInToast);
         onDone?.();
         return;
       }
@@ -256,7 +256,7 @@ export function AccountForm({
         // password (kept typed), never a second reset.
         const toLogin = (failure: unknown) => {
           setMode("login");
-          setNotice(fr.account.resetThenLogin);
+          setNotice(t.account.resetThenLogin);
           if (failure !== null) setError(placeError(failure, "login"));
         };
         // Asked once the code is accepted, so a wrong code never asks it twice.
@@ -272,7 +272,7 @@ export function AccountForm({
           toLogin(failure);
           return;
         }
-        linked(client, next, fr.account.resetToast);
+        linked(client, next, t.account.resetToast);
         onDone?.();
         return;
       }
@@ -284,7 +284,7 @@ export function AccountForm({
     if (!ready || sending.current) return;
     // No built-in server: an empty address is asked for, nothing is sent.
     if (serverUrl.trim().length === 0) {
-      setError({ place: "server", text: fr.account.serverRequired });
+      setError({ place: "server", text: t.account.serverRequired });
       return;
     }
     sending.current = true;
@@ -322,14 +322,14 @@ export function AccountForm({
       noValidate
       className="flex max-w-[420px] flex-col gap-4"
     >
-      <h3 className="text-[15px] font-semibold">{fr.account.title[mode]}</h3>
+      <h3 className="text-[15px] font-semibold">{t.account.title[mode]}</h3>
       {notice && (
         <p role="status" className="-mt-2 text-[13px] font-medium text-text">
           {notice}
         </p>
       )}
       {mode === "forgot" && (
-        <p className="-mt-2 text-[13px] text-text-2">{fr.account.forgotHelp}</p>
+        <p className="-mt-2 text-[13px] text-text-2">{t.account.forgotHelp}</p>
       )}
       {mode === "reset" && (
         <p
@@ -337,12 +337,12 @@ export function AccountForm({
           role="status"
           className="-mt-2 text-[13px] text-text-2"
         >
-          {fr.account.codeSent(email.trim())}
+          {t.account.codeSent(email.trim())}
         </p>
       )}
 
       {mode !== "reset" && (
-        <Field label={fr.account.email} htmlFor={ids.email}>
+        <Field label={t.account.email} htmlFor={ids.email}>
           <input
             ref={firstRef}
             id={ids.email}
@@ -352,7 +352,7 @@ export function AccountForm({
               setEmail(e.target.value);
               clearError();
             }}
-            placeholder={fr.account.emailPlaceholder}
+            placeholder={t.account.emailPlaceholder}
             spellCheck={false}
             autoCapitalize="off"
             autoCorrect="off"
@@ -366,7 +366,7 @@ export function AccountForm({
       )}
 
       {mode === "reset" && (
-        <Field label={fr.account.code} htmlFor={ids.code}>
+        <Field label={t.account.code} htmlFor={ids.code}>
           <input
             ref={firstRef}
             id={ids.code}
@@ -389,9 +389,7 @@ export function AccountForm({
 
       {mode !== "forgot" && (
         <Field
-          label={
-            mode === "reset" ? fr.account.newPassword : fr.account.password
-          }
+          label={mode === "reset" ? t.account.newPassword : t.account.password}
           htmlFor={ids.password}
         >
           <div className="relative">
@@ -415,7 +413,7 @@ export function AccountForm({
               className={`${inputClass} pr-9`}
             />
             <IconButton
-              label={shown ? fr.account.hidePassword : fr.account.showPassword}
+              label={shown ? t.account.hidePassword : t.account.showPassword}
               size={26}
               onClick={() => setShown((v) => !v)}
               className="absolute top-[3px] right-[3px]"
@@ -430,7 +428,7 @@ export function AccountForm({
           {passwordError && <FieldError id={ids.error} text={passwordError} />}
           {newPassword && passwordError === null && (
             <p id={ids.passwordRule} className="text-[12.5px] text-text-2">
-              {fr.account.passwordRule}
+              {t.account.passwordRule}
             </p>
           )}
           {mode === "login" && (
@@ -441,14 +439,14 @@ export function AccountForm({
                 onClick={() => go("forgot")}
                 className="text-[12.5px] text-text-2 underline-offset-2 hover:text-text hover:underline disabled:opacity-50 disabled:hover:text-text-2 disabled:hover:no-underline"
               >
-                {fr.account.forgotLink}
+                {t.account.forgotLink}
               </button>
             </div>
           )}
         </Field>
       )}
 
-      <Field label={fr.account.serverUrl} htmlFor={ids.server}>
+      <Field label={t.account.serverUrl} htmlFor={ids.server}>
         <input
           id={ids.server}
           type="url"
@@ -458,7 +456,7 @@ export function AccountForm({
             setServerUrl(e.target.value);
             clearError();
           }}
-          placeholder={fr.account.serverUrlPlaceholder}
+          placeholder={t.account.serverUrlPlaceholder}
           required
           spellCheck={false}
           autoCapitalize="off"
@@ -473,7 +471,7 @@ export function AccountForm({
         />
         {serverError && <FieldError id={ids.error} text={serverError} />}
         <p id={ids.serverHelp} className="text-[12.5px] text-text-2">
-          {fr.account.serverHelp}
+          {t.account.serverHelp}
         </p>
       </Field>
 
@@ -495,26 +493,26 @@ export function AccountForm({
           disabled={!ready || busy}
           aria-busy={busy || undefined}
         >
-          {busy ? fr.account.busy[mode] : fr.account.submit[mode]}
+          {busy ? t.account.busy[mode] : t.account.submit[mode]}
         </Button>
         {mode === "signup" && (
           <Button variant="ghost" disabled={busy} onClick={() => go("login")}>
-            {fr.account.toLogin}
+            {t.account.toLogin}
           </Button>
         )}
         {mode === "login" && (
           <Button variant="ghost" disabled={busy} onClick={() => go("signup")}>
-            {fr.account.toSignup}
+            {t.account.toSignup}
           </Button>
         )}
         {mode === "reset" && (
           <Button variant="ghost" disabled={busy} onClick={() => go("forgot")}>
-            {fr.account.newCode}
+            {t.account.newCode}
           </Button>
         )}
         {mode === "forgot" && (
           <Button variant="ghost" disabled={busy} onClick={() => go("login")}>
-            {fr.account.back}
+            {t.account.back}
           </Button>
         )}
         {(mode === "signup" || mode === "login") && onCancel && (
@@ -524,7 +522,7 @@ export function AccountForm({
             disabled={busy}
             onClick={onCancel}
           >
-            {fr.account.back}
+            {t.account.back}
           </Button>
         )}
       </div>

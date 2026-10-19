@@ -12,7 +12,7 @@
 
 import type { DragDropEvent } from "@tauri-apps/api/webview";
 import { showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands } from "../../lib/ipc";
 import { run } from "../../lib/run";
 import { noteDropAt } from "../notes/editor/noteDrop";
@@ -61,7 +61,7 @@ function markTask(el: HTMLElement | null): void {
 async function attach(taskId: string, paths: string[]) {
   const detail = await run(commands.addAttachments({ taskId, paths }));
   if (detail) {
-    showToast({ message: fr.attachments.added(paths.length, detail.title) });
+    showToast({ message: t.attachments.added(paths.length, detail.title) });
   }
 }
 

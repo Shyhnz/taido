@@ -15,7 +15,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { fr as frLocale } from "date-fns/locale";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { parseLocalDate, toLocalDateString } from "../../lib/dates";
 
 const capitalize = (s: string) =>
@@ -86,14 +86,14 @@ export function relativeDay(
   now: Date = new Date(),
 ): string | null {
   const diff = differenceInCalendarDays(parseLocalDate(date), now);
-  if (diff === 0) return fr.dates.today;
-  if (diff === 1) return fr.dates.tomorrow;
+  if (diff === 0) return t.dates.today;
+  if (diff === 1) return t.dates.tomorrow;
   return null;
 }
 
 /** Title of a day group: « 3 oct · Aujourd'hui · Samedi », « 5 oct · Lundi ». */
 export function dayTitle(date: string, now: Date = new Date()): string {
-  return fr.upcoming.dayTitle(
+  return t.upcoming.dayTitle(
     shortDate(date),
     relativeDay(date, now),
     weekdayName(date),

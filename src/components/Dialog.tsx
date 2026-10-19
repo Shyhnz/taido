@@ -13,7 +13,7 @@ import {
   useState,
 } from "react";
 import { create } from "zustand";
-import { fr } from "../i18n/fr";
+import { t } from "../i18n";
 import { errorMessage } from "../lib/ipc";
 import { readableError } from "../lib/run";
 import { Button } from "./Button";
@@ -170,7 +170,7 @@ export function confirmDialog(options: {
         kind: "confirm",
         title: options.title,
         message: options.message,
-        confirmLabel: options.confirmLabel ?? fr.common.delete,
+        confirmLabel: options.confirmLabel ?? t.common.delete,
         danger: options.danger ?? true,
         resolve,
       },
@@ -194,7 +194,7 @@ export function promptDialog(options: {
         kind: "prompt",
         title: options.title,
         fields: options.fields,
-        confirmLabel: options.confirmLabel ?? fr.common.save,
+        confirmLabel: options.confirmLabel ?? t.common.save,
         submit: options.submit,
         resolve,
       },
@@ -274,7 +274,7 @@ function PromptForm({
         </p>
       )}
       <div className="flex justify-end gap-2 pt-1">
-        <Button onClick={() => done(null)}>{fr.common.cancel}</Button>
+        <Button onClick={() => done(null)}>{t.common.cancel}</Button>
         <Button type="submit" variant="primary" disabled={!valid || busy}>
           {pending.confirmLabel}
         </Button>
@@ -296,7 +296,7 @@ export function DialogHost() {
       <Dialog title={pending.title} onClose={() => done(false)} width={420}>
         <p className="px-5 pt-2 text-[13.5px] text-text-2">{pending.message}</p>
         <div className="flex justify-end gap-2 px-5 pt-4 pb-4">
-          <Button onClick={() => done(false)}>{fr.common.cancel}</Button>
+          <Button onClick={() => done(false)}>{t.common.cancel}</Button>
           <Button
             variant={pending.danger ? "danger" : "primary"}
             onClick={() => done(true)}

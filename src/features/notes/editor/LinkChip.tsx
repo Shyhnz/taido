@@ -10,7 +10,7 @@ import {
   ReactNodeViewRenderer,
 } from "@tiptap/react";
 import { CircleCheck, FileText } from "lucide-react";
-import { fr } from "../../../i18n/fr";
+import { t } from "../../../i18n";
 import { commands, isNotFound } from "../../../lib/ipc";
 import { useTask } from "../../../lib/queries";
 import { useUi } from "../../../stores/ui";
@@ -55,7 +55,7 @@ function Chip({ node, selected }: ReactNodeViewProps) {
         data-wiki-link=""
         className={`${look} bg-hover text-text-3 line-through`}
       >
-        {fr.notes.editor.linkDead(label || id.slice(0, 8))}
+        {t.notes.editor.linkDead(label || id.slice(0, 8))}
       </NodeViewWrapper>
     );
   }
@@ -67,7 +67,7 @@ function Chip({ node, selected }: ReactNodeViewProps) {
     >
       <button
         type="button"
-        aria-label={`${kind === "page" ? fr.notes.mentionPage : fr.notes.mentionTask} : ${shown}`}
+        aria-label={`${kind === "page" ? t.notes.mentionPage : t.notes.mentionTask} : ${shown}`}
         contentEditable={false}
         onClick={() => {
           if (kind === "task") useUi.getState().openTask(id);

@@ -5,7 +5,7 @@
 
 import type { MouseEvent } from "react";
 import type { Agent, Ring } from "../../bindings";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 
 export type RingSize = 20 | 24 | 15;
 
@@ -50,13 +50,13 @@ const LOOKS: Record<Ring, Look> = {
 const PREVIEW: ReadonlySet<Ring> = new Set(["human", "idle", "paused"]);
 
 export function ringLabel(ring: Ring, agent: Agent = "claude"): string {
-  return fr.ring.state(ring, agent);
+  return t.ring.state(ring, agent);
 }
 
 export function ringAriaLabel(ring: Ring, agent: Agent = "claude"): string {
-  if (ring === "completed") return fr.ring.reopen;
+  if (ring === "completed") return t.ring.reopen;
   // A plain task just says « Terminer »; an agent state is added to the name.
-  return fr.ring.markDone(ring === "human" ? null : ringLabel(ring, agent));
+  return t.ring.markDone(ring === "human" ? null : ringLabel(ring, agent));
 }
 
 export function RingSvg({

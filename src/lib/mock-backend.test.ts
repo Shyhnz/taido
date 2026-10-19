@@ -404,6 +404,7 @@ describe("MockBackend", () => {
       codexPath: null,
       agentChosen: null,
       voiceSpaceHold: null,
+      language: null,
     });
     expect(settings).toEqual({
       theme: "dark",
@@ -427,6 +428,7 @@ describe("MockBackend", () => {
       codexPath: null,
       agentChosen: true,
       voiceSpaceHold: true,
+      language: null,
     });
   });
 
@@ -689,6 +691,7 @@ describe("MockBackend", () => {
       codexPath: null,
       agentChosen: null,
       voiceSpaceHold: null,
+      language: null,
     });
     expect((await c.checkAgent("claude")).path).toBe("/usr/local/bin/claude");
     expect((await c.getAppStatus()).claude.path).toBe("/usr/local/bin/claude");

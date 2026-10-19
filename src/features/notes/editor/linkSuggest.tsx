@@ -12,7 +12,7 @@ import Suggestion, {
   type SuggestionProps,
 } from "@tiptap/suggestion";
 import { CircleCheck, FileText } from "lucide-react";
-import { fr } from "../../../i18n/fr";
+import { t } from "../../../i18n";
 import { IS_MOBILE } from "../../../lib/target";
 import { linkLabel, type WikiLinkKind } from "./wikiLink";
 
@@ -75,12 +75,12 @@ function SuggestList({ items, index, choose }: ListProps) {
   return (
     <div
       role="listbox"
-      aria-label={fr.notes.editor.linkSuggest}
+      aria-label={t.notes.editor.linkSuggest}
       className="max-h-[min(320px,50vh)] w-[min(320px,calc(100vw-32px))] overflow-y-auto rounded-lg border border-border bg-bg p-1 shadow-pop"
     >
       {items.length === 0 && (
         <p className="px-2.5 py-2 text-[13.5px] text-text-3">
-          {fr.notes.editor.linkNone}
+          {t.notes.editor.linkNone}
         </p>
       )}
       {items.map((item, i) => (
@@ -91,8 +91,8 @@ function SuggestList({ items, index, choose }: ListProps) {
               className="px-2.5 pt-1.5 pb-0.5 text-[11px] font-semibold tracking-wide text-text-3 uppercase"
             >
               {item.kind === "page"
-                ? fr.notes.editor.linkPages
-                : fr.notes.editor.linkTasks}
+                ? t.notes.editor.linkPages
+                : t.notes.editor.linkTasks}
             </p>
           )}
           {/* biome-ignore lint/a11y/useKeyWithClickEvents: the page's text drives the keyboard (↑ ↓ Entrée) */}

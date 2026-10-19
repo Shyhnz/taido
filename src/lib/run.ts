@@ -1,5 +1,5 @@
 import { showError } from "../components/Toast";
-import { fr } from "../i18n/fr";
+import { t } from "../i18n";
 import { errorKind, errorMessage } from "./ipc";
 
 /**
@@ -8,13 +8,13 @@ import { errorKind, errorMessage } from "./ipc";
  */
 export function readableError(error: unknown, action?: string): string {
   const kind = errorKind(error);
-  if (action) return fr.errors.withAction(action, kind);
-  return kind ? fr.errors.kind[kind] : fr.errors.unknown;
+  if (action) return t.errors.withAction(action, kind);
+  return kind ? t.errors.kind[kind] : t.errors.unknown;
 }
 
 /**
  * Awaits a command and shows its error in a toast. Resolves to `undefined` on failure.
- * `action` is the first half of the toast (`fr.errors.action.*`).
+ * `action` is the first half of the toast (`t.errors.action.*`).
  */
 export async function run<T>(
   promise: Promise<T>,

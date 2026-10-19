@@ -7,7 +7,7 @@
 import { create } from "zustand";
 import type { TerminalInfo, VoiceStatus } from "../../bindings";
 import { showError, showToast } from "../../components/Toast";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { commands, errorKind, errorMessage } from "../../lib/ipc";
 import { readableError } from "../../lib/run";
 import { pasteIntoTerminal } from "../terminals/registry";
@@ -107,10 +107,10 @@ function fail(error: unknown): void {
   console.error(errorMessage(error), error);
   if (errorKind(error) === "mic_denied") {
     showToast({
-      message: fr.voice.micDenied,
+      message: t.voice.micDenied,
       tone: "error",
       action: {
-        label: fr.voice.openMicSettings,
+        label: t.voice.openMicSettings,
         onAction: () => void commands.voiceOpenMicSettings().catch(() => {}),
       },
     });
@@ -150,7 +150,7 @@ export async function stopDictation(): Promise<void> {
     const target = textTargets.get(terminalId);
     if (text && target) target.write(text);
     else if (text) pasteIntoTerminal(terminalId, text);
-    else showToast({ message: fr.voice.heardNothing, duration: 2500 });
+    else showToast({ message: t.voice.heardNothing, duration: 2500 });
   } catch (error) {
     fail(error);
   } finally {

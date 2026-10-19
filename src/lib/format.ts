@@ -1,5 +1,5 @@
 import type { Subject, SubjectColor } from "../bindings";
-import { fr } from "../i18n/fr";
+import { t } from "../i18n";
 
 /** Truncates `text` to at most `max` characters, adding an ellipsis when cut. */
 export function truncate(text: string, max: number): string {
@@ -40,7 +40,7 @@ export function projectPath(
   const parent = subject.parentId
     ? subjects.find((s) => s.id === subject.parentId)
     : undefined;
-  return parent ? fr.subProjects.path(parent.name, subject.name) : subject.name;
+  return parent ? t.subProjects.path(parent.name, subject.name) : subject.name;
 }
 
 /** `projectPath` followed by a section: « Globex › Client › Design ». */
@@ -49,5 +49,5 @@ export function sectionPath(
   section: { name: string },
   subjects: Pick<Subject, "id" | "name">[],
 ): string {
-  return fr.subProjects.path(projectPath(subject, subjects), section.name);
+  return t.subProjects.path(projectPath(subject, subjects), section.name);
 }

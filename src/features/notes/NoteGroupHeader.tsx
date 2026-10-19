@@ -7,7 +7,7 @@
 import { ChevronDown, ChevronRight, Ellipsis } from "lucide-react";
 import type { NoteGroup } from "../../bindings";
 import { openContextMenu, openMenuAt } from "../../components/Menu";
-import { fr } from "../../i18n/fr";
+import { t } from "../../i18n";
 import { useUi } from "../../stores/ui";
 import { InlineNameInput } from "../sidebar/Sidebar";
 import { groupMenuItems, renameNoteGroup, useGroupRename } from "./noteActions";
@@ -35,13 +35,13 @@ export function NoteGroupHeader({
   );
   const stopRename = () => useGroupRename.setState({ renamingId: null });
   const Chevron = open ? ChevronDown : ChevronRight;
-  const menuLabel = fr.notes.groupMenu(name);
+  const menuLabel = t.notes.groupMenu(name);
 
   if (group && renaming) {
     return (
       <div className="py-1">
         <InlineNameInput
-          label={fr.notes.groupName}
+          label={t.notes.groupName}
           initial={group.name}
           onCancel={stopRename}
           onCommit={async (value) => {
@@ -56,12 +56,12 @@ export function NoteGroupHeader({
     );
   }
 
-  const toggleLabel = fr.notes.toggleGroup(name, open);
+  const toggleLabel = t.notes.toggleGroup(name, open);
   // Folded: how many pages it hides, after its name.
   const hidden =
     !open && count > 0 ? (
       <span className="shrink-0 pl-1.5 text-[11.5px] font-normal tracking-normal text-text-3 normal-case tabular-nums">
-        {fr.notes.pageCount(count)}
+        {t.notes.pageCount(count)}
       </span>
     ) : null;
 
@@ -122,7 +122,7 @@ export function NoteGroupHeader({
         <button
           type="button"
           aria-label={menuLabel}
-          title={fr.common.more}
+          title={t.common.more}
           onClick={(e) =>
             openMenuAt(
               e.currentTarget,
