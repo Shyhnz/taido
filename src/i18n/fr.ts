@@ -46,9 +46,9 @@ const taskCount = (n: number) =>
   n === 0 ? "Aucune tâche" : plural(n, "tâche", "tâches");
 
 /**
- * What an account keeps on the server (Réglages › Compte on the Mac, Synchro on the phone):
- * one text for both devices. Mirrors the synced entities of docs/SYNC.md (protocol 3) and, since
- * V2.7 bis, the content of attachments (§ 0.13).
+ * What an account keeps on the server (Réglages › Compte on the computer, Synchro on the phone):
+ * one text for both devices. Mirrors the synced entities of docs/SYNC.md, the content of
+ * attachments included.
  */
 const ACCOUNT_PRIVACY =
   "Ton compte garde tes projets, sections, tâches, colonnes du Kanban, temps passé, relations entre tâches et pièces jointes (noms et fichiers). Jamais les dossiers, les terminaux, les sessions de Claude ni le journal.";
@@ -89,6 +89,8 @@ export const fr = {
     more: "Plus d'actions",
     loading: "Chargement…",
     tasks: taskCount,
+    /** A title or name inside a sentence: « Globex ». */
+    quote: (text: string) => `« ${text} »`,
   },
 
   /**
@@ -106,7 +108,7 @@ export const fr = {
       codex_missing:
         "Codex est introuvable. Installe-le ou indique son chemin dans Réglages.",
       internal: "Un problème est survenu. Réessaie.",
-      // Account commands (V2.7); the account forms show `fr.sync.accountError` instead.
+      // Account commands; the account forms show `fr.sync.accountError` instead.
       sync_auth: "E-mail ou mot de passe incorrect.",
       sync_rate_limited: "Trop d'essais. Attends quelques minutes.",
       sync_email_taken: "Un compte existe déjà avec cette adresse.",
@@ -470,7 +472,7 @@ export const fr = {
     loading: "Chargement…",
     notFound: "Cette tâche n'existe plus.",
     noProject: "Sans projet",
-    // --- m1bis task panel (one column) ---
+    // --- task panel (one column) ---
     move: "Déplacer vers…",
     /** Chip « Projet › Section »: accessible name and menu title. */
     location: (where: string) => `Projet : ${where}. Changer`,
@@ -484,7 +486,7 @@ export const fr = {
     hideHistory: "Masquer l'historique",
     /** (`features.terminals`): folder, git branch, state. */
     technicalDetails: "Détails techniques",
-    // --- end m1bis task panel ---
+    // --- end task panel ---
   },
 
   /** (`features.terminals`): « Détails techniques » of the task panel. */
@@ -706,7 +708,7 @@ export const fr = {
       theme: "Thème",
       /** (docs/SYNC.md § 5); same text as `fr.sync.tab`. */
       sync: "Synchro",
-      /** The Mac's name of the « sync » tab (Taido V2.7); the phone keeps « Synchro ». */
+      /** The computer's name of the « sync » tab; the phone keeps « Synchro ». */
       account: "Compte",
       agents: "Agents",
       diagnostic: "Diagnostic",
@@ -1012,6 +1014,9 @@ export const fr = {
 
   shortcuts: {
     dialogClose: "Fermer la fenêtre",
+    /** Key names shown next to a hint (the relation picker's footer). */
+    enter: "Entrée",
+    escape: "Échap",
   },
 
   // --- Sidebar projects: inline creation, rename, loading ---
@@ -1061,7 +1066,7 @@ export const fr = {
   },
   // ---- end of the views area block ----
 
-  // --- m1bis date picker (src/components/DatePicker.tsx) ---
+  // --- date picker (src/components/DatePicker.tsx) ---
   /** French date picker of the due date (panel chip and « Échéance… » dialog). */
   datePicker: {
     label: "Choisir l'échéance",
@@ -1079,9 +1084,9 @@ export const fr = {
     clearTime: "Retirer l'heure",
     clear: "Retirer l'échéance",
   },
-  // --- end m1bis date picker ---
+  // --- end date picker ---
 
-  // ── Keyboard, toasts and global regions (m1bis-keyboard) ──────────────────────────────
+  // ── Keyboard, toasts and global regions ─────────────────────────────────────────────────
   app: {
     /** Label of the toast area (aria region). */
     notifications: "Notifications",
@@ -1090,9 +1095,9 @@ export const fr = {
     /** « Ouvrir le dossier » failed (bug #11). */
     openFolderError: "Impossible d'ouvrir le dossier.",
   },
-  // ── end m1bis-keyboard ─────────────────────────────────────────────────────────────────
+  // ── end keyboard ───────────────────────────────────────────────────────────────────────
 
-  // ── lists, priority, Claude dot, Upcoming (m5bis-list) ──────────────────
+  // ── lists, priority, Claude dot, Upcoming ─────────────────────────────────
   /**
    * Round checkbox coloured by priority. `n` is the number shown (`displayPriority`): P1 red,
    * P2 orange, P3 yellow, P4 plain.
@@ -1153,7 +1158,7 @@ export const fr = {
     /** Toast after a task is dropped on a calendar day: « Déplacée au mercredi 14 octobre ». */
     movedTo: (day: string) => `Déplacée au ${day}`,
   },
-  // ── end m5bis-list ──────────────────────────────────────────────────────────────────────
+  // ── end lists ───────────────────────────────────────────────────────────────────────────
   // ── task panel (child tasks, priority, session recap) ─────────────────
   panelBis: {
     /** Breadcrumb of a subtask's panel. */
@@ -1210,7 +1215,7 @@ export const fr = {
     link: (name: string, n: number) =>
       n === 0 ? `Ouvrir ${name}` : `Ouvrir ${name}, ${taskCount(n)}`,
   },
-  /** Taido V2.2 bis, product decision: groups gather projects in the sidebar, like Brave's tab groups. */
+  /** Groups gather projects in the sidebar, like Brave's tab groups. */
   groups: {
     menuLabel: (name: string) => `Options du groupe « ${name} »`,
     toggle: (name: string, open: boolean) =>
@@ -1261,7 +1266,7 @@ export const fr = {
     loadError: "Impossible de lire l'état de la synchro.",
     intro:
       "Synchronise tes projets et tes tâches avec ton téléphone, par ton serveur.",
-    /** `intro` read on the phone itself (Taido V2.7: the phone logs in to the account). */
+    /** `intro` read on the phone itself (the phone logs in to the account). */
     introMobile:
       "Connecte-toi à ton compte pour retrouver les projets et les tâches de ton ordinateur.",
     privacy: ACCOUNT_PRIVACY,
@@ -1270,7 +1275,7 @@ export const fr = {
     email: "Adresse e-mail",
     emailPlaceholder: "toi@exemple.fr",
     password: "Mot de passe",
-    /** Phone, under the login form: no signup nor password reset on the phone in V2.7. */
+    /** Phone, under the login form: no signup nor password reset on the phone. */
     signupOnMac: "Crée ton compte depuis l'ordinateur.",
     forgotOnMac:
       "Pour changer ton mot de passe, utilise « Mot de passe oublié » sur l'ordinateur.",
@@ -1341,7 +1346,7 @@ export const fr = {
       invalid: "Indique une adresse de serveur qui commence par https://.",
       /** `invalid` refusal of a signup or login while already linked to an account. */
       alreadyLinked: "Déconnecte-toi d'abord pour changer de compte.",
-      /** `invalid` refusal of signup, forgotten password or reset on the phone (V2.7). */
+      /** `invalid` refusal of signup, forgotten password or reset on the phone. */
       notOnPhone:
         "Crée ton compte ou change ton mot de passe depuis l'ordinateur.",
     },
@@ -1376,7 +1381,7 @@ export const fr = {
     installHelp:
       "Pour l'installer : menu ⋮ de Chrome › « Ajouter à l'écran d'accueil ».",
   },
-  // ── Taido V2.7: accounts on the Mac (welcome screen, Réglages › Compte) ──────────────────
+  // ── Accounts on the computer (welcome screen, Réglages › Compte) ─────────────────────────
   account: {
     /** Réglages › Compte while not logged in: the two ways in. */
     start: {
@@ -1457,7 +1462,7 @@ export const fr = {
       "La synchro n'a pas pu se faire : des modifications n'ont peut-être pas été envoyées au compte. Elles restent sur cet appareil et partiront à ta prochaine connexion.",
     logoutAnyway: "Se déconnecter quand même",
     loggedOutToast: "Déconnecté. Tes projets restent sur cet appareil.",
-    /** The texts above that name the device, as the phone says them (same flows, V2.7). */
+    /** The texts above that name the device, as the phone says them (same flows). */
     phone: {
       mergeText: (email: string) =>
         `Ce téléphone contient déjà des projets. Ils seront ajoutés à ceux du compte ${email}.`,
@@ -1475,7 +1480,7 @@ export const fr = {
 
   // ── ────────────────────────────────────────────────────────────────────
 
-  // ── Taido V2.2: kanban ─────────────────────────────────────────────
+  // ── kanban ─────────────────────────────────────────────────────────
   board: {
     tabs: "Affichage du projet",
     list: "Liste",
@@ -1501,7 +1506,7 @@ export const fr = {
     error: "Le kanban n'a pas pu être chargé.",
     retry: "Réessayer",
     dragLabel: (title: string) => `Déplacer « ${title} »`,
-    /** Web app (Taido V2.8): a linked device before its first full sync has no columns yet. */
+    /** Web app: a linked device before its first full sync has no columns yet. */
     notReady:
       "Les colonnes arrivent avec la première synchronisation. Reviens dans un instant.",
     notReadyError:
@@ -1515,13 +1520,13 @@ export const fr = {
     moveToLabel: (title: string) => `Déplacer « ${title} » vers…`,
   },
 
-  // ── Taido V2.6: portfolio ─────────────────────────────────────────
+  // ── portfolio ─────────────────────────────────────────────────────
   portfolio: {
     title: "Portefeuille",
     subtitle: "Tous tes projets, une ligne chacun.",
     export: "Exporter les temps (CSV)",
     exported: (path: string) => `Temps exportés : ${path}`,
-    /** Web app (Taido V2.8): the CSV is a download. */
+    /** Web app: the CSV is a download. */
     downloaded: (fileName: string) => `Temps exportés : ${fileName} téléchargé`,
     fileName: (date: string, days: number) =>
       `taido-temps-${days}j-${date}.csv`,
@@ -1557,7 +1562,7 @@ export const fr = {
     error: "Le portefeuille n'a pas pu être chargé.",
   },
 
-  // ── Taido V2.5: dashboard ──────────────────────────────────────────
+  // ── dashboard ──────────────────────────────────────────────────────
   dashboard: {
     tab: "Dashboard",
     period: "Période",
@@ -1577,7 +1582,7 @@ export const fr = {
     blocked: "Bloquées",
     blockedHint: (relation: number, waiting: number) =>
       `${relation} par une tâche · ${waiting} attend${waiting > 1 ? "ent" : ""} ta réponse`,
-    /** Web app (Taido V2.8): no Claude, so nothing « attend ta réponse ». */
+    /** Web app: no Claude, so nothing « attend ta réponse ». */
     blockedHintWeb: (relation: number) => `${relation} par une tâche`,
     time: "Temps passé",
     perDone: (time: string) => `moy. ${time} par tâche finie`,
@@ -1609,7 +1614,7 @@ export const fr = {
     loading: "Chargement du dashboard…",
     error: "Le dashboard n'a pas pu être chargé.",
     retry: "Réessayer",
-    /** The compact strip above the list (wireframe V2·1). */
+    /** The compact strip above the list. */
     strip: "Chiffres du projet",
     stripOpen: (n: number) => `${n} ouverte${n > 1 ? "s" : ""}`,
     stripDone: (n: number) => `${n} terminée${n > 1 ? "s" : ""} (7 j)`,
@@ -1619,7 +1624,7 @@ export const fr = {
     stripOpenDashboard: "Ouvrir le dashboard",
   },
 
-  // ── Taido V2.3: attachments and relations ───────────────────
+  // ── attachments and relations ───────────────────────────────
   attachments: {
     title: "Pièces jointes",
     hint: (agent: Agent) =>
@@ -1648,7 +1653,7 @@ export const fr = {
     deleteMessage:
       "Elle est retirée de tous tes appareils, et sa copie dans le dossier de la tâche est supprimée. Le fichier d'origine ne bouge pas.",
     missing: "fichier introuvable",
-    /** V2.7 bis: where the file stands with the account (core `AttachmentRemote`). */
+    /** Where the file stands with the account (core `AttachmentRemote`). */
     remote: {
       local_only: "Sur cet appareil seulement",
       uploading: "Envoi…",
@@ -1657,14 +1662,13 @@ export const fr = {
       too_large: "Trop gros pour le serveur",
       quota_full: "Espace du compte plein",
     },
-    /** V2.7 bis: the web app (site and phone), where files come from the browser. */
+    /** The web app (site and phone), where files come from the browser. */
     web: {
       drop: "Glisse des fichiers ici, colle une image, ou",
       adding: "Ajout…",
       localOnly: "Sur cet appareil seulement",
       /** No task folder on the web: the attachment simply leaves every device. */
       deleteMessage: "Elle est retirée de tous tes appareils.",
-      tooLarge: (names: string) => `Trop gros (100 Mo max) : ${names}`,
       error: {
         unlinked: "Connecte-toi à ton compte pour télécharger ce fichier.",
         not_on_server:
@@ -1672,7 +1676,6 @@ export const fr = {
         offline: "Pas de connexion : le fichier n'a pas pu être téléchargé.",
         corrupt: "Le fichier reçu est abîmé. Réessaie.",
         storage: "Plus de place sur cet appareil pour garder ce fichier.",
-        too_large: "Trop gros (100 Mo max).",
         not_found: "Ce fichier n'existe plus.",
       },
     },
@@ -1771,8 +1774,7 @@ export const fr = {
     showFewerSegments: "Voir moins",
   },
 
-  // ── Taido V2.1: chrono ────────────────────────────────────────────
-  /** The project notebook: « Notes » tab and its pages. */
+  /** « Demander au projet »: a Claude Code terminal in a side panel. */
   ask: {
     button: "Demander au projet",
     title: "Demander au projet",
@@ -1786,6 +1788,7 @@ export const fr = {
     retry: "Réessayer",
     openError: "Impossible d'ouvrir Claude Code.",
   },
+  /** The project notebook: « Notes » tab and its pages. */
   notes: {
     tab: "Notes",
     listLabel: "Pages du carnet",
@@ -1923,6 +1926,7 @@ export const fr = {
     },
   },
 
+  // ── chrono ────────────────────────────────────────────────────────
   chrono: {
     title: "Chrono",
     runningLabel: (time: string) => `Chrono : ${time}, en cours`,
@@ -1976,11 +1980,11 @@ export const fr = {
 } as const;
 
 /** Replaces the agent's name in a text written for Claude. */
-const toCodex = (text: string): string =>
+export const toCodex = (text: string): string =>
   text.replaceAll("Claude Code", "Codex").replaceAll("Claude", "Codex");
 
 /** The same texts with every string, and every string a function returns, rewritten. */
-function mapTexts<T>(value: T, f: (text: string) => string): T {
+export function mapTexts<T>(value: T, f: (text: string) => string): T {
   if (typeof value === "string") return f(value) as T;
   if (typeof value === "function") {
     return ((...args: unknown[]) =>

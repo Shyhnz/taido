@@ -92,10 +92,7 @@ export async function addImagesToPage(
         const name = imageFileName(pastedName(f), f.type);
         return name === f.name ? f : new File([f], name, { type: f.type });
       });
-      const { ids, tooLarge } = await files.addToPage(pageId, named);
-      if (tooLarge.length > 0) {
-        showError(t.attachments.web.tooLarge(tooLarge.join(", ")));
-      }
+      const { ids } = await files.addToPage(pageId, named);
       return ids;
     } catch (error) {
       console.error(errorMessage(error), error);

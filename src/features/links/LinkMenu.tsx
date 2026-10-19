@@ -298,9 +298,13 @@ export function LinkMenu({
       <p className="flex flex-wrap gap-x-3 gap-y-0.5 border-t border-border px-2.5 py-1.5 text-[11.5px] text-text-3">
         <span>↑↓ {strings.relations.hints.move}</span>
         <span>→ ← {strings.relations.hints.subtasks}</span>
-        <span>Entrée {strings.relations.hints.pick}</span>
+        <span>
+          {strings.shortcuts.enter} {strings.relations.hints.pick}
+        </span>
         <span>Tab {strings.relations.hints.kind}</span>
-        <span>Échap {strings.relations.hints.close}</span>
+        <span>
+          {strings.shortcuts.escape} {strings.relations.hints.close}
+        </span>
       </p>
     </section>
   );

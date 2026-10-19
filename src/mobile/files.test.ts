@@ -77,7 +77,7 @@ describe("adding files on the phone or the site", () => {
     const result = await phone.backend.files.add(t.id, [
       new File(["abc"], "note.txt", { type: "text/plain" }),
     ]);
-    expect(result).toEqual({ added: 1, tooLarge: [] });
+    expect(result).toEqual({ added: 1 });
     const a = await only(phone, t.id);
     expect(a).toMatchObject({
       fileName: "note.txt",
@@ -126,7 +126,7 @@ describe("adding files on the phone or the site", () => {
       big,
       new File(["abc"], "a.txt"),
     ]);
-    expect(result).toEqual({ added: 2, tooLarge: [] });
+    expect(result).toEqual({ added: 2 });
     await syncAndSend(phone);
     const names = (await tiles(phone, t.id)).map((x) => x.fileName).sort();
     expect(names).toEqual(["a.txt", "film.mov"]);

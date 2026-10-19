@@ -13,11 +13,14 @@ import { en, enHelpers } from "./en";
 import { type Fr, fr, frHelpers } from "./fr";
 
 export type Language = "en" | "fr";
-/** `fr` is `as const`; the table type widens the literals so that `en` can have its own texts. */
+/**
+ * `fr` is `as const`; the table type widens the literals (returned ones too) so that `en` can
+ * have its own texts.
+ */
 type Widen<T> = T extends string
   ? string
-  : T extends (...args: never[]) => unknown
-    ? T
+  : T extends (...args: infer A) => infer R
+    ? (...args: A) => Widen<R>
     : T extends readonly (infer U)[]
       ? readonly Widen<U>[]
       : T extends object
@@ -63,12 +66,13 @@ export function currentLanguage(): Language {
   return detected;
 }
 
-const language = currentLanguage();
+/** The language of this window, read once at startup like `t` (a change reloads the window). */
+export const activeLanguage: Language = currentLanguage();
 
 /** The active string table. */
-export const t: Strings = language === "fr" ? fr : en;
+export const t: Strings = activeLanguage === "fr" ? fr : en;
 
-const helpers = language === "fr" ? frHelpers : enHelpers;
+const helpers = activeLanguage === "fr" ? frHelpers : enHelpers;
 
 export const {
   agentName,

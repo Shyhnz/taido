@@ -38,7 +38,7 @@ export const PREVIEW_MAX_BYTES = 10 * 1024 * 1024;
 export const hasPreview = (mimeType: string, size: number): boolean =>
   PREVIEW_MIMES.has(mimeType.toLowerCase()) && size <= PREVIEW_MAX_BYTES;
 
-/** Why a file could not be added or downloaded (the UI says it in French). */
+/** Why a file could not be added or downloaded (the UI says it in its language). */
 export type WebFileErrorKind =
   /** Not on this device and no account to fetch it from. */
   | "unlinked"
@@ -50,8 +50,6 @@ export type WebFileErrorKind =
   | "corrupt"
   /** This device could not keep the file (storage full or unavailable). */
   | "storage"
-  /** Over the 100 MB limit (refused before it is read). */
-  | "too_large"
   /** The attachment is gone. */
   | "not_found";
 
@@ -74,8 +72,6 @@ export interface OpenedFile {
 
 export interface AddedFiles {
   added: number;
-  /** Names refused before anything was read: over the 100 MB limit. */
-  tooLarge: string[];
 }
 
 /** Files added as images of a notebook page: the new attachments' ids, in order. */

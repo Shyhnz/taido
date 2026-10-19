@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Subject } from "../../bindings";
 import { applyCompletion, findCompletion, fuzzyRank } from "./complete";
 
@@ -205,5 +205,35 @@ describe("« @ » offers dates (Taido V2.4)", () => {
       caret: 15,
     });
     expect(findCompletion("Appel @demain 10", 16, [], null, now)).toBeNull();
+  });
+});
+
+describe("« @ » offers English dates in English", () => {
+  afterEach(() => {
+    window.localStorage.setItem("taido.language", "fr");
+    vi.resetModules();
+  });
+  // Friday 9 October 2026, 15:00.
+  const now = new Date(2026, 9, 9, 15, 0);
+  it("lists the English date words and writes the plain word", async () => {
+    window.localStorage.setItem("taido.language", "en");
+    vi.resetModules();
+    const { findCompletion: complete } = await import("./complete");
+    const all = complete("Call @", 6, [], null, now);
+    expect(all?.options.map((o) => o.label).slice(0, 4)).toEqual([
+      "Today",
+      "Tomorrow",
+      "Tonight",
+      "Monday",
+    ]);
+    const fri = complete("Call @fri", 9, [], null, now);
+    expect(fri?.options[0]).toMatchObject({
+      label: "Friday",
+      insert: "friday",
+      date: true,
+      hint: "16 Oct",
+    });
+    const next = complete("Call @next", 10, [], null, now);
+    expect(next?.options.map((o) => o.insert)).toContain("next week");
   });
 });

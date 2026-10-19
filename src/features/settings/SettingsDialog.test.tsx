@@ -235,7 +235,7 @@ describe("Réglages", () => {
       within(dialog).getByRole("region", { name: "Claude Code" }),
     );
     expect(await panel.findByText(MOCK_CLAUDE_PATH)).toBeInTheDocument();
-    expect(panel.getByText("2.1.288 (simulé)")).toBeInTheDocument();
+    expect(panel.getByText("2.1.288 (mock)")).toBeInTheDocument();
     expect(panel.getByText("Connecté")).toBeInTheDocument();
 
     backend().state.claude = { found: true, loggedIn: false };

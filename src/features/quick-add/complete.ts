@@ -1,11 +1,12 @@
 /**
  * Autocompletion of `#projet` and `/section` in the quick add: fuzzy, without
  * case or accents. Pure: the dialog gives the text, the caret and the projects. Taido V2.4
- * (by design): `@` offers dates the same way; choosing one writes the plain date word
- * (« vendredi »), which the parser reads with or without the `@`.
+ * (by design): `@` offers dates the same way, in the interface's language; choosing one writes
+ * the plain date word (« vendredi », "friday"), which the parser reads with or without the `@`.
  */
 
 import type { Subject, SubjectColor } from "../../bindings";
+import { activeLanguage, type Language } from "../../i18n";
 import { formatDueMeta } from "../../lib/dates";
 import { projectPath, sectionPath } from "../../lib/format";
 import { fold, parseQuickAdd } from "./parse";
@@ -144,24 +145,40 @@ function ranked(
 }
 
 /** What `@` offers: the date words the parser knows, with the date each gives today. */
-const DATE_WORDS = [
-  "aujourd'hui",
-  "demain",
-  "après-demain",
-  "ce soir",
-  "lundi",
-  "mardi",
-  "mercredi",
-  "jeudi",
-  "vendredi",
-  "samedi",
-  "dimanche",
-  "dans 1 semaine",
-];
+const DATE_WORDS: Record<Language, string[]> = {
+  fr: [
+    "aujourd'hui",
+    "demain",
+    "après-demain",
+    "ce soir",
+    "lundi",
+    "mardi",
+    "mercredi",
+    "jeudi",
+    "vendredi",
+    "samedi",
+    "dimanche",
+    "dans 1 semaine",
+  ],
+  en: [
+    "today",
+    "tomorrow",
+    "tonight",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+    "next week",
+    "in 1 week",
+  ],
+};
 
 function dateCandidates(now: Date): Candidate[] {
-  return DATE_WORDS.flatMap((word) => {
-    const due = parseQuickAdd(word, now, []).due;
+  return DATE_WORDS[activeLanguage].flatMap((word) => {
+    const due = parseQuickAdd(word, now, [], { language: activeLanguage }).due;
     if (!due) return [];
     return [
       {

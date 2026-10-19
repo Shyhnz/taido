@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Subject } from "../../bindings";
 import {
   fold,
@@ -538,5 +538,130 @@ describe("« @ » before a date (Taido V2.4)", () => {
       title: "Écrire à @paul",
       due: undefined,
     });
+  });
+});
+
+describe("quick add in English", () => {
+  // Saturday 3 October 2026, 10:00: tomorrow is Sunday the 4th, next Monday the 5th.
+  const en = (text: string) =>
+    summary(parseQuickAdd(text, NOW, SUBJECTS, { language: "en" }));
+
+  it.each<[string, Expected]>([
+    ["Call Bob tomorrow", { title: "Call Bob", due: { date: "2026-10-04" } }],
+    [
+      "Review monday !1",
+      { title: "Review", due: { date: "2026-10-05" }, priority: 4 },
+    ],
+    ["Plan next week", { title: "Plan", due: { date: "2026-10-05" } }],
+    ["Pay rent today", { title: "Pay rent", due: { date: "2026-10-03" } }],
+    [
+      "Call mum tonight",
+      { title: "Call mum", due: { date: "2026-10-03", time: "18:00" } },
+    ],
+    [
+      "Call mum @tomorrow 5pm",
+      { title: "Call mum", due: { date: "2026-10-04", time: "17:00" } },
+    ],
+    [
+      "Standup tomorrow at 9:30am",
+      { title: "Standup", due: { date: "2026-10-04", time: "09:30" } },
+    ],
+    [
+      "Standup tomorrow 14:15",
+      { title: "Standup", due: { date: "2026-10-04", time: "14:15" } },
+    ],
+    [
+      "Gym tomorrow morning",
+      { title: "Gym", due: { date: "2026-10-04", time: "09:00" } },
+    ],
+    [
+      "Demo friday afternoon",
+      { title: "Demo", due: { date: "2026-10-09", time: "14:00" } },
+    ],
+    ["Demo fri", { title: "Demo", due: { date: "2026-10-09" } }],
+    ["Demo on Tuesday", { title: "Demo", due: { date: "2026-10-06" } }],
+    ["Demo next saturday", { title: "Demo", due: { date: "2026-10-10" } }],
+    [
+      "Renew passport in 3 days",
+      { title: "Renew passport", due: { date: "2026-10-06" } },
+    ],
+    [
+      "Renew passport in a week",
+      { title: "Renew passport", due: { date: "2026-10-10" } },
+    ],
+    [
+      "Party day after tomorrow",
+      { title: "Party", due: { date: "2026-10-05" } },
+    ],
+    ["Taxes 15 nov", { title: "Taxes", due: { date: "2026-11-15" } }],
+    ["Taxes Nov 15th", { title: "Taxes", due: { date: "2026-11-15" } }],
+    [
+      "Taxes on 2 january 2027",
+      { title: "Taxes", due: { date: "2027-01-02" } },
+    ],
+    ["Taxes 13/10", { title: "Taxes", due: { date: "2026-10-13" } }],
+    ["Rent on the 12th", { title: "Rent", due: { date: "2026-10-12" } }],
+    [
+      "Lunch at noon",
+      { title: "Lunch", due: { date: "2026-10-03", time: "12:00" } },
+    ],
+    [
+      "Ship it 12am",
+      { title: "Ship it", due: { date: "2026-10-03", time: "00:00" } },
+    ],
+    [
+      "Fix login #Site/Design tomorrow >claude",
+      {
+        title: "Fix login",
+        subject: "Site",
+        section: "Design",
+        due: { date: "2026-10-04" },
+        launch: "claude",
+      },
+    ],
+    // French words are plain text in English.
+    ["Appeler Bob demain", { title: "Appeler Bob demain" }],
+    // Only whole words: no date inside another word.
+    [
+      "Sunday school notes mondays",
+      { title: "school notes mondays", due: { date: "2026-10-04" } },
+    ],
+    [
+      "Call Bob tomorrow about monday",
+      { title: "Call Bob about monday", due: { date: "2026-10-04" } },
+    ],
+  ])("%s", (text, expected) => {
+    expect(en(text)).toEqual(expected);
+  });
+});
+
+describe("quick add in French stays French", () => {
+  it("reads demain and leaves English words alone", () => {
+    expect(summary(parseQuickAdd("Appeler Bob demain", NOW, SUBJECTS))).toEqual(
+      {
+        title: "Appeler Bob",
+        due: { date: "2026-10-04" },
+      },
+    );
+    expect(summary(parseQuickAdd("Call Bob tomorrow", NOW, SUBJECTS))).toEqual({
+      title: "Call Bob tomorrow",
+    });
+  });
+});
+
+describe("the quick add follows the interface's language", () => {
+  afterEach(() => {
+    window.localStorage.setItem("taido.language", "fr");
+    vi.resetModules();
+  });
+
+  it("reads English words in an English window", async () => {
+    window.localStorage.setItem("taido.language", "en");
+    vi.resetModules();
+    const { parseQuickAdd: parseEn } = await import("./parse");
+    expect(parseEn("Call Bob tomorrow", NOW, []).due).toEqual({
+      date: "2026-10-04",
+    });
+    expect(parseEn("Appeler Bob demain", NOW, []).due).toBeUndefined();
   });
 });

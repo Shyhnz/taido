@@ -28,6 +28,7 @@
  */
 
 import type { Section, Subject } from "../../bindings";
+import { activeLanguage, type Language } from "../../i18n";
 
 export type LaunchKind = "claude" | "codex" | "shell";
 
@@ -82,6 +83,8 @@ export interface ParseOptions {
   literals?: Range[];
   /** `>claude` and `>shell` are recognised (default true; false where there are no terminals). */
   agents?: boolean;
+  /** Language of the date and time words (default: the interface's, `activeLanguage`). */
+  language?: Language;
 }
 
 export interface ParseResult {
@@ -163,7 +166,71 @@ const time = (h: number, m: number) =>
 // Dates and times
 // ---------------------------------------------------------------------------
 
-const WEEKDAYS: Record<string, number> = {
+/** Weekday names, Sunday 0, in a regex alternation that tries the longest first. */
+const weekdayRe = (days: Record<string, number>) =>
+  Object.keys(days)
+    .sort((a, b) => b.length - a.length)
+    .join("|");
+
+/** The next occurrence of `target`, never today. */
+const nextWeekday = (today: Date, target: number) =>
+  addDays(today, (target - today.getDay() + 7) % 7 || 7);
+
+/** A month alternation from names and abbreviations, longest first so the regex prefers them. */
+const monthRe = (months: [string, number][]) =>
+  months
+    .map(([name]) => name)
+    .sort((a, b) => b.length - a.length)
+    .join("|");
+
+interface DateMatch {
+  end: number;
+  date: string;
+  time: string | null;
+}
+
+type DateRule = {
+  re: RegExp;
+  /** Date of the match, null when it is not a real date. */
+  resolve: (m: RegExpExecArray, today: Date) => Date | null;
+  /** « ce soir » already carries its time. */
+  time?: string;
+  dayPart?: boolean;
+  /**
+   * An impossible date here (« le 30 fev », « 31/02 ») stays text: no later rule may read a
+   * date from its prefix (« le 30 »).
+   */
+  final?: boolean;
+};
+
+type TimeRule = {
+  re: RegExp;
+  /** `HH:MM` of the match, null when it is not a real time. */
+  resolve: (m: RegExpExecArray) => string | null;
+};
+
+/** The date and time words of one language. */
+interface DateWords {
+  dateRules: DateRule[];
+  /** Part of the day after a date word: « demain soir », "tomorrow evening". */
+  dayPartRe: RegExp;
+  dayParts: Record<string, string>;
+  timeRules: TimeRule[];
+}
+
+/** « le 12 », "the 12th": this month, or the next month that has that day once it is past. */
+function dayOfMonth(day: number, today: Date): Date | null {
+  for (let k = 0; k < 13; k++) {
+    const month = new Date(today.getFullYear(), today.getMonth() + k, 1);
+    const d = makeDate(month.getFullYear(), month.getMonth() + 1, day);
+    if (d && d >= today) return d;
+  }
+  return null;
+}
+
+// --- French ---------------------------------------------------------------
+
+const FR_WEEKDAYS: Record<string, number> = {
   dimanche: 0,
   lundi: 1,
   mardi: 2,
@@ -173,8 +240,7 @@ const WEEKDAYS: Record<string, number> = {
   samedi: 6,
 };
 
-/** Month names and abbreviations, longest first so the regex prefers them. */
-const MONTHS: [string, number][] = [
+const FR_MONTHS: [string, number][] = [
   ["septembre", 9],
   ["decembre", 12],
   ["novembre", 11],
@@ -197,109 +263,225 @@ const MONTHS: [string, number][] = [
   ["nov", 11],
   ["dec", 12],
 ];
-const MONTH_RE = MONTHS.map(([name]) => name).join("|");
-const MONTH_OF = new Map(MONTHS);
+const FR_MONTH_OF = new Map(FR_MONTHS);
 
-/** Part of the day after a date word: « demain soir ». */
-const DAY_PARTS: Record<string, string> = {
-  matin: "09:00",
-  midi: "12:00",
-  "apres-midi": "14:00",
-  "apres midi": "14:00",
-  soir: "18:00",
+const FR: DateWords = {
+  dateRules: [
+    {
+      re: /aujourd'hui|aujourdhui|auj/y,
+      resolve: (_m, today) => today,
+      dayPart: true,
+    },
+    { re: /ce\s+soir/y, resolve: (_m, today) => today, time: "18:00" },
+    {
+      re: /apres-demain|apres\s+demain/y,
+      resolve: (_m, today) => addDays(today, 2),
+      dayPart: true,
+    },
+    {
+      re: /demain/y,
+      resolve: (_m, today) => addDays(today, 1),
+      dayPart: true,
+    },
+    {
+      re: /dans\s+(\d{1,3}|un|une)\s+(jours?|semaines?)/y,
+      resolve: (m, today) => {
+        const n = m[1] === "un" || m[1] === "une" ? 1 : Number(m[1]);
+        return addDays(today, m[2].startsWith("semaine") ? n * 7 : n);
+      },
+    },
+    {
+      // The next occurrence, never today; « lundi prochain » is the same day (like the date
+      // picker's « Lundi prochain »: the Monday strictly after today).
+      re: new RegExp(`(${weekdayRe(FR_WEEKDAYS)})(?:\\s+prochain)?`, "y"),
+      resolve: (m, today) => nextWeekday(today, FR_WEEKDAYS[m[1]]),
+      dayPart: true,
+    },
+    {
+      re: new RegExp(
+        `(?:le\\s+)?(\\d{1,2})(?:er)?\\s+(${monthRe(FR_MONTHS)})\\.?(?:\\s+(\\d{4}))?`,
+        "y",
+      ),
+      resolve: (m, today) =>
+        dayMonth(Number(m[1]), FR_MONTH_OF.get(m[2]) ?? 0, m[3], today),
+      dayPart: true,
+      final: true,
+    },
+    {
+      re: /(?:le\s+)?(\d{1,2})\/(\d{1,2})(?:\/(\d{4}|\d{2}))?/y,
+      resolve: (m, today) => dayMonth(Number(m[1]), Number(m[2]), m[3], today),
+      dayPart: true,
+      final: true,
+    },
+    {
+      re: /le\s+(\d{1,2})(?:er)?/y,
+      resolve: (m, today) => dayOfMonth(Number(m[1]), today),
+      dayPart: true,
+    },
+  ],
+  dayPartRe: /\s+(apres-midi|apres\s+midi|matin|midi|soir)/y,
+  dayParts: {
+    matin: "09:00",
+    midi: "12:00",
+    "apres-midi": "14:00",
+    "apres midi": "14:00",
+    soir: "18:00",
+  },
+  timeRules: [
+    {
+      re: /(?:a\s+)?(\d{1,2})\s?h(\d{2})?/y,
+      resolve: (m) => time(Number(m[1]), Number(m[2] ?? "0")),
+    },
+    {
+      re: /(?:a\s+)?(\d{1,2}):(\d{2})/y,
+      resolve: (m) => time(Number(m[1]), Number(m[2])),
+    },
+  ],
 };
-const DAY_PART_RE = /\s+(apres-midi|apres\s+midi|matin|midi|soir)/y;
 
-interface DateMatch {
-  end: number;
-  date: string;
-  time: string | null;
-}
+// --- English --------------------------------------------------------------
 
-type DateRule = {
-  re: RegExp;
-  /** Date of the match, null when it is not a real date. */
-  resolve: (m: RegExpExecArray, today: Date) => Date | null;
-  /** « ce soir » already carries its time. */
-  time?: string;
-  dayPart?: boolean;
-  /**
-   * An impossible date here (« le 30 fev », « 31/02 ») stays text: no later rule may read a
-   * date from its prefix (« le 30 »).
-   */
-  final?: boolean;
+const EN_WEEKDAYS: Record<string, number> = {
+  sunday: 0,
+  sun: 0,
+  monday: 1,
+  mon: 1,
+  tuesday: 2,
+  tues: 2,
+  tue: 2,
+  wednesday: 3,
+  wed: 3,
+  thursday: 4,
+  thurs: 4,
+  thur: 4,
+  thu: 4,
+  friday: 5,
+  fri: 5,
+  saturday: 6,
+  sat: 6,
 };
 
-const WEEKDAY_RE = Object.keys(WEEKDAYS).join("|");
-
-const DATE_RULES: DateRule[] = [
-  {
-    re: /aujourd'hui|aujourdhui|auj/y,
-    resolve: (_m, today) => today,
-    dayPart: true,
-  },
-  { re: /ce\s+soir/y, resolve: (_m, today) => today, time: "18:00" },
-  {
-    re: /apres-demain|apres\s+demain/y,
-    resolve: (_m, today) => addDays(today, 2),
-    dayPart: true,
-  },
-  {
-    re: /demain/y,
-    resolve: (_m, today) => addDays(today, 1),
-    dayPart: true,
-  },
-  {
-    re: /dans\s+(\d{1,3}|un|une)\s+(jours?|semaines?)/y,
-    resolve: (m, today) => {
-      const n = m[1] === "un" || m[1] === "une" ? 1 : Number(m[1]);
-      return addDays(today, m[2].startsWith("semaine") ? n * 7 : n);
-    },
-  },
-  {
-    // The next occurrence, never today; « lundi prochain » is the same day (like the date
-    // picker's « Lundi prochain »: the Monday strictly after today).
-    re: new RegExp(`(${WEEKDAY_RE})(?:\\s+prochain)?`, "y"),
-    resolve: (m, today) => {
-      const target = WEEKDAYS[m[1]];
-      const delta = (target - today.getDay() + 7) % 7 || 7;
-      return addDays(today, delta);
-    },
-    dayPart: true,
-  },
-  {
-    re: new RegExp(
-      `(?:le\\s+)?(\\d{1,2})(?:er)?\\s+(${MONTH_RE})\\.?(?:\\s+(\\d{4}))?`,
-      "y",
-    ),
-    resolve: (m, today) => {
-      const month = MONTH_OF.get(m[2]) ?? 0;
-      return dayMonth(Number(m[1]), month, m[3], today);
-    },
-    dayPart: true,
-    final: true,
-  },
-  {
-    re: /(?:le\s+)?(\d{1,2})\/(\d{1,2})(?:\/(\d{4}|\d{2}))?/y,
-    resolve: (m, today) => dayMonth(Number(m[1]), Number(m[2]), m[3], today),
-    dayPart: true,
-    final: true,
-  },
-  {
-    // « le 12 »: this month, or the next month that has that day once it is past.
-    re: /le\s+(\d{1,2})(?:er)?/y,
-    resolve: (m, today) => {
-      const day = Number(m[1]);
-      for (let k = 0; k < 13; k++) {
-        const month = new Date(today.getFullYear(), today.getMonth() + k, 1);
-        const d = makeDate(month.getFullYear(), month.getMonth() + 1, day);
-        if (d && d >= today) return d;
-      }
-      return null;
-    },
-    dayPart: true,
-  },
+const EN_MONTHS: [string, number][] = [
+  ["january", 1],
+  ["february", 2],
+  ["march", 3],
+  ["april", 4],
+  ["may", 5],
+  ["june", 6],
+  ["july", 7],
+  ["august", 8],
+  ["september", 9],
+  ["october", 10],
+  ["november", 11],
+  ["december", 12],
+  ["jan", 1],
+  ["feb", 2],
+  ["mar", 3],
+  ["apr", 4],
+  ["jun", 6],
+  ["jul", 7],
+  ["aug", 8],
+  ["sept", 9],
+  ["sep", 9],
+  ["oct", 10],
+  ["nov", 11],
+  ["dec", 12],
 ];
+const EN_MONTH_OF = new Map(EN_MONTHS);
+const EN_MONTH = monthRe(EN_MONTHS);
+const ORDINAL = "(?:st|nd|rd|th)";
+
+/** "5pm", "9:30am", "12am" (midnight), "12pm" (noon). */
+const twelveHour = (h: number, m: number, half: string) =>
+  h < 1 || h > 12 ? null : time((h % 12) + (half === "pm" ? 12 : 0), m);
+
+const EN: DateWords = {
+  dateRules: [
+    { re: /today/y, resolve: (_m, today) => today, dayPart: true },
+    { re: /tonight/y, resolve: (_m, today) => today, time: "18:00" },
+    {
+      re: /(?:the\s+)?day\s+after\s+tomorrow/y,
+      resolve: (_m, today) => addDays(today, 2),
+      dayPart: true,
+    },
+    {
+      re: /tomorrow/y,
+      resolve: (_m, today) => addDays(today, 1),
+      dayPart: true,
+    },
+    {
+      re: /in\s+(\d{1,3}|a|an|one)\s+(days?|weeks?)/y,
+      resolve: (m, today) => {
+        const n = /^\d/.test(m[1]) ? Number(m[1]) : 1;
+        return addDays(today, m[2].startsWith("week") ? n * 7 : n);
+      },
+    },
+    // Next Monday, like the date picker's "Next Monday" (Todoist's "next week").
+    { re: /next\s+week/y, resolve: (_m, today) => nextWeekday(today, 1) },
+    {
+      // The next occurrence, never today; "next monday" is the same day (the Monday strictly
+      // after today, like the date picker).
+      re: new RegExp(`(?:next\\s+|on\\s+)?(${weekdayRe(EN_WEEKDAYS)})`, "y"),
+      resolve: (m, today) => nextWeekday(today, EN_WEEKDAYS[m[1]]),
+      dayPart: true,
+    },
+    {
+      // "15 nov", "3rd november 2027", "on 2 jan".
+      re: new RegExp(
+        `(?:on\\s+)?(\\d{1,2})${ORDINAL}?\\s+(?:of\\s+)?(${EN_MONTH})\\.?(?:\\s+(\\d{4}))?`,
+        "y",
+      ),
+      resolve: (m, today) =>
+        dayMonth(Number(m[1]), EN_MONTH_OF.get(m[2]) ?? 0, m[3], today),
+      dayPart: true,
+      final: true,
+    },
+    {
+      // "nov 15", "November 15th, 2027".
+      re: new RegExp(
+        `(?:on\\s+)?(${EN_MONTH})\\.?\\s+(\\d{1,2})${ORDINAL}?(?:,?\\s+(\\d{4}))?`,
+        "y",
+      ),
+      resolve: (m, today) =>
+        dayMonth(Number(m[2]), EN_MONTH_OF.get(m[1]) ?? 0, m[3], today),
+      dayPart: true,
+      final: true,
+    },
+    {
+      // Day first, like the dates the app shows ("3 Nov").
+      re: /(?:on\s+)?(\d{1,2})\/(\d{1,2})(?:\/(\d{4}|\d{2}))?/y,
+      resolve: (m, today) => dayMonth(Number(m[1]), Number(m[2]), m[3], today),
+      dayPart: true,
+      final: true,
+    },
+    {
+      re: new RegExp(`(?:on\\s+)?the\\s+(\\d{1,2})${ORDINAL}`, "y"),
+      resolve: (m, today) => dayOfMonth(Number(m[1]), today),
+      dayPart: true,
+    },
+  ],
+  dayPartRe: /\s+(morning|noon|afternoon|evening|night)/y,
+  dayParts: {
+    morning: "09:00",
+    noon: "12:00",
+    afternoon: "14:00",
+    evening: "18:00",
+    night: "18:00",
+  },
+  timeRules: [
+    {
+      re: /(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s?(am|pm)/y,
+      resolve: (m) => twelveHour(Number(m[1]), Number(m[2] ?? "0"), m[3]),
+    },
+    {
+      re: /(?:at\s+)?(\d{1,2}):(\d{2})/y,
+      resolve: (m) => time(Number(m[1]), Number(m[2])),
+    },
+    { re: /(?:at\s+)?noon/y, resolve: () => "12:00" },
+  ],
+};
+
+const DATE_WORDS: Record<Language, DateWords> = { fr: FR, en: EN };
 
 /** Day and month, with the year given, else this year or the next once it is past. */
 function dayMonth(
@@ -317,18 +499,23 @@ function dayMonth(
   return makeDate(today.getFullYear() + 1, month, day);
 }
 
-function matchDate(folded: string, i: number, today: Date): DateMatch | null {
-  for (const rule of DATE_RULES) {
+function matchDate(
+  words: DateWords,
+  folded: string,
+  i: number,
+  today: Date,
+): DateMatch | null {
+  for (const rule of words.dateRules) {
     rule.re.lastIndex = i;
     const m = rule.re.exec(folded);
     if (!m) continue;
     let end = i + m[0].length;
     let at = rule.time ?? null;
     if (rule.dayPart) {
-      DAY_PART_RE.lastIndex = end;
-      const part = DAY_PART_RE.exec(folded);
+      words.dayPartRe.lastIndex = end;
+      const part = words.dayPartRe.exec(folded);
       if (part && endsWord(folded, end + part[0].length)) {
-        at = DAY_PARTS[part[1].replace(/\s+/, " ")] ?? null;
+        at = words.dayParts[part[1].replace(/\s+/, " ")] ?? null;
         end += part[0].length;
       }
     }
@@ -343,22 +530,18 @@ function matchDate(folded: string, i: number, today: Date): DateMatch | null {
   return null;
 }
 
-const TIME_RULES: RegExp[] = [
-  /(?:a\s+)?(\d{1,2})\s?h(\d{2})?/y,
-  /(?:a\s+)?(\d{1,2}):(\d{2})/y,
-];
-
 function matchTime(
+  words: DateWords,
   folded: string,
   i: number,
 ): { end: number; time: string } | null {
-  for (const re of TIME_RULES) {
-    re.lastIndex = i;
-    const m = re.exec(folded);
+  for (const rule of words.timeRules) {
+    rule.re.lastIndex = i;
+    const m = rule.re.exec(folded);
     if (!m) continue;
     const end = i + m[0].length;
     if (!endsWord(folded, end)) continue;
-    const t = time(Number(m[1]), Number(m[2] ?? "0"));
+    const t = rule.resolve(m);
     if (t) return { end, time: t };
   }
   return null;
@@ -396,6 +579,8 @@ interface Ctx {
   slashSubject: Subject | null;
   today: Date;
   agents: boolean;
+  /** Date and time words of the language. */
+  words: DateWords;
 }
 
 /** Section of `subject` written after the `/` at `slash`, with where it ends. */
@@ -527,7 +712,7 @@ function matchAt(ctx: Ctx, i: number): QuickToken | null {
   // Taido V2.4: `@vendredi`, `@13/10`, `@demain 10h`, `@10h` — the `@`
   // only marks a date or a time, which reads as without it.
   const at = ch === "@" ? i + 1 : i;
-  const date = matchDate(folded, at, ctx.today);
+  const date = matchDate(ctx.words, folded, at, ctx.today);
   if (date) {
     return {
       kind: "date",
@@ -537,7 +722,7 @@ function matchAt(ctx: Ctx, i: number): QuickToken | null {
       value: { date: date.date, time: date.time },
     };
   }
-  const t = matchTime(folded, at);
+  const t = matchTime(ctx.words, folded, at);
   if (t) {
     return {
       kind: "time",
@@ -615,6 +800,7 @@ export function parseQuickAdd(
     slashSubject: contextSubject,
     today: startOfDay(now),
     agents: options.agents ?? true,
+    words: DATE_WORDS[options.language ?? activeLanguage],
   };
 
   let tokens = effective(scan(ctx, literals));

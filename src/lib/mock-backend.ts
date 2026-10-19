@@ -264,9 +264,9 @@ export interface MockClaude {
 }
 
 export const MOCK_CLAUDE_PATH = "/opt/homebrew/bin/claude";
-export const MOCK_CLAUDE_VERSION = "2.1.288 (simulé)";
+export const MOCK_CLAUDE_VERSION = "2.1.288 (mock)";
 export const MOCK_CODEX_PATH = "/opt/homebrew/bin/codex";
-export const MOCK_CODEX_VERSION = "0.162.1 (simulé)";
+export const MOCK_CODEX_VERSION = "0.162.1 (mock)";
 
 /** A readable shared theme (synced setting `appearance`); a later version's colour is not. */
 function isAppearance(

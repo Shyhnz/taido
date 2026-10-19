@@ -267,7 +267,7 @@ export async function launchAgent(
     const ok = await confirmDialog({
       title: t.relations.warnTitle,
       message: t.relations.warnMessage(
-        blockers.map((t) => `« ${t.title} »`).join(", "),
+        blockers.map((b) => t.common.quote(b.title)).join(", "),
         chosen ?? "claude",
       ),
       confirmLabel: t.relations.warnConfirm,

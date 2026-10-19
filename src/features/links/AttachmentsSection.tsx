@@ -442,7 +442,7 @@ function webErrorText(error: unknown): string {
   return readableError(error);
 }
 
-/** Adds files from the browser; says which ones were too large or why it failed. */
+/** Adds files from the browser; says why it failed. */
 async function addOnWeb(
   files: WebAttachmentFiles,
   taskId: string,
@@ -450,10 +450,7 @@ async function addOnWeb(
 ): Promise<void> {
   if (list.length === 0) return;
   try {
-    const { tooLarge } = await files.add(taskId, list);
-    if (tooLarge.length > 0) {
-      showError(t.attachments.web.tooLarge(tooLarge.join(", ")));
-    }
+    await files.add(taskId, list);
   } catch (error) {
     console.error(errorMessage(error), error);
     showError(webErrorText(error));

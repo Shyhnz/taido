@@ -340,7 +340,6 @@ export class PhoneFiles implements WebAttachmentFiles {
   // --- adding ----------------------------------------------------------------------------
 
   async add(taskId: string, files: readonly File[]): Promise<AddedFiles> {
-    const tooLarge: string[] = [];
     let added = 0;
     try {
       for (const file of files) {
@@ -356,7 +355,7 @@ export class PhoneFiles implements WebAttachmentFiles {
         );
       }
     }
-    return { added, tooLarge };
+    return { added };
   }
 
   /** Bytes pasted as base64 (`addAttachmentData`), through the same path. */
@@ -372,7 +371,6 @@ export class PhoneFiles implements WebAttachmentFiles {
     pageId: string,
     files: readonly File[],
   ): Promise<AddedPageFiles> {
-    const tooLarge: string[] = [];
     const ids: string[] = [];
     // A page holds only images (`attachments::ensure_owner_takes`): refused before any is kept.
     const other = files.find((f) => !isPageImage(f.name, f.type));
@@ -387,7 +385,7 @@ export class PhoneFiles implements WebAttachmentFiles {
     } finally {
       if (ids.length > 0) this.backend.emitDataChanged(["notes"]);
     }
-    return { added: ids.length, tooLarge, ids };
+    return { added: ids.length, ids };
   }
 
   /** An image pasted into a page (`addNoteAttachmentData`): the new attachment's id. */

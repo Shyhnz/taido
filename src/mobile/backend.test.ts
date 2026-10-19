@@ -1201,7 +1201,7 @@ describe("the project notebook", () => {
     const added = await a.files.addToPage(p.id, [
       new File(["abc"], "a.png", { type: "image/png" }),
     ]);
-    expect(added).toMatchObject({ added: 1, tooLarge: [] });
+    expect(added).toMatchObject({ added: 1 });
     await a.saveNow();
     const b = await createMobileBackend({ store, fileStore });
     expect(b.notes.groups).toEqual(a.notes.groups);
