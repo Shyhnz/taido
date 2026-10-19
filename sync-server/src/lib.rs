@@ -35,6 +35,40 @@ pub const DEFAULT_BIND: &str = "127.0.0.1:3020";
 /// Default data directory.
 pub const DEFAULT_DATA_DIR: &str = "./data";
 
+/// Environment variable that opens or closes account creation.
+pub const ENV_SIGNUPS: &str = "TAIDO_SIGNUPS";
+
+/// Whether `POST /api/signup` creates accounts (`TAIDO_SIGNUPS`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Signups {
+    /// Anyone can create an account (the default).
+    #[default]
+    Open,
+    /// Account creation is refused; login, password reset and sync are unaffected.
+    Closed,
+}
+
+impl Signups {
+    /// Reads [`ENV_SIGNUPS`].
+    pub fn from_env() -> Result<Signups, ServerError> {
+        Self::from_env_value(std::env::var(ENV_SIGNUPS).ok().as_deref())
+    }
+
+    /// Unset or blank = open; else `open` or `closed`, in any case. Anything else is refused.
+    pub fn from_env_value(value: Option<&str>) -> Result<Signups, ServerError> {
+        let value = value.map(str::trim).unwrap_or_default();
+        if value.is_empty() || value.eq_ignore_ascii_case("open") {
+            Ok(Signups::Open)
+        } else if value.eq_ignore_ascii_case("closed") {
+            Ok(Signups::Closed)
+        } else {
+            Err(ServerError::Invalid(format!(
+                "{ENV_SIGNUPS} must be \"open\" or \"closed\""
+            )))
+        }
+    }
+}
+
 /// Runtime configuration (environment, § 4.1).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
@@ -90,19 +124,21 @@ impl BoundServer {
 /// Opens the database and binds the listener, without e-mail and with the default file limits
 /// (see [`bind_with`]).
 pub async fn bind(config: &Config) -> Result<BoundServer, ServerError> {
-    bind_with(config, None, FileLimits::default()).await
+    bind_with(config, None, FileLimits::default(), Signups::Open).await
 }
 
 /// Opens the database and binds the listener; e-mails go through SMTP when `mail` is set,
 /// else `/api/password/forgot` answers 503 `mail_unavailable`. Attachment files are kept in
-/// `<data_dir>/files` within `limits`. Must run inside Tokio.
+/// `<data_dir>/files` within `limits`; `/api/signup` follows `signups`. Must run inside Tokio.
 pub async fn bind_with(
     config: &Config,
     mail: Option<&mail::MailConfig>,
     limits: FileLimits,
+    signups: Signups,
 ) -> Result<BoundServer, ServerError> {
     let files = FileStore::in_data_dir(&config.data_dir, limits);
-    let mut state = AppState::new(store::Store::open(&config.data_dir)?, files);
+    let mut state =
+        AppState::new(store::Store::open(&config.data_dir)?, files).with_signups(signups);
     if let Some(mail) = mail {
         state = state.with_mailer(Arc::new(mail::SmtpMailer::new(mail)?));
         if let Some(url) = &mail.public_url {
@@ -318,4 +354,38 @@ async fn start_test_server(data_dir: &Path, bind_addr: &str) -> Result<TestServe
         shutdown: Some(tx),
         handle: Some(handle),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn signups_value_is_case_insensitive() {
+        assert_eq!(Signups::from_env_value(None).expect("unset"), Signups::Open);
+        for (value, expected) in [
+            ("", Signups::Open),
+            ("  ", Signups::Open),
+            ("open", Signups::Open),
+            ("OPEN", Signups::Open),
+            ("closed", Signups::Closed),
+            ("Closed", Signups::Closed),
+            ("CLOSED", Signups::Closed),
+            (" closed ", Signups::Closed),
+        ] {
+            assert_eq!(
+                Signups::from_env_value(Some(value)).expect(value),
+                expected,
+                "{value:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn invalid_signups_value_is_refused() {
+        for value in ["maybe", "false", "0", "close"] {
+            let err = Signups::from_env_value(Some(value)).expect_err(value);
+            assert!(err.to_string().contains("TAIDO_SIGNUPS"), "{err}");
+        }
+    }
 }

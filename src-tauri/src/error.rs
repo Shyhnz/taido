@@ -22,6 +22,7 @@
 //! | `sync_bad_email` | Signup, forgotten password: the address is not `x@y.z`.         |
 //! | `sync_invalid_code` | Reset: the e-mailed code is wrong, expired or used up.       |
 //! | `sync_mail_unavailable` | Forgotten password: the server cannot send e-mails.      |
+//! | `sync_signups_closed` | Signup: the server does not accept new accounts.           |
 //! | `sync_offline` | Account: the sync server cannot be reached.                       |
 //! | `sync_server` | Account: the sync server answered with an unexpected error.        |
 //! | `file_not_here` | « Télécharger »: the attachment's file is not on this Mac and there |
@@ -73,6 +74,8 @@ pub enum AppError {
     SyncInvalidCode,
     #[error("the sync server cannot send e-mails")]
     SyncMailUnavailable,
+    #[error("the sync server does not accept new accounts")]
+    SyncSignupsClosed,
     #[error("sync server unreachable: {0}")]
     SyncOffline(String),
     #[error("sync server error: {0}")]
@@ -123,6 +126,7 @@ pub enum ErrorKind {
     SyncBadEmail,
     SyncInvalidCode,
     SyncMailUnavailable,
+    SyncSignupsClosed,
     SyncOffline,
     SyncServer,
     FileNotHere,
@@ -150,6 +154,7 @@ impl AppError {
             AppError::SyncBadEmail => ErrorKind::SyncBadEmail,
             AppError::SyncInvalidCode => ErrorKind::SyncInvalidCode,
             AppError::SyncMailUnavailable => ErrorKind::SyncMailUnavailable,
+            AppError::SyncSignupsClosed => ErrorKind::SyncSignupsClosed,
             AppError::SyncOffline(_) => ErrorKind::SyncOffline,
             AppError::SyncServer(_) => ErrorKind::SyncServer,
             AppError::FileNotHere(_) => ErrorKind::FileNotHere,
@@ -215,6 +220,7 @@ mod tests {
             (AppError::SyncBadEmail, "sync_bad_email"),
             (AppError::SyncInvalidCode, "sync_invalid_code"),
             (AppError::SyncMailUnavailable, "sync_mail_unavailable"),
+            (AppError::SyncSignupsClosed, "sync_signups_closed"),
             (AppError::SyncOffline("timeout".into()), "sync_offline"),
             (AppError::SyncServer("HTTP 500".into()), "sync_server"),
             (AppError::FileNotHere("att".into()), "file_not_here"),

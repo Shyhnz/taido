@@ -1797,6 +1797,31 @@ async fn every_account_error_has_its_kind() {
     );
     serving.abort();
 
+    // A server whose signups are closed: signup says so, login of its accounts still works.
+    let dir = tempfile::tempdir().expect("server dir");
+    let state = taido_sync_server::AppState::new(
+        taido_sync_server::store::Store::open(dir.path()).expect("store"),
+        taido_sync_server::FileStore::in_data_dir(dir.path(), Default::default()),
+    )
+    .with_signups(taido_sync_server::Signups::Closed);
+    let bound = taido_sync_server::bind_state(
+        &taido_sync_server::Config {
+            bind: "127.0.0.1:0".into(),
+            data_dir: dir.path().to_path_buf(),
+            static_dir: None,
+        },
+        state,
+    )
+    .await
+    .expect("bind");
+    let closed_signups = format!("http://{}", bound.local_addr().expect("addr"));
+    let serving = tokio::spawn(bound.run(std::future::pending()));
+    assert_eq!(
+        kind(engine::signup(db, client, &closed_signups, NEW_EMAIL, PASSWORD).await),
+        ErrorKind::SyncSignupsClosed
+    );
+    serving.abort();
+
     assert!(
         !store::is_linked(&a.conn()).expect("linked"),
         "still unlinked"

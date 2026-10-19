@@ -3,14 +3,15 @@
 //! forgotten-password e-mails `TAIDO_SMTP_HOST`, `TAIDO_SMTP_PORT`, `TAIDO_SMTP_USER`,
 //! `TAIDO_SMTP_PASSWORD`, `TAIDO_MAIL_FROM`, `TAIDO_PUBLIC_URL`, and for the attachment files
 //! `TAIDO_MAX_FILE_BYTES`, `TAIDO_ACCOUNT_QUOTA_BYTES` (the files are stored under the data
-//! directory; the old `TAIDO_R2_*` settings are ignored with a warning).
+//! directory; the old `TAIDO_R2_*` settings are ignored with a warning), and `TAIDO_SIGNUPS`
+//! (`open`, the default, or `closed`) for the account creation.
 
 use std::io::Write;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use taido_sync_server::mail::MailConfig;
-use taido_sync_server::{auth, healthcheck, store, Config, FileLimits, ServerError};
+use taido_sync_server::{auth, healthcheck, store, Config, FileLimits, ServerError, Signups};
 use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Parser)]
@@ -104,7 +105,15 @@ async fn serve(config: &Config) -> Result<(), ServerError> {
     if std::env::vars_os().any(|(name, _)| name.to_string_lossy().starts_with("TAIDO_R2_")) {
         tracing::warn!("Cloudflare R2 is no longer supported: files are stored on disk");
     }
-    let server = taido_sync_server::bind_with(config, mail.as_ref(), limits).await?;
+    let signups = Signups::from_env()?;
+    tracing::info!(
+        "signups {}",
+        match signups {
+            Signups::Open => "open",
+            Signups::Closed => "closed",
+        }
+    );
+    let server = taido_sync_server::bind_with(config, mail.as_ref(), limits, signups).await?;
     let addr = server.local_addr()?;
     {
         let mut out = std::io::stdout().lock();

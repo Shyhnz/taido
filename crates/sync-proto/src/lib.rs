@@ -867,6 +867,8 @@ pub enum ErrorCode {
     WeakPassword,
     /// 400: address that is not `x@y.z` or longer than 254 characters.
     BadEmail,
+    /// 403: `POST /api/signup` on a server that closed account creation (`TAIDO_SIGNUPS=closed`).
+    SignupsClosed,
     /// 400: reset code wrong, expired or used up.
     InvalidCode,
     /// 503: the server has no e-mail sending configured.
@@ -897,6 +899,7 @@ impl ErrorCode {
             | ErrorCode::InvalidCode
             | ErrorCode::HashMismatch => 400,
             ErrorCode::Unauthorized => 401,
+            ErrorCode::SignupsClosed => 403,
             ErrorCode::NotFound => 404,
             ErrorCode::EmailTaken | ErrorCode::ChunkOffset => 409,
             ErrorCode::PayloadTooLarge | ErrorCode::FileTooLarge => 413,

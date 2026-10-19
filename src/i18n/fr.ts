@@ -114,6 +114,7 @@ export const fr = {
       sync_bad_email: "Adresse e-mail invalide.",
       sync_invalid_code: "Code faux ou expiré.",
       sync_mail_unavailable: "Le serveur ne peut pas envoyer d'e-mails.",
+      sync_signups_closed: "Les inscriptions sont fermées sur ce serveur.",
       sync_offline: "Serveur injoignable.",
       sync_server: "Le serveur a renvoyé une erreur.",
       // « Télécharger » (2026-10-10).
@@ -1330,6 +1331,8 @@ export const fr = {
       sync_invalid_code: "Code faux ou expiré. Demande un nouveau code.",
       sync_mail_unavailable:
         "Le serveur ne peut pas envoyer d'e-mails pour le moment. Réessaie plus tard.",
+      sync_signups_closed:
+        "Les inscriptions sont fermées sur ce serveur. Demande un compte à la personne qui l'héberge.",
       sync_offline: "Serveur injoignable. Vérifie ta connexion.",
       sync_server: "Le serveur a renvoyé une erreur. Réessaie plus tard.",
       invalid: "Indique une adresse de serveur qui commence par https://.",

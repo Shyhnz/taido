@@ -382,6 +382,7 @@ export type ErrorCode =
   | "email_taken"
   | "weak_password"
   | "bad_email"
+  | "signups_closed"
   | "invalid_code"
   | "mail_unavailable"
   | "file_too_large"
@@ -416,6 +417,7 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   email_taken: 409,
   weak_password: 400,
   bad_email: 400,
+  signups_closed: 403,
   invalid_code: 400,
   mail_unavailable: 503,
   file_too_large: 413,

@@ -382,6 +382,25 @@ describe("Réglages › Compte", () => {
     expect((await commands.syncStatus()).state).toBe("unlinked");
   });
 
+  it("signup on a closed server shows the closed message", async () => {
+    const { user, dialog } = await openAccount();
+    await user.click(
+      await within(dialog).findByRole("button", { name: "Créer un compte" }),
+    );
+    await fill(user, dialog, "user@exemple.fr", "un-bon-mot-de-passe");
+    const url = within(dialog).getByLabelText("Adresse du serveur");
+    await typeInto(user, url, "https://inscriptions-fermees.exemple.fr");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Créer mon compte" }),
+    );
+    await waitFor(() =>
+      expect(url).toHaveAccessibleDescription(
+        /^Les inscriptions sont fermées sur ce serveur\. Demande un compte à la personne qui l'héberge\./,
+      ),
+    );
+    expect((await commands.syncStatus()).state).toBe("unlinked");
+  });
+
   it("never sends twice while a call runs", async () => {
     let finish: () => void = () => {};
     const login = vi.spyOn(commands, "syncLogin").mockImplementation(

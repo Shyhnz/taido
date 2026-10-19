@@ -57,6 +57,7 @@ export function linkErrorText(error: unknown): string {
     case "sync_bad_email":
     case "sync_invalid_code":
     case "sync_mail_unavailable":
+    case "sync_signups_closed":
     case "sync_offline":
     case "sync_server":
     case "invalid":

@@ -23,6 +23,7 @@ use crate::files::{FileLimits, FileStore};
 use crate::gate::BodyGates;
 use crate::mail::MemoryMailer;
 use crate::store::{self, Store};
+use crate::Signups;
 
 const EMAIL: &str = "user@example.com";
 const PASSWORD: &str = "correct horse battery";
@@ -202,6 +203,45 @@ async fn login_errors() {
     let (status, _, body) = send(&app, post_json("/api/login", None, big.to_string())).await;
     assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
     assert_eq!(error_code(&body), ErrorCode::PayloadTooLarge);
+}
+
+#[tokio::test]
+async fn signup_refused_when_closed() {
+    let state = new_state(Store::in_memory().expect("store")).with_signups(Signups::Closed);
+    let app = app(&state);
+    // Refused before any limit or store work: even a malformed body gets the same answer,
+    // and the signup limiter is not used.
+    for body in [signup_body("new@example.com", PASSWORD), "{".to_string()] {
+        let (status, _, body) = send(&app, post_json("/api/signup", None, body)).await;
+        assert_eq!(status, StatusCode::FORBIDDEN);
+        assert_eq!(error_code(&body), ErrorCode::SignupsClosed);
+    }
+    let conn = state.store.lock().expect("lock");
+    assert!(store::list_accounts(&conn).expect("accounts").is_empty());
+}
+
+#[tokio::test]
+async fn login_still_works_when_signups_closed() {
+    let state = state_with_account().with_signups(Signups::Closed);
+    let app = app(&state);
+    let (status, _, body) = send(&app, post_json("/api/login", None, login_body(PASSWORD))).await;
+    assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+}
+
+#[tokio::test]
+async fn signups_default_open() {
+    let state = new_state(Store::in_memory().expect("store"));
+    assert_eq!(state.signups, Signups::Open);
+    let (status, _, _) = send(
+        &app(&state),
+        post_json(
+            "/api/signup",
+            None,
+            signup_body("new@example.com", PASSWORD),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
 }
 
 #[tokio::test]

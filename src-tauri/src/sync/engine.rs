@@ -180,6 +180,7 @@ pub fn account_error(e: ClientError) -> AppError {
             ErrorCode::BadEmail => AppError::SyncBadEmail,
             ErrorCode::InvalidCode => AppError::SyncInvalidCode,
             ErrorCode::MailUnavailable => AppError::SyncMailUnavailable,
+            ErrorCode::SignupsClosed => AppError::SyncSignupsClosed,
             other => AppError::SyncServer(format!("HTTP {status} ({other:?})")),
         },
         // A proxy's page instead of the server's JSON error.

@@ -22,6 +22,8 @@ export const MOCK_SYNC_UNREACHABLE = "injoignable";
 export const MOCK_SYNC_NO_MAIL = "sans-mail";
 /** Signup with this address: `sync_email_taken`. */
 export const MOCK_SYNC_TAKEN_EMAIL = "pris@exemple.fr";
+/** A server address containing this has closed its signups (`sync_signups_closed`). */
+export const MOCK_SYNC_SIGNUPS_CLOSED = "inscriptions-fermees";
 /** Login, forgotten password or reset with this address: `sync_rate_limited`. */
 export const MOCK_SYNC_LIMITED_EMAIL = "bloque@exemple.fr";
 /** The only reset code accepted (else `sync_invalid_code`). */
@@ -160,6 +162,9 @@ export class MockSync {
       this.checkCanJoin(input.email, false);
     }
     const url = this.server(input.serverUrl);
+    if (url.includes(MOCK_SYNC_SIGNUPS_CLOSED)) {
+      throw fail("sync_signups_closed", "signups closed");
+    }
     const email = normalizeEmail(input.email);
     if (email === null)
       throw fail("sync_bad_email", "malformed e-mail address");

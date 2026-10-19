@@ -172,6 +172,7 @@ const KNOWN_KINDS: Record<ErrorKind, true> = {
   sync_bad_email: true,
   sync_invalid_code: true,
   sync_mail_unavailable: true,
+  sync_signups_closed: true,
   sync_offline: true,
   sync_server: true,
   file_not_here: true,

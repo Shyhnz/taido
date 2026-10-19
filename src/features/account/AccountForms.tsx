@@ -70,6 +70,9 @@ export function placeError(error: unknown, mode: AccountMode): PlacedError {
     case "sync_auth":
       place = "password";
       break;
+    case "sync_signups_closed":
+      place = "server";
+      break;
     case "sync_invalid_code":
       place = "code";
       break;

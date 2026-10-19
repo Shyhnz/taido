@@ -846,6 +846,7 @@ fn new_error_codes() {
         (ErrorCode::BadEmail, 400, "bad_email"),
         (ErrorCode::InvalidCode, 400, "invalid_code"),
         (ErrorCode::MailUnavailable, 503, "mail_unavailable"),
+        (ErrorCode::SignupsClosed, 403, "signups_closed"),
     ];
     for (code, status, name) in cases {
         assert_eq!(code.http_status(), status, "{code:?}");

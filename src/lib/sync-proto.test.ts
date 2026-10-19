@@ -576,5 +576,6 @@ describe("sync protocol 3 mirror", () => {
     expect(ERROR_HTTP_STATUS.bad_email).toBe(400);
     expect(ERROR_HTTP_STATUS.invalid_code).toBe(400);
     expect(ERROR_HTTP_STATUS.mail_unavailable).toBe(503);
+    expect(ERROR_HTTP_STATUS.signups_closed).toBe(403);
   });
 });

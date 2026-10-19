@@ -836,7 +836,7 @@ export type Due = {
 export type Editor = "vscode" | "cursor" | "zed" | "windsurf" | "sublime";
 
 /**  Stable error kinds the UI translates (see the module documentation). */
-export type ErrorKind = "not_found" | "invalid" | "no_folder" | "folder_missing" | "claude_missing" | "codex_missing" | "internal" | "sync_auth" | "sync_rate_limited" | "sync_email_taken" | "sync_weak_password" | "sync_bad_email" | "sync_invalid_code" | "sync_mail_unavailable" | "sync_offline" | "sync_server" | "file_not_here" | "file_not_on_server" | "downloads_denied" | "disk_full" | "file_write_failed" | "mic_denied" | "voice_unavailable";
+export type ErrorKind = "not_found" | "invalid" | "no_folder" | "folder_missing" | "claude_missing" | "codex_missing" | "internal" | "sync_auth" | "sync_rate_limited" | "sync_email_taken" | "sync_weak_password" | "sync_bad_email" | "sync_invalid_code" | "sync_mail_unavailable" | "sync_signups_closed" | "sync_offline" | "sync_server" | "file_not_here" | "file_not_on_server" | "downloads_denied" | "disk_full" | "file_write_failed" | "mic_denied" | "voice_unavailable";
 
 /**  Error shape seen by the UI. */
 export type ErrorPayload = {

@@ -38,6 +38,7 @@ use crate::gate::{self, BodyGates};
 use crate::mail::{self, Mailer};
 use crate::store::{self, Authed, Store};
 use crate::sync::{self, RawSyncRequest};
+use crate::Signups;
 
 /// Content Security Policy of every static response (§ 4.4). `'unsafe-inline'` styles: the
 /// toast library injects a `<style>` element. `img-src blob:`: the web app shows an attached
@@ -77,6 +78,8 @@ pub struct AppState {
     pub forgot_limiter: Arc<LoginLimits>,
     /// Wrong reset codes, per client address and global (per hour).
     pub reset_limiter: Arc<LoginLimits>,
+    /// Whether `/api/signup` creates accounts (`TAIDO_SIGNUPS`).
+    pub signups: Signups,
     /// Address of this server in the links of the mails (`TAIDO_PUBLIC_URL`, no trailing
     /// slash). With a mailer: confirmation mails at signup; else accounts are confirmed at once.
     pub public_url: Option<String>,
@@ -119,6 +122,7 @@ impl AppState {
                 auth::MAX_RESET_FAILURES,
                 auth::RESET_WINDOW,
             )),
+            signups: Signups::Open,
             public_url: None,
             resend_limiter: Arc::new(LoginLimits::new(
                 auth::MAX_RESENDS_PER_ACCOUNT,
@@ -139,6 +143,12 @@ impl AppState {
     /// The state with this mail sender (SMTP in production, [`mail::MemoryMailer`] in tests).
     pub fn with_mailer(mut self, mailer: Arc<dyn Mailer>) -> Self {
         self.mailer = Some(mailer);
+        self
+    }
+
+    /// The state with account creation open or closed.
+    pub fn with_signups(mut self, signups: Signups) -> Self {
+        self.signups = signups;
         self
     }
 
@@ -384,6 +394,13 @@ async fn signup(
     headers: HeaderMap,
     body: Result<Bytes, BytesRejection>,
 ) -> Result<Json<LoginResponse>, ApiError> {
+    // First of all: a closed server does no parsing, limiting nor hashing for a signup.
+    if state.signups == Signups::Closed {
+        return Err(ApiError::new(
+            ErrorCode::SignupsClosed,
+            "account creation is closed on this server",
+        ));
+    }
     let body = body.map_err(ApiError::from_body_rejection)?;
     let request: SignupRequest = parse_versioned(&body)?;
     let device_name = check_device_name(&request.device_name)?;
