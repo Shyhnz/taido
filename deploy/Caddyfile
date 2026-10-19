@@ -1,0 +1,7 @@
+# Caddy gets and renews the HTTPS certificate by itself.
+{$TAIDO_DOMAIN} {
+	reverse_proxy taido:3020 {
+		# The Taido server uses this address to rate-limit logins.
+		header_up X-Real-IP {remote_host}
+	}
+}

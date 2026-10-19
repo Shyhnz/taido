@@ -78,49 +78,15 @@ then a `debian:bookworm-slim` image with an unprivileged user (uid 10001) runs i
 
 ## Deploy
 
-The server speaks plain HTTP and does not terminate TLS. Run it behind a reverse proxy
-(nginx, Caddy, Traefik…) that provides HTTPS, sets `X-Real-IP` to the real client address,
-accepts request bodies of at least 16 MiB, and rate-limits `/api/login`, `/api/signup` and
-`/api/password/`.
+To run your own server (Docker Compose + Caddy for HTTPS, accounts, backups, updates), follow
+`docs/SELF-HOSTING.md`; the ready-to-use files are in `deploy/`.
 
-1. **Folder and data**
-
-   ```sh
-   mkdir -p /srv/taido-sync/data
-   chown 10001:10001 /srv/taido-sync/data       # the container user
-   ```
-
-2. **`docker-compose.yml`** (adjust the image name, the address and the mail variables):
-
-   ```yaml
-   services:
-     taido-sync:
-       image: taido-sync-server
-       restart: unless-stopped
-       ports:
-         - "127.0.0.1:3020:3020"
-       volumes:
-         - ./data:/data
-       environment:
-         TAIDO_PUBLIC_URL: https://sync.example.com
-         # TAIDO_SMTP_HOST: smtp.example.com
-         # TAIDO_SMTP_USER: ...
-         # TAIDO_SMTP_PASSWORD: ...
-         # TAIDO_MAIL_FROM: "Taido <noreply@sync.example.com>"
-   ```
-
-   Keep secrets (SMTP password) in an environment file that is not in a repository.
-
-3. **Start and check**
-
-   ```sh
-   docker compose up -d
-   docker compose ps                              # "healthy" after a few seconds
-   curl -s http://127.0.0.1:3020/api/health       # {"ok":true,"protocol":3}
-   ```
-
-4. **Point the apps at it**: in Taido, Settings › Account, enter your server address
-   (`https://sync.example.com`), then create an account.
+The server speaks plain HTTP and does not terminate TLS. If you use another setup, run it behind
+a reverse proxy (nginx, Caddy, Traefik…) that provides HTTPS, sets `X-Real-IP` to the real
+client address, accepts request bodies of at least 16 MiB, and rate-limits `/api/login`,
+`/api/signup` and `/api/password/`. Check it with `curl -s http://127.0.0.1:3020/api/health`
+(`{"ok":true,"protocol":3}`) or `taido-sync-server healthcheck`. Account creation can be closed
+with `TAIDO_SIGNUPS=closed` (`docs/SYNC.md` § 0.2).
 
 ## Daily backup
 
