@@ -11,9 +11,8 @@ use axum::body::{Body, Bytes};
 use axum::extract::rejection::{BytesRejection, PathRejection};
 use axum::extract::{DefaultBodyLimit, Path as UrlPath, Request, State};
 use axum::http::header::{
-    HeaderValue, ACCEPT_RANGES, AUTHORIZATION, CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_LENGTH,
-    CONTENT_RANGE, CONTENT_SECURITY_POLICY, CONTENT_TYPE, RANGE, REFERRER_POLICY,
-    X_CONTENT_TYPE_OPTIONS,
+    HeaderValue, AUTHORIZATION, CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_SECURITY_POLICY,
+    CONTENT_TYPE, RANGE, REFERRER_POLICY, X_CONTENT_TYPE_OPTIONS,
 };
 use axum::http::{HeaderMap, Method, StatusCode, Uri};
 use axum::middleware::{self, Next};
@@ -34,10 +33,9 @@ use tracing::Span;
 
 use crate::auth::{self, LoginLimits, VERIFY_WAIT};
 use crate::error::{ApiError, ApiNotFound, ServerError};
-use crate::files::{self, FileStore, Stored};
+use crate::files::{self, FileStore};
 use crate::gate::{self, BodyGates};
 use crate::mail::{self, Mailer};
-use crate::r2::{self, R2};
 use crate::store::{self, Authed, Store};
 use crate::sync::{self, RawSyncRequest};
 
@@ -340,8 +338,8 @@ fn check_device_name(name: &str) -> Result<String, ApiError> {
 /// Longest client address kept by the rate limiters.
 const MAX_CLIENT_CHARS: usize = 64;
 
-/// The client address for the rate limiters: `X-Real-IP`, set by nginx from Cloudflare's
-/// `CF-Connecting-IP` (it overwrites any value sent by the client; the server listens on
+/// The client address for the rate limiters: `X-Real-IP`, set by the reverse proxy from the
+/// real client address (it overwrites any value sent by the client; the server listens on
 /// loopback behind it, § 4.5), else one shared key. A spoofed value only escapes the
 /// per-client limits, never the global one.
 fn client_key(headers: &HeaderMap) -> String {
@@ -1082,14 +1080,9 @@ async fn download_file(
     let id = attachment_id(path)?;
     let store = Arc::clone(&state.store);
     let files = Arc::clone(&state.files);
-    let (stored, file_name) =
+    let (file, file_name) =
         blocking(move || files.download(&store, &authed.account_id, &id)).await?;
-    let mut response = match stored {
-        Stored::Disk(file) => serve_disk_file(&file, method, headers.get(RANGE)).await?,
-        Stored::Remote { r2, key } => {
-            serve_remote_file(&r2, &key, &method, headers.get(RANGE)).await?
-        }
-    };
+    let mut response = serve_disk_file(&file, method, headers.get(RANGE)).await?;
     let headers = response.headers_mut();
     headers.insert(
         CONTENT_TYPE,
@@ -1127,43 +1120,6 @@ async fn serve_disk_file(
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => Err(files::missing()),
         Err(err) => Err(ServerError::from(err).into()),
     }
-}
-
-/// A file in the bucket, streamed through: R2's status (200, 206 or 416), its length and range
-/// headers, and its body (none for `HEAD`).
-async fn serve_remote_file(
-    r2: &R2,
-    key: &str,
-    method: &Method,
-    range: Option<&HeaderValue>,
-) -> Result<Response, ApiError> {
-    let found = match r2.read(key, method, range).await? {
-        r2::Read::Found(found) => found,
-        r2::Read::Missing => {
-            tracing::warn!(key_len = key.len(), "complete file missing from the bucket");
-            return Err(files::missing());
-        }
-    };
-    let status = StatusCode::from_u16(found.status().as_u16())
-        .map_err(|_| ServerError::Storage("R2 status".into()))?;
-    let mut response = Response::builder().status(status);
-    for name in [CONTENT_LENGTH, CONTENT_RANGE, ACCEPT_RANGES] {
-        if let Some(value) = found
-            .headers()
-            .get(name.as_str())
-            .and_then(|v| HeaderValue::from_bytes(v.as_bytes()).ok())
-        {
-            response = response.header(name, value);
-        }
-    }
-    let body = if *method == Method::HEAD || status == StatusCode::RANGE_NOT_SATISFIABLE {
-        Body::empty()
-    } else {
-        Body::from_stream(found.bytes_stream())
-    };
-    response
-        .body(body)
-        .map_err(|_| ServerError::Storage("download response".into()).into())
 }
 
 #[cfg(test)]

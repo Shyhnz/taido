@@ -1958,15 +1958,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
-name = "hmac"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6303bc9732ae41b04cb554b844a762b4115a61bfaa81e3e83050991eeb56863f"
-dependencies = [
- "digest 0.11.3",
-]
-
-[[package]]
 name = "hostname"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3958,20 +3949,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
 
 [[package]]
-name = "rusty-s3"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2412ec048709e6a8ee4ee1505313bce003f6b8b27fc41a97e30615223c7ed592"
-dependencies = [
- "hmac",
- "jiff",
- "percent-encoding",
- "sha2 0.11.0",
- "url",
- "zeroize",
-]
-
-[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4684,11 +4661,9 @@ dependencies = [
  "getrandom 0.4.3",
  "lettre",
  "libc",
- "reqwest",
  "rusqlite",
  "rusqlite_migration",
  "rustls",
- "rusty-s3",
  "serde",
  "serde_json",
  "sha2 0.11.0",

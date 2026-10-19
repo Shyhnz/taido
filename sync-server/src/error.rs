@@ -37,8 +37,7 @@ pub enum ServerError {
     /// A push would grow the account's synced data past its quota, or the disk is low.
     #[error("the account's synced data would exceed its quota")]
     RecordsQuota,
-    /// The bucket of the attachment files (R2) refused or could not be reached; the text never
-    /// contains its key nor a signed URL.
+    /// The attachment files could not be stored or served; the text never contains a file name.
     #[error("file storage: {0}")]
     Storage(String),
     /// An e-mail could not be sent; the text never contains the address nor the content.

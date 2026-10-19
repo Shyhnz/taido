@@ -2,15 +2,14 @@
 //! `TAIDO_SYNC_BIND`, `TAIDO_SYNC_DATA_DIR`, `TAIDO_SYNC_STATIC_DIR`, `RUST_LOG`, and for the
 //! forgotten-password e-mails `TAIDO_SMTP_HOST`, `TAIDO_SMTP_PORT`, `TAIDO_SMTP_USER`,
 //! `TAIDO_SMTP_PASSWORD`, `TAIDO_MAIL_FROM`, `TAIDO_PUBLIC_URL`, and for the attachment files
-//! `TAIDO_MAX_FILE_BYTES`, `TAIDO_ACCOUNT_QUOTA_BYTES`, and their bucket `TAIDO_R2_ENDPOINT`,
-//! `TAIDO_R2_BUCKET`, `TAIDO_R2_ACCESS_KEY_ID`, `TAIDO_R2_SECRET_ACCESS_KEY` (optional).
+//! `TAIDO_MAX_FILE_BYTES`, `TAIDO_ACCOUNT_QUOTA_BYTES` (the files are stored under the data
+//! directory; the old `TAIDO_R2_*` settings are ignored with a warning).
 
 use std::io::Write;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use taido_sync_server::mail::MailConfig;
-use taido_sync_server::r2::{R2Config, R2};
 use taido_sync_server::{auth, healthcheck, store, Config, FileLimits, ServerError};
 use tracing_subscriber::EnvFilter;
 
@@ -102,17 +101,10 @@ async fn serve(config: &Config) -> Result<(), ServerError> {
         records_quota_bytes = limits.records_quota_bytes,
         "storage limits"
     );
-    let r2 = match R2Config::from_env()? {
-        Some(r2) => {
-            tracing::info!(endpoint = %r2.endpoint, bucket = %r2.bucket, "files stored in R2");
-            Some(R2::new(&r2)?)
-        }
-        None => {
-            tracing::warn!("TAIDO_R2_ENDPOINT is not set: files stay on the disk");
-            None
-        }
-    };
-    let server = taido_sync_server::bind_with(config, mail.as_ref(), limits, r2).await?;
+    if std::env::vars_os().any(|(name, _)| name.to_string_lossy().starts_with("TAIDO_R2_")) {
+        tracing::warn!("Cloudflare R2 is no longer supported: files are stored on disk");
+    }
+    let server = taido_sync_server::bind_with(config, mail.as_ref(), limits).await?;
     let addr = server.local_addr()?;
     {
         let mut out = std::io::stdout().lock();

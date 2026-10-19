@@ -10,6 +10,7 @@ use std::process::{Child, Command, Stdio};
 
 use common::{get, post_json, request};
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 
 const BIN: &str = env!("CARGO_BIN_EXE_taido-sync-server");
 const EMAIL: &str = "user@example.com";
@@ -74,14 +75,25 @@ impl Drop for Served {
 }
 
 fn serve(data_dir: &Path, static_dir: Option<&Path>) -> Served {
+    serve_with(data_dir, static_dir, &[], Stdio::null())
+}
+
+/// `serve` with extra environment variables and the given destination for its log.
+fn serve_with(
+    data_dir: &Path,
+    static_dir: Option<&Path>,
+    env: &[(&str, &str)],
+    stderr: Stdio,
+) -> Served {
     let mut cmd = command(data_dir, "127.0.0.1:0");
     if let Some(dir) = static_dir {
         cmd.env("TAIDO_SYNC_STATIC_DIR", dir);
     }
+    cmd.envs(env.iter().copied());
     let mut child = cmd
         .arg("serve")
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
+        .stderr(stderr)
         .spawn()
         .expect("spawn serve");
     let stdout = child.stdout.take().expect("stdout");
@@ -151,6 +163,92 @@ async fn serve_signup_devices_revoke_and_healthcheck() {
     assert!(!ok, "set-password is gone");
 
     drop(served);
+}
+
+/// Every regular file under `dir`, with its content.
+fn files_under(dir: &Path) -> Vec<Vec<u8>> {
+    let mut found = Vec::new();
+    for entry in std::fs::read_dir(dir).expect("read dir").flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            found.extend(files_under(&path));
+        } else {
+            found.push(std::fs::read(&path).expect("read file"));
+        }
+    }
+    found
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn legacy_r2_settings_are_ignored() {
+    let dir = tempfile::tempdir().expect("tmp");
+    let log_path = dir.path().join("server.log");
+    let log = std::fs::File::create(&log_path).expect("log");
+    let served = serve_with(
+        dir.path(),
+        None,
+        &[
+            ("TAIDO_R2_ENDPOINT", "http://127.0.0.1:9"),
+            ("TAIDO_R2_BUCKET", "bucket"),
+            ("TAIDO_R2_ACCESS_KEY_ID", "key-id"),
+            ("TAIDO_R2_SECRET_ACCESS_KEY", "secret"),
+            ("TAIDO_MIN_FREE_BYTES", "0"),
+        ],
+        Stdio::from(log),
+    );
+    let token = signup(&served.base_url, EMAIL, "Mac").await["token"]
+        .as_str()
+        .expect("token")
+        .to_string();
+    let data: Vec<u8> = (0..3_000u32).map(|i| (i * 31 % 251) as u8).collect();
+    let hash: String = Sha256::digest(&data)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    let synced = post_json(
+        &served.base_url,
+        "/api/sync",
+        Some(&token),
+        &json!({"protocol": 3, "cursor": 0, "changes": [{
+            "entity": "attachment", "id": "a1", "updated_at": "2026-10-10T09:00:00.000Z",
+            "device_id": "",
+            "data": {"task_id": "t1", "file_name": "devis.pdf", "mime_type": "application/pdf",
+                     "size": data.len(), "created_at": "2026-10-10T09:00:00.000Z",
+                     "deleted_at": null}}]}),
+    )
+    .await;
+    assert_eq!(
+        synced.status,
+        200,
+        "{}",
+        String::from_utf8_lossy(&synced.body)
+    );
+
+    let put = request(
+        &served.base_url,
+        "PUT",
+        &format!("/api/files/a1?offset=0&size={}&sha256={hash}", data.len()),
+        Some(&token),
+        &data,
+    )
+    .await;
+    assert_eq!(put.status, 200, "{}", String::from_utf8_lossy(&put.body));
+    assert_eq!(put.json()["complete"], json!(true));
+
+    // The file sits on the server's disk, under `<data dir>/files`.
+    assert_eq!(files_under(&dir.path().join("files")), vec![data.clone()]);
+    let got = request(&served.base_url, "GET", "/api/files/a1", Some(&token), b"").await;
+    assert_eq!(got.status, 200);
+    assert_eq!(got.body, data);
+
+    drop(served);
+    let log = std::fs::read_to_string(&log_path).expect("read log");
+    assert_eq!(
+        log.matches("Cloudflare R2 is no longer supported").count(),
+        1,
+        "{log}"
+    );
+    assert!(!log.contains("secret"), "the keys are never logged: {log}");
 }
 
 #[tokio::test]

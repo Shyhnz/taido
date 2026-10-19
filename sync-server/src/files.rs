@@ -22,10 +22,7 @@
 //! when it would leave less than [`FileLimits::min_free_bytes`] free on the disk, and a write
 //! that finds the disk full drops the upload and answers the same.
 //!
-//! With a bucket ([`FileStore::with_remote`]), the uploads in
-//! progress stay on the disk but a complete file goes to R2 as `comptes/<account_id>/<name>`
-//! and leaves the disk. A complete file still on the disk (kept before the bucket was set up) is
-//! served from there until [`FileStore::move_to_remote`] has moved it.
+//! Files always live on the server's disk, under `<data dir>/files/<account_id>/`.
 
 use std::collections::HashSet;
 use std::fmt::Write as _;
@@ -33,7 +30,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Condvar, Mutex, PoisonError};
+use std::sync::{Condvar, Mutex, PoisonError};
 
 use axum::http::HeaderValue;
 use rusqlite::{params, Connection, OptionalExtension};
@@ -46,7 +43,6 @@ use sync_proto::{
 
 use crate::auth::hex_lower;
 use crate::error::{ApiError, ServerError};
-use crate::r2::R2;
 use crate::store::{self, Store};
 
 /// Directory of the files inside the data directory.
@@ -240,15 +236,6 @@ pub struct FileStore {
     /// Free bytes to use instead of the disk's (tests only; `None` in production).
     free_bytes_override: Mutex<Option<u64>>,
     locks: KeyLocks,
-    /// Bucket of the complete files; `None`: they stay on the disk.
-    remote: Option<Arc<R2>>,
-}
-
-/// Where the complete file of an attachment is read from.
-#[derive(Debug)]
-pub enum Stored {
-    Disk(PathBuf),
-    Remote { r2: Arc<R2>, key: String },
 }
 
 /// Where one attachment's file lives.
@@ -258,8 +245,6 @@ struct Paths {
     dir: PathBuf,
     file: PathBuf,
     part: PathBuf,
-    /// Key of the file in the bucket.
-    key: String,
 }
 
 impl FileStore {
@@ -273,19 +258,7 @@ impl FileStore {
             records_quota_bytes: AtomicU64::new(limits.records_quota_bytes),
             free_bytes_override: Mutex::new(None),
             locks: KeyLocks::default(),
-            remote: None,
         }
-    }
-
-    /// Complete files go to this bucket instead of staying on the disk.
-    #[must_use]
-    pub fn with_remote(mut self, r2: Arc<R2>) -> FileStore {
-        self.remote = Some(r2);
-        self
-    }
-
-    pub fn has_remote(&self) -> bool {
-        self.remote.is_some()
     }
 
     /// Files under `<data_dir>/files`.
@@ -373,7 +346,6 @@ impl FileStore {
         Ok(Paths {
             file: dir.join(&name),
             part: dir.join(format!("{name}{PART_SUFFIX}")),
-            key: R2::key(account_id, &name),
             dir,
             name,
         })
@@ -394,14 +366,7 @@ impl FileStore {
             let conn = store.lock()?;
             let attachment =
                 live_attachment(&conn, account_id, attachment_id)?.ok_or_else(missing)?;
-            let row = trusted_row(
-                &conn,
-                &paths,
-                account_id,
-                attachment_id,
-                &attachment,
-                self.has_remote(),
-            )?;
+            let row = trusted_row(&conn, &paths, account_id, attachment_id, &attachment)?;
             (attachment, row)
         };
         Ok(match row {
@@ -459,14 +424,7 @@ impl FileStore {
                     format!("files are limited to {max_file_bytes} bytes"),
                 ));
             }
-            match trusted_row(
-                &conn,
-                &paths,
-                account_id,
-                attachment_id,
-                &attachment,
-                self.has_remote(),
-            )? {
+            match trusted_row(&conn, &paths, account_id, attachment_id, &attachment)? {
                 Some(row) if row.size == upload.size && row.sha256 == upload.sha256 => {
                     if row.complete {
                         UploadState::Complete
@@ -583,22 +541,8 @@ impl FileStore {
                 "the file does not match its sha256",
             ));
         }
-        if let Some(r2) = &self.remote {
-            let sent = block_on(r2.put_file(&paths.key, &paths.part, upload.size));
-            // Sent or not, the bytes leave the disk: a failed upload starts again from 0.
-            remove_if_exists(&paths.part)?;
-            if let Err(err) = sent.and_then(|sent| sent) {
-                forget(&*store.lock()?, account_id, attachment_id)?;
-                tracing::warn!(account_id, attachment_id, error = %err,
-                    "file not stored in the bucket: upload dropped");
-                return Err(err.into());
-            }
-            // An older copy kept on the disk is not the file anymore.
-            remove_if_exists(&paths.file)?;
-        } else {
-            fs::rename(&paths.part, &paths.file).map_err(ServerError::from)?;
-            sync_dir(&paths.dir);
-        }
+        fs::rename(&paths.part, &paths.file).map_err(ServerError::from)?;
+        sync_dir(&paths.dir);
         if !mark_complete(&*store.lock()?, account_id, attachment_id, upload)? {
             // The attachment was deleted meanwhile: its deletion removes the file.
             return Err(missing());
@@ -613,37 +557,20 @@ impl FileStore {
     }
 
     /// `GET /api/files/{id}`: where the complete file of a live attachment of the account is
-    /// (the disk while it is still there, else the bucket when there is one), and the
-    /// attachment's file name (for `Content-Disposition`).
+    /// (on the disk), and the attachment's file name (for `Content-Disposition`).
     pub fn download(
         &self,
         store: &Store,
         account_id: &str,
         attachment_id: &str,
-    ) -> Result<(Stored, String), ApiError> {
+    ) -> Result<(PathBuf, String), ApiError> {
         check_attachment_id(attachment_id)?;
         let paths = self.paths(account_id, attachment_id)?;
         let _lock = self.locks.lock(&paths.name)?;
         let conn = store.lock()?;
         let attachment = live_attachment(&conn, account_id, attachment_id)?.ok_or_else(missing)?;
-        match trusted_row(
-            &conn,
-            &paths,
-            account_id,
-            attachment_id,
-            &attachment,
-            self.has_remote(),
-        )? {
-            Some(row) if row.complete => {
-                let stored = match &self.remote {
-                    Some(r2) if !paths.file.is_file() => Stored::Remote {
-                        r2: Arc::clone(r2),
-                        key: paths.key,
-                    },
-                    _ => Stored::Disk(paths.file),
-                };
-                Ok((stored, attachment.file_name))
-            }
+        match trusted_row(&conn, &paths, account_id, attachment_id, &attachment)? {
+            Some(row) if row.complete => Ok((paths.file, attachment.file_name)),
             _ => Err(missing()),
         }
     }
@@ -680,85 +607,9 @@ impl FileStore {
         let file = remove_if_exists(&paths.file);
         let part = remove_if_exists(&paths.part);
         file.and(part)?;
-        if let Some(r2) = &self.remote {
-            block_on(r2.delete(&paths.key))??;
-        }
         tracing::info!(account_id, attachment_id, "attached file deleted");
         Ok(())
     }
-
-    /// Moves to the bucket the complete files still on the disk (kept there before it was set
-    /// up): each one is uploaded, its size checked in the bucket, then deleted from the disk.
-    /// A file that fails stays on the disk (logged by ids) and is tried again at the next
-    /// start. Returns the number of files and of bytes moved. Call from blocking code.
-    pub fn move_to_remote(&self, store: &Store) -> Result<(u64, u64), ServerError> {
-        let Some(r2) = &self.remote else {
-            return Ok((0, 0));
-        };
-        let rows: Vec<(String, String)> = {
-            let conn = store.lock()?;
-            let mut stmt =
-                conn.prepare("SELECT account_id, attachment_id FROM files WHERE complete = 1")?;
-            let rows = stmt
-                .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
-                .collect::<Result<_, _>>()?;
-            rows
-        };
-        let (mut files, mut bytes) = (0, 0);
-        for (account_id, attachment_id) in rows {
-            match self.move_one(store, r2, &account_id, &attachment_id) {
-                Ok(Some(size)) => {
-                    files += 1;
-                    bytes += size;
-                }
-                Ok(None) => {}
-                Err(err) => tracing::warn!(account_id, attachment_id, error = %err,
-                    "file not moved to the bucket"),
-            }
-        }
-        Ok((files, bytes))
-    }
-
-    /// Moves one complete file to the bucket; `None` when it is not on the disk (anymore).
-    fn move_one(
-        &self,
-        store: &Store,
-        r2: &R2,
-        account_id: &str,
-        attachment_id: &str,
-    ) -> Result<Option<u64>, ServerError> {
-        let paths = self.paths(account_id, attachment_id)?;
-        let _lock = self.locks.lock(&paths.name)?;
-        let Some(row) = file_row(&*store.lock()?, account_id, attachment_id)? else {
-            return Ok(None);
-        };
-        if !row.complete || !paths.file.is_file() {
-            return Ok(None);
-        }
-        block_on(r2.put_file(&paths.key, &paths.file, row.size))??;
-        let stored = block_on(r2.size(&paths.key))??;
-        if stored != Some(row.size) {
-            return Err(ServerError::Storage(format!(
-                "the bucket holds {stored:?} bytes instead of {}",
-                row.size
-            )));
-        }
-        remove_if_exists(&paths.file)?;
-        tracing::info!(
-            account_id,
-            attachment_id,
-            size = row.size,
-            "file moved to the bucket"
-        );
-        Ok(Some(row.size))
-    }
-}
-
-/// Runs an R2 request from blocking code (a `spawn_blocking` thread of the server's runtime).
-fn block_on<F: std::future::Future>(future: F) -> Result<F::Output, ServerError> {
-    let handle = tokio::runtime::Handle::try_current()
-        .map_err(|_| ServerError::Storage("no runtime to reach the bucket".into()))?;
-    Ok(handle.block_on(future))
 }
 
 /// What `put_chunk` found in the `files` table.
@@ -806,7 +657,7 @@ fn available_bytes(path: &Path) -> io::Result<u64> {
 }
 
 /// The `files` row of the attachment when it can be trusted. A complete row whose file is gone
-/// from the disk (when there is no bucket: one in the bucket is trusted), or a row whose hash is not the attachment's (when the attachment has one),
+/// from the disk, or a row whose hash is not the attachment's (when the attachment has one),
 /// is dropped with its bytes and reads as no row. Call with the file's lock held.
 fn trusted_row(
     conn: &Connection,
@@ -814,7 +665,6 @@ fn trusted_row(
     account_id: &str,
     attachment_id: &str,
     attachment: &Attachment,
-    remote: bool,
 ) -> Result<Option<FileRow>, ServerError> {
     let Some(row) = file_row(conn, account_id, attachment_id)? else {
         return Ok(None);
@@ -825,7 +675,7 @@ fn trusted_row(
         .is_some_and(|expected| expected != row.sha256)
     {
         "not the attachment's hash"
-    } else if row.complete && !remote && !paths.file.is_file() {
+    } else if row.complete && !paths.file.is_file() {
         "missing on disk"
     } else {
         return Ok(Some(row));

@@ -13,7 +13,6 @@ pub mod healthcheck;
 pub mod http;
 pub mod mail;
 pub mod mail_template;
-pub mod r2;
 pub mod store;
 pub mod sync;
 
@@ -91,38 +90,19 @@ impl BoundServer {
 /// Opens the database and binds the listener, without e-mail and with the default file limits
 /// (see [`bind_with`]).
 pub async fn bind(config: &Config) -> Result<BoundServer, ServerError> {
-    bind_with(config, None, FileLimits::default(), None).await
+    bind_with(config, None, FileLimits::default()).await
 }
 
 /// Opens the database and binds the listener; e-mails go through SMTP when `mail` is set,
 /// else `/api/password/forgot` answers 503 `mail_unavailable`. Attachment files are kept in
-/// `<data_dir>/files` within `limits`, or in the bucket `r2` once complete; then the complete
-/// files still on the disk are moved to it in the background. Must run inside Tokio.
+/// `<data_dir>/files` within `limits`. Must run inside Tokio.
 pub async fn bind_with(
     config: &Config,
     mail: Option<&mail::MailConfig>,
     limits: FileLimits,
-    r2: Option<Arc<r2::R2>>,
 ) -> Result<BoundServer, ServerError> {
-    let mut files = FileStore::in_data_dir(&config.data_dir, limits);
-    if let Some(r2) = r2 {
-        files = files.with_remote(r2);
-    }
+    let files = FileStore::in_data_dir(&config.data_dir, limits);
     let mut state = AppState::new(store::Store::open(&config.data_dir)?, files);
-    if state.files.has_remote() {
-        let (store, files) = (Arc::clone(&state.store), Arc::clone(&state.files));
-        tokio::task::spawn_blocking(move || match files.move_to_remote(&store) {
-            Ok((0, _)) => {}
-            Ok((moved, bytes)) => {
-                tracing::info!(
-                    files = moved,
-                    bytes,
-                    "files moved from the disk to the bucket"
-                );
-            }
-            Err(err) => tracing::warn!(error = %err, "files not moved to the bucket"),
-        });
-    }
     if let Some(mail) = mail {
         state = state.with_mailer(Arc::new(mail::SmtpMailer::new(mail)?));
         if let Some(url) = &mail.public_url {
@@ -302,24 +282,10 @@ pub async fn start_for_tests_at(
     data_dir: &Path,
     bind_addr: &str,
 ) -> Result<TestServer, ServerError> {
-    start_test_server(data_dir, bind_addr, None).await
+    start_test_server(data_dir, bind_addr).await
 }
 
-/// [`start_for_tests`] with the complete files in a bucket (a fake S3 server of the test).
-/// Nothing is moved from the disk at start: call `FileStore::move_to_remote` through
-/// [`TestServer::state`].
-pub async fn start_for_tests_with_bucket(
-    data_dir: &Path,
-    r2: Arc<r2::R2>,
-) -> Result<TestServer, ServerError> {
-    start_test_server(data_dir, "127.0.0.1:0", Some(r2)).await
-}
-
-async fn start_test_server(
-    data_dir: &Path,
-    bind_addr: &str,
-    r2: Option<Arc<r2::R2>>,
-) -> Result<TestServer, ServerError> {
+async fn start_test_server(data_dir: &Path, bind_addr: &str) -> Result<TestServer, ServerError> {
     let config = Config {
         bind: bind_addr.to_string(),
         data_dir: data_dir.to_path_buf(),
@@ -330,10 +296,7 @@ async fn start_test_server(
         min_free_bytes: 0,
         ..FileLimits::default()
     };
-    let mut files = FileStore::in_data_dir(data_dir, limits);
-    if let Some(r2) = r2 {
-        files = files.with_remote(r2);
-    }
+    let files = FileStore::in_data_dir(data_dir, limits);
     let state = AppState::new(store::Store::open(data_dir)?, files)
         .with_mailer(mailer.clone())
         .with_public_url(TEST_PUBLIC_URL);

@@ -28,10 +28,6 @@ All configuration is by environment variable.
 | `TAIDO_ACCOUNT_QUOTA_BYTES` | `2147483648` (2 GB per account) | default |
 | `TAIDO_MIN_FREE_BYTES` | `2147483648` (2 GB kept free on the disk) | default |
 | `TAIDO_RECORDS_QUOTA_BYTES` | `52428800` (50 MB of synchronised rows per account) | default |
-| `TAIDO_R2_ENDPOINT` | unset = attachments stay on the local disk | none |
-| `TAIDO_R2_BUCKET` | bucket name (required with the endpoint) | none |
-| `TAIDO_R2_ACCESS_KEY_ID` | access key of the bucket's API token (required with the endpoint) | none |
-| `TAIDO_R2_SECRET_ACCESS_KEY` | secret key of the bucket's API token (required with the endpoint) | none |
 
 **Mail.** `TAIDO_SMTP_*` and `TAIDO_MAIL_FROM` send the "forgot password" e-mail (a 6-digit
 code) and the address-confirmation e-mail sent at signup. The confirmation e-mail contains a
@@ -48,59 +44,15 @@ its uploads in progress. A new upload that would leave less than `TAIDO_MIN_FREE
 the disk is refused (507 `quota_exceeded`), as is one that fills the disk. The limits are
 logged at startup (`storage limits`).
 
-**Attachment storage.** By default the content of attachments is stored under
-`<TAIDO_SYNC_DATA_DIR>/files/`. Set the four `TAIDO_R2_*` variables to store it in a private
-Cloudflare R2 bucket (S3 API) instead; the server presigns each request and the keys are never
-logged. Set all four or none: a partial configuration stops the server and names the missing
-ones.
-
-## Commands
-
-| Command | Purpose |
-| --- | --- |
-| `serve` (default) | serves the API (and the web app); prints one line `LISTENING <address>` |
-| `accounts` | lists accounts (e-mail, creation date, number of connected devices) |
-| `devices [<email>]` | lists devices, of every account or of one |
-| `revoke <id>` | signs a device out |
-| `reset-epoch` | gives the database a new identity (after a restore) |
-| `healthcheck` | exit code 0 if `GET /api/health` answers within 3 s, else 1 (used by Docker) |
-
-There is no administrator password: each person creates an account from the app
-(`POST /api/signup`).
-
-## Routes
-
-| Route | Purpose |
-| --- | --- |
-| `GET /api/health` | `{"ok":true,"protocol":3}` |
-| `POST /api/signup` | creates an account (lowercase e-mail, at most 254 characters; password of at least 10 characters) and its first device; returns the token. Errors: `email_taken` (409), `bad_email`, `weak_password` (400) |
-| `POST /api/login` | e-mail + password → token of a new device. A wrong password and an unknown address get the same 401 |
-| `POST /api/logout` | revokes the bearer token |
-| `POST /api/password/forgot` | sends a 6-digit code (valid 30 minutes) if the address has an account; always 204 for a well-formed request. Errors: `bad_email` (400), `rate_limited` (429), `mail_unavailable` (503) |
-| `POST /api/password/reset` | `{protocol, email, code, password}`: sets the new password and signs out every device; 204. Wrong, expired or used code: 400 `invalid_code`; 5 tries per code |
-| `GET /api/account` | e-mail and creation date of the token's account |
-| `POST /api/sync` | synchronises the token's account rows. Deleting an attachment also deletes its file |
-| `GET /api/files/{id}/status` | upload state of an attachment's file |
-| `PUT /api/files/{id}?offset=…&size=…&sha256=…` | one chunk (at most 8 MiB) of a file; the SHA-256 is verified at the last byte |
-| `GET /api/files/{id}` | the whole file, always as a download (`application/octet-stream`, `Content-Disposition: attachment`, `nosniff`, `Content-Security-Policy: sandbox`); supports one `Range` |
-
-Rate limits (in memory, reset at restart; the client address is read from `X-Real-IP`, which
-your reverse proxy must set): in 15 minutes, 10 login failures per e-mail address and client,
-50 per client, 1 000 in total; per hour, 5 signups per client and 20 in total; per hour, 3
-code requests per address, 10 per client and 100 in total; per hour, 20 wrong codes per client
-and 1 000 in total.
-
-Passwords, codes, tokens, e-mail addresses and contents (titles, notes, file names and file
-contents) are never written to the logs.
-
-## Attachment files
+**Attachment storage.** The content of attachments is always stored on the server's disk, under
+`<TAIDO_SYNC_DATA_DIR>/files/`. Cloudflare R2 is no longer supported: the old `TAIDO_R2_*`
+variables are ignored (the server logs one warning at startup).
 
 Stored under `<TAIDO_SYNC_DATA_DIR>/files/<account id>/<SHA-256 of account id and attachment
 id>` (`.part` while uploading), so no client-supplied name ever reaches a path. The `files`
 table records the announced size and hash and whether the file is complete. A file is only
 accepted for a live attachment of the account that is already synchronised, and is deleted
-when the attachment is. **Back up the `files/` folder together with the database** (unless
-you use R2, in which case the bucket holds the files).
+when the attachment is. **Back up the `files/` folder together with the database.**
 
 ## Local development
 
@@ -157,7 +109,7 @@ accepts request bodies of at least 16 MiB, and rate-limits `/api/login`, `/api/s
          # TAIDO_MAIL_FROM: "Taido <noreply@sync.example.com>"
    ```
 
-   Keep secrets (SMTP password, R2 keys) in an environment file that is not in a repository.
+   Keep secrets (SMTP password) in an environment file that is not in a repository.
 
 3. **Start and check**
 
