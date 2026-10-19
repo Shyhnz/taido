@@ -51,7 +51,21 @@ pub enum Signups {
 impl Signups {
     /// Reads [`ENV_SIGNUPS`].
     pub fn from_env() -> Result<Signups, ServerError> {
-        Self::from_env_value(std::env::var(ENV_SIGNUPS).ok().as_deref())
+        Self::from_os_value(std::env::var_os(ENV_SIGNUPS))
+    }
+
+    /// Like [`Signups::from_env_value`], for a raw environment value: one that is not valid
+    /// UTF-8 is refused (never read as open).
+    pub fn from_os_value(value: Option<std::ffi::OsString>) -> Result<Signups, ServerError> {
+        match value {
+            None => Self::from_env_value(None),
+            Some(value) => match value.to_str() {
+                Some(text) => Self::from_env_value(Some(text)),
+                None => Err(ServerError::Invalid(format!(
+                    "{ENV_SIGNUPS} must be \"open\" or \"closed\""
+                ))),
+            },
+        }
     }
 
     /// Unset or blank = open; else `open` or `closed`, in any case. Anything else is refused.
@@ -379,6 +393,16 @@ mod tests {
                 "{value:?}"
             );
         }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn non_utf8_signups_value_is_refused() {
+        use std::os::unix::ffi::OsStringExt;
+        let value = std::ffi::OsString::from_vec(vec![0x63, 0xff, 0xfe]);
+        let err = Signups::from_os_value(Some(value)).expect_err("not unicode");
+        assert!(err.to_string().contains("TAIDO_SIGNUPS"), "{err}");
+        assert_eq!(Signups::from_os_value(None).expect("unset"), Signups::Open);
     }
 
     #[test]

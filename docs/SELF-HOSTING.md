@@ -67,14 +67,15 @@ Repeat on your other computers by signing in with the same account.
 By default, anyone who knows your server address can create an account. Once you have created
 the accounts you need, close it:
 
-1. Edit `docker-compose.yml` and change `TAIDO_SIGNUPS: open` to `TAIDO_SIGNUPS: closed`.
+1. Edit `deploy/.env` and change `TAIDO_SIGNUPS=open` to `TAIDO_SIGNUPS=closed`.
 2. Apply it:
 
    ```sh
    docker compose up -d
    ```
 
-Existing accounts keep working (login, sync, password reset). Only new account creation is
+Existing accounts keep working (login and sync; "forgot password" only if e-mail is set up, see
+below). Only new account creation is
 refused. To add someone later, set it back to `open`, create the account, and close it again.
 
 ## Phone
@@ -85,9 +86,9 @@ the browser menu: **Add to home screen**.
 ## Optional: e-mail
 
 Without e-mail the server works, but there is no "forgot password" and new accounts are
-confirmed immediately. To turn e-mail on, uncomment these lines under `environment:` in
-`docker-compose.yml` and fill them in with the details from your mail provider, then run
-`docker compose up -d`:
+confirmed immediately. To turn e-mail on, uncomment these lines in `deploy/.env` and fill them in with the
+details from your mail provider, then run `docker compose up -d`. Keep this file (it holds your
+mail password) out of any repository:
 
 | Setting | What it does |
 | --- | --- |
@@ -97,14 +98,14 @@ confirmed immediately. To turn e-mail on, uncomment these lines under `environme
 | `TAIDO_SMTP_PASSWORD` | SMTP password. |
 | `TAIDO_MAIL_FROM` | The sender, for example `Taido <noreply@example.com>`. Required with `TAIDO_SMTP_HOST`. |
 
-`TAIDO_PUBLIC_URL` is already set for you from your domain: it is the address put in the
+`TAIDO_PUBLIC_URL` is set for you from your domain: it is the address put in the
 confirmation e-mail. The server refuses to start if the e-mail settings are incomplete, and the
 error tells you what is missing (`docker compose logs taido`).
 
 ## Optional: limits
 
-All sizes are whole numbers of bytes. Add them under `environment:` in `docker-compose.yml`
-only if you want to change the defaults.
+All sizes are whole numbers of bytes. Uncomment them in `deploy/.env`
+only if you want to change the defaults, then run `docker compose up -d`.
 
 | Setting | Default | What it does |
 | --- | --- | --- |

@@ -30,3 +30,4 @@ src-tauri/target/
 
 # Claude Code agent worktrees
 .claude/worktrees/
+deploy/.env

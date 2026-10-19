@@ -14,3 +14,4 @@ logs
 .vscode
 .idea
 sync-server/data
+deploy/.env

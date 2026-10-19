@@ -83,8 +83,8 @@ To run your own server (Docker Compose + Caddy for HTTPS, accounts, backups, upd
 
 The server speaks plain HTTP and does not terminate TLS. If you use another setup, run it behind
 a reverse proxy (nginx, Caddy, Traefik…) that provides HTTPS, sets `X-Real-IP` to the real
-client address, accepts request bodies of at least 16 MiB, and rate-limits `/api/login`,
-`/api/signup` and `/api/password/`. Check it with `curl -s http://127.0.0.1:3020/api/health`
+client address, accepts request bodies of at least 16 MiB, and (optionally, the server has its own limiters)
+rate-limits `/api/login`, `/api/signup` and `/api/password/`. Check it with `curl -s http://127.0.0.1:3020/api/health`
 (`{"ok":true,"protocol":3}`) or `taido-sync-server healthcheck`. Account creation can be closed
 with `TAIDO_SIGNUPS=closed` (`docs/SYNC.md` § 0.2).
 
