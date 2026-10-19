@@ -19,7 +19,7 @@ export const en: Strings = {
   settings: {
     ...fr.settings,
     language: "Language / Langue",
-    languageHelp: "Taido restarts to change the language.",
+    languageHelp: "Taido reloads to apply it.",
   },
   dates: {
     justNow: "just now",

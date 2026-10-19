@@ -79,12 +79,24 @@ export const {
   tutorialTexts,
 } = helpers;
 
-/** Saves the choice here and in the core, then reloads so every text is rebuilt. */
+/**
+ * Saves the choice in the core first, then here, then reloads so every text is rebuilt. The
+ * order matters: while the core still has the old language, this window keeps it too, so a
+ * settings refetch in between cannot make `reconcileLanguage` flip the choice back. On a
+ * failure (a toast is shown) nothing changes.
+ */
 export async function setLanguage(lang: Language): Promise<void> {
+  // Loaded on demand: `ipc` and `run` reach the date helpers, which import this module.
+  const [{ commands }, { run }] = await Promise.all([
+    import("../lib/ipc"),
+    import("../lib/run"),
+  ]);
+  const saved = await run(
+    commands.updateSettings(settingsPatch({ language: lang })),
+    t.errors.action.settings,
+  );
+  if (!saved) return;
   remember(lang);
-  // Loaded on demand: `ipc` reaches the date helpers, which import this module.
-  const { commands } = await import("../lib/ipc");
-  await commands.updateSettings(settingsPatch({ language: lang }));
   globalThis.location.reload();
 }
 

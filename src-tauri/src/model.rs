@@ -442,7 +442,7 @@ pub struct TaskLine {
     pub tone: LineTone,
 }
 
-/// Which template the UI renders (strings live in `src/i18n/fr.ts`).
+/// Which template the UI renders (strings live in `src/i18n/`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum LineKind {

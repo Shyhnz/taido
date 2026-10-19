@@ -30,13 +30,13 @@ export const MOCK_SYNC_LIMITED_EMAIL = "bloque@exemple.fr";
 export const MOCK_SYNC_RESET_CODE = "123456";
 /**
  * Detail of the `invalid` refusal of a signup or login while linked (core
- * `engine::ALREADY_LINKED`); the UI matches it to show `fr.sync.accountError.alreadyLinked`.
+ * `engine::ALREADY_LINKED`); the UI matches it to show `t.sync.accountError.alreadyLinked`.
  */
 export const ALREADY_LINKED = "already linked to an account: log out first";
 /**
  * Detail of the `invalid` refusal of the account commands the phone does not offer in V2.7
  * (signup, forgotten password, reset): they are done from the Mac. The UI matches it to show
- * `fr.sync.accountError.notOnPhone`.
+ * `t.sync.accountError.notOnPhone`.
  */
 export const NOT_ON_THE_PHONE = "not available on the phone: use the Mac";
 

@@ -714,7 +714,7 @@ export const fr = {
     tabsLabel: "Sections des réglages",
     /** The language select (shown in both languages so it can be found from either). */
     language: "Langue / Language",
-    languageHelp: "Taido redémarre pour changer de langue.",
+    languageHelp: "Taido se recharge pour l'appliquer.",
     theme: "Apparence",
     themeHelp: "« Système » suit le réglage clair ou sombre de macOS.",
     /** The phone's Réglages › Général. */

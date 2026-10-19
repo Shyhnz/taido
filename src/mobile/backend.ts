@@ -88,7 +88,7 @@ import {
 
 /**
  * Refusal of the account commands the phone does not offer in V2.7 (signup, forgotten
- * password, reset: done from the Mac); the UI says so (`fr.sync.accountError.notOnPhone`).
+ * password, reset: done from the Mac); the UI says so (`t.sync.accountError.notOnPhone`).
  */
 const notOnThePhone = (): ErrorPayload => ({
   kind: "invalid",
@@ -115,7 +115,7 @@ export interface MobileBackendOptions {
   storageBroken?: boolean;
   now?: () => Date;
   fetch?: FetchFn;
-  /** Called when a save fails (the app shows `fr.mobile.storageError`). */
+  /** Called when a save fails (the app shows `t.mobile.storageError`). */
   onStorageError?: () => void;
   /** Builds the HTTP client for a server address (tests inject a fake). */
   clientFor?: (baseUrl: string) => SyncClient;

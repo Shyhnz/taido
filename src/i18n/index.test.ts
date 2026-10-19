@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Settings } from "../bindings";
 import { commands, mockBackend } from "../lib/ipc";
 import {
   currentLanguage,
@@ -61,6 +62,47 @@ describe("setLanguage", () => {
     await setLanguage("en");
     expect(window.localStorage.getItem(LANGUAGE_KEY)).toBe("en");
     expect((await commands.getSettings()).language).toBe("en");
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("setLanguage ordering", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    window.localStorage.setItem(LANGUAGE_KEY, "fr");
+  });
+
+  it("a failing core save keeps the old language and does not reload", async () => {
+    const reload = vi.fn();
+    vi.stubGlobal("location", { ...window.location, reload });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(commands, "updateSettings").mockRejectedValue({
+      kind: "internal",
+    });
+    await setLanguage("en");
+    expect(window.localStorage.getItem(LANGUAGE_KEY)).toBe("fr");
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("a reconcile while the save is pending cannot flip the choice", async () => {
+    const reload = vi.fn();
+    vi.stubGlobal("location", { ...window.location, reload });
+    let release: (s: Settings) => void = () => {};
+    const base = await commands.getSettings();
+    vi.spyOn(commands, "updateSettings").mockReturnValue(
+      new Promise<Settings>((r) => {
+        release = r;
+      }),
+    );
+    const pending = setLanguage("en");
+    // A refetch now still shows the core's old language: it agrees with the local one.
+    await reconcileLanguage({ ...base, language: "fr" });
+    expect(reload).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem(LANGUAGE_KEY)).toBe("fr");
+    release({ ...base, language: "en" });
+    await pending;
+    expect(window.localStorage.getItem(LANGUAGE_KEY)).toBe("en");
     expect(reload).toHaveBeenCalledTimes(1);
   });
 });

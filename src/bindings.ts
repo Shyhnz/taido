@@ -968,7 +968,7 @@ export type JournalKind = "created" | "note" | "session_started" | "prompt" | "t
  */
 export type Language = "en" | "fr";
 
-/**  Which template the UI renders (strings live in `src/i18n/fr.ts`). */
+/**  Which template the UI renders (strings live in `src/i18n/`). */
 export type LineKind = 
 /**  First line of the description (`text`). */
 "description" | 
