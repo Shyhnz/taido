@@ -1,10 +1,11 @@
 /**
- * Chrono display helpers (Taido V2.1): the core gives the stopped seconds and the start of the
+ * Chrono display helpers: the core gives the stopped seconds and the start of the
  * running segment; the UI adds the running part up to now and ticks every second.
  */
 
 import { useEffect, useState } from "react";
 import type { TaskChrono } from "../../bindings";
+import { t } from "../../i18n";
 
 /** Total seconds at `now`: the stopped segments plus the running one. */
 export function chronoSeconds(chrono: TaskChrono, now: Date): number {
@@ -44,10 +45,10 @@ export function useNow(running: boolean): Date {
   return running ? now : new Date();
 }
 
-/** « 9 h 40 », « 42 min », « 0 min » (dashboard figures). */
+/** « 9 h 40 », « 42 min », « 0 min » ("9h 40m" in English): dashboard figures. */
 export function formatHours(seconds: number): string {
   const m = Math.floor(Math.max(0, seconds) / 60);
   const h = Math.floor(m / 60);
-  if (h === 0) return `${m} min`;
-  return `${h} h ${String(m % 60).padStart(2, "0")}`;
+  if (h === 0) return t.sessions.durationMinutes(m);
+  return t.sessions.durationHours(h, m % 60);
 }

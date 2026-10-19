@@ -1,12 +1,14 @@
 /** Text that gives French away in the English interface (step 3, review focus 5). */
 const DENYLIST: (string | RegExp)[] = [
-  /[éèàçùê«»]/,
+  /[éèàçùêôîûïœ«»]/,
   " le ",
   " la ",
   " les ",
   " des ",
   "Tâche",
   "Réglages",
+  "Sans projet",
+  "Prochainement",
 ];
 
 /** The first denylist entry `text` contains, or null. */

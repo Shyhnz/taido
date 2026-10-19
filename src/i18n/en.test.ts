@@ -164,6 +164,31 @@ describe("the English table", () => {
     );
   });
 
+  it("writes units the English way, and reads naturally", () => {
+    expect(en.dates.hoursAgo(3)).toBe("3h ago");
+    expect(en.sessions.durationHours(1, 5)).toBe("1h 05m");
+    expect(en.dashboard.oldestValue(7)).toBe("7d");
+    expect(en.dashboard.late(3)).toBe("3d late");
+    expect(en.dashboard.age(3)).toBe("open for 3d");
+    expect(en.portfolio.inactive(3)).toBe("inactive 3d");
+    expect(en.portfolio.done(7)).toBe("Completed (7d)");
+    for (const text of [
+      en.row.menuFile,
+      en.move.fileTitle,
+      en.panel.locationMenu,
+      en.list.file,
+    ]) {
+      expect(text).toBe("Move to project…");
+    }
+    expect(en.relations.showSubtasks(1, "Ship")).toBe(
+      "Show 1 subtask of “Ship”",
+    );
+    expect(en.relations.showSubtasks(3, "Ship")).toBe(
+      "Show the 3 subtasks of “Ship”",
+    );
+    expect(en.account.privacy).toContain("It never keeps your folders");
+  });
+
   it("says the same about the account on the computer and the phone", () => {
     expect(en.account.privacy).toBe(en.sync.privacy);
   });

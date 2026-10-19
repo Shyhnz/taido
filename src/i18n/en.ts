@@ -30,7 +30,7 @@ const s = (n: number) => (n === 1 ? "" : "s");
 
 /** What an account keeps on the server: one text for the computer and the phone. */
 const ACCOUNT_PRIVACY =
-  "Your account keeps your projects, sections, tasks, Kanban columns, time spent, links between tasks and attachments (names and files). Never your folders, terminals, Claude sessions or activity.";
+  "Your account keeps your projects, sections, tasks, Kanban columns, time spent, links between tasks and attachments (names and files). It never keeps your folders, terminals, Claude sessions or activity.";
 
 /** Readable errors of Claude Code, by `StopFailure.error` type. */
 const AGENT_ERRORS: Record<string, string> = {
@@ -345,7 +345,7 @@ const en: Strings = {
     menuLaunchAgent: (agent: Agent) => `Launch ${agentProduct(agent)}`,
     menuOpenShell: "Open a shell",
     menuMove: "Move to…",
-    menuFile: "File in…",
+    menuFile: "Move to project…",
     menuDue: "Due date…",
     menuDelete: "Delete",
     deleteTitle: (title: string) => `Delete “${title}”?`,
@@ -366,7 +366,7 @@ const en: Strings = {
 
   move: {
     title: "Move to…",
-    fileTitle: "File in…",
+    fileTitle: "Move to project…",
     noProject: "Inbox",
   },
 
@@ -410,7 +410,7 @@ const en: Strings = {
     noProject: "Inbox",
     move: "Move to…",
     location: (where: string) => `Project: ${where}. Change`,
-    locationMenu: "File in…",
+    locationMenu: "Move to project…",
     dueEmpty: "Due date",
     dueChip: (label: string) => `Due: ${label}. Change`,
     dueOverdue: "overdue",
@@ -883,7 +883,7 @@ const en: Strings = {
     durationUnderMinute: "under 1 min",
     durationMinutes: (n: number) => `${n} min`,
     durationHours: (h: number, m: number) =>
-      `${h} h ${String(m).padStart(2, "0")}`,
+      `${h}h ${String(m).padStart(2, "0")}m`,
     aiSummary: (agent: Agent) => `Summary by ${agentName(agent)}`,
     rename: "Rename session",
     renameLabel: (start: string) => `Name of the session from ${start}`,
@@ -894,7 +894,7 @@ const en: Strings = {
   dates: {
     justNow: "just now",
     minutesAgo: (n: number) => `${n} min ago`,
-    hoursAgo: (n: number) => `${n} h ago`,
+    hoursAgo: (n: number) => `${n}h ago`,
     yesterdayAt: (time: string) => `yesterday ${time}`,
     todayAt: (time: string) => `today ${time}`,
     today: "Today",
@@ -920,8 +920,8 @@ const en: Strings = {
   list: {
     label: (view: string) => `Tasks · ${view}`,
     more: (title: string) => `Actions for task ${title}`,
-    file: "File in…",
-    fileLabel: (title: string) => `File “${title}” in a project`,
+    file: "Move to project…",
+    fileLabel: (title: string) => `Move “${title}” to a project`,
     hasNote: "Has a note",
     sectionCount: (n: number) => taskCount(n),
     retry: "Try again",
@@ -953,8 +953,8 @@ const en: Strings = {
     isToday: "today",
     time: "Time",
     timePlaceholder: "Add a time",
-    timeHelp: "For example 17:00 or 9:30. Enter to confirm.",
-    timeInvalid: "Time not recognized. Try 17:00 or 9:30.",
+    timeHelp: "For example 5pm or 9:30am. Enter to confirm.",
+    timeInvalid: "Time not recognized. Try 5pm or 9:30am.",
     clearTime: "Remove time",
     clear: "Remove due date",
   },
@@ -1313,19 +1313,19 @@ const en: Strings = {
     downloaded: (fileName: string) => `Time exported: ${fileName} downloaded`,
     fileName: (date: string, days: number) => `taido-time-${days}d-${date}.csv`,
     open: "Open tasks",
-    done: (days: number) => `Completed (${days} d)`,
+    done: (days: number) => `Completed (${days}d)`,
     overdue: "Overdue",
-    time: (days: number) => `Time (${days} d)`,
+    time: (days: number) => `Time (${days}d)`,
     table: "Projects",
     cols: {
       project: "Project",
       open: "Open",
-      done: (days: number) => `Completed ${days} d`,
+      done: (days: number) => `Completed ${days}d`,
       overdue: "Overdue",
       blocked: "Blocked",
       next: "Next due task",
       sessions: "Sessions",
-      time: (days: number) => `Time ${days} d`,
+      time: (days: number) => `Time ${days}d`,
       last: "Last activity",
     },
     sortBy: (col: string) => `Sort by ${col}`,
@@ -1333,7 +1333,7 @@ const en: Strings = {
     running: (n: number) => `${n} session${s(n)} running`,
     waiting: (n: number) => `${n} session${s(n)} waiting for you`,
     noSession: "none",
-    inactive: (n: number) => `inactive ${n} d`,
+    inactive: (n: number) => `inactive ${n}d`,
     never: "never",
     openDashboard: (name: string) => `Open the dashboard of ${name}`,
     empty: "No projects yet.",
@@ -1352,8 +1352,8 @@ const en: Strings = {
       n === 0 ? "no subtasks" : `including ${n} subtask${s(n)}`,
     openDelta: (n: number, days: number) =>
       n === 0
-        ? `steady over ${days} d`
-        : `${n > 0 ? "+" : "−"}${Math.abs(n)} over ${days} d`,
+        ? `steady over ${days}d`
+        : `${n > 0 ? "+" : "−"}${Math.abs(n)} over ${days}d`,
     done: "Completed",
     doneBefore: (n: number) => `${n} in the previous period`,
     overdue: "Overdue",
@@ -1366,7 +1366,7 @@ const en: Strings = {
     perDone: (time: string) => `avg. ${time} per completed task`,
     noneDone: "no completed task",
     oldest: "Oldest open",
-    oldestValue: (days: number) => `${days} d`,
+    oldestValue: (days: number) => `${days}d`,
     noOpen: "none",
     timeByDay: "Time per day",
     auto: (agent: Agent) => `${agentName(agent)} sessions (auto)`,
@@ -1380,20 +1380,20 @@ const en: Strings = {
         : `${n} open task${s(n)} without a date`,
     noUpcoming: "No upcoming due dates",
     lateOrBlocked: "Overdue and blocked",
-    late: (days: number) => `${days} d late`,
+    late: (days: number) => `${days}d late`,
     blockedBy: (title: string) => `by: ${title}`,
     waiting: "waiting for you",
     nothingLate: "Nothing overdue or blocked",
     lingering: "Lingering tasks",
-    age: (days: number) => (days === 0 ? "opened today" : `open for ${days} d`),
-    timeByTask: (days: number) => `Time per task (${days} d)`,
+    age: (days: number) => (days === 0 ? "opened today" : `open for ${days}d`),
+    timeByTask: (days: number) => `Time per task (${days}d)`,
     noTime: "No time in this period",
     loading: "Loading dashboard…",
     error: "Couldn't load the dashboard.",
     retry: "Try again",
     strip: "Project numbers",
     stripOpen: (n: number) => `${n} open`,
-    stripDone: (n: number) => `${n} completed (7 d)`,
+    stripDone: (n: number) => `${n} completed (7d)`,
     stripLate: (n: number) => `${n} overdue`,
     stripBlocked: (n: number) => `${n} blocked`,
     stripTime: (time: string) => `${time} this week`,
@@ -1483,7 +1483,9 @@ const en: Strings = {
     recentGroup: "Recently changed",
     alreadyLinked: "already linked",
     showSubtasks: (n: number, title: string) =>
-      `Show the ${n} subtask${s(n)} of “${title}”`,
+      n === 1
+        ? `Show 1 subtask of “${title}”`
+        : `Show the ${n} subtasks of “${title}”`,
     hideSubtasks: (title: string) => `Hide subtasks of “${title}”`,
     groupLabel: (project: string, n: number) => `${project}, ${n} task${s(n)}`,
     hints: {

@@ -99,6 +99,11 @@ describe("parseTime", () => {
     ["0930", "09:30"],
     [" 8 h ", "08:00"],
     ["0", "00:00"],
+    ["5pm", "17:00"],
+    ["9:30am", "09:30"],
+    ["9.30 PM", "21:30"],
+    ["12am", "00:00"],
+    ["12pm", "12:00"],
   ])("parses %s", (text, expected) => {
     expect(parseTime(text)).toBe(expected);
   });
@@ -108,7 +113,10 @@ describe("parseTime", () => {
     expect(parseTime("   ")).toBeNull();
   });
 
-  it.each(["24", "12:60", "midi", "17h3", "1:2:3"])("rejects %s", (text) => {
-    expect(parseTime(text)).toBeUndefined();
-  });
+  it.each(["24", "12:60", "midi", "17h3", "1:2:3", "13pm", "0am", "17h30pm"])(
+    "rejects %s",
+    (text) => {
+      expect(parseTime(text)).toBeUndefined();
+    },
+  );
 });

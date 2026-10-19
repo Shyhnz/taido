@@ -556,7 +556,15 @@ describe("quick add in English", () => {
     ["Pay rent today", { title: "Pay rent", due: { date: "2026-10-03" } }],
     [
       "Call mum tonight",
-      { title: "Call mum", due: { date: "2026-10-03", time: "18:00" } },
+      { title: "Call mum", due: { date: "2026-10-03", time: "20:00" } },
+    ],
+    [
+      "Dinner tomorrow evening",
+      { title: "Dinner", due: { date: "2026-10-04", time: "18:00" } },
+    ],
+    [
+      "Movie tomorrow night",
+      { title: "Movie", due: { date: "2026-10-04", time: "20:00" } },
     ],
     [
       "Call mum @tomorrow 5pm",
@@ -579,6 +587,27 @@ describe("quick add in English", () => {
       { title: "Demo", due: { date: "2026-10-09", time: "14:00" } },
     ],
     ["Demo fri", { title: "Demo", due: { date: "2026-10-09" } }],
+    // Short weekday names are words too: a date only after next/on/this/@ or at the end.
+    [
+      "Buy sun cream tomorrow",
+      { title: "Buy sun cream", due: { date: "2026-10-04" } },
+    ],
+    ["Sat down with Mark", { title: "Sat down with Mark" }],
+    ["Call Ana fri", { title: "Call Ana", due: { date: "2026-10-09" } }],
+    [
+      "Call Ana fri #Perso",
+      { title: "Call Ana", subject: "Perso", due: { date: "2026-10-09" } },
+    ],
+    ["Review on wed", { title: "Review", due: { date: "2026-10-07" } }],
+    [
+      "Review this thu notes",
+      { title: "Review notes", due: { date: "2026-10-08" } },
+    ],
+    [
+      "Review @mon notes",
+      { title: "Review notes", due: { date: "2026-10-05" } },
+    ],
+    ["Wed planner shopping", { title: "Wed planner shopping" }],
     ["Demo on Tuesday", { title: "Demo", due: { date: "2026-10-06" } }],
     ["Demo next saturday", { title: "Demo", due: { date: "2026-10-10" } }],
     [

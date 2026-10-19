@@ -110,12 +110,21 @@ export function addDaysTo(date: string, delta: number): string {
 }
 
 /**
- * Parses the free-text time field: « 17 », « 17h », « 17h30 », « 17:30 », « 9.05 », « 0930 ».
- * Empty text means « no time » (`null`). Returns `undefined` when the text is not a time.
+ * Parses the free-text time field: « 17 », « 17h », « 17h30 », « 17:30 », « 9.05 », « 0930 »,
+ * and the 12-hour "5pm", "9:30am". Empty text means « no time » (`null`). Returns `undefined`
+ * when the text is not a time.
  */
 export function parseTime(text: string): string | null | undefined {
   const t = text.trim().toLowerCase();
   if (t.length === 0) return null;
+  const twelve = /^(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)$/.exec(t);
+  if (twelve) {
+    const h = Number(twelve[1]);
+    const m = twelve[2] === undefined ? 0 : Number(twelve[2]);
+    if (h < 1 || h > 12 || m > 59) return undefined;
+    const hours = (h % 12) + (twelve[3] === "pm" ? 12 : 0);
+    return `${String(hours).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
   const match =
     /^(\d{1,2})(?:\s*[h:.]\s*(\d{2})?)?$/.exec(t) ?? /^(\d{2})(\d{2})$/.exec(t);
   if (!match) return undefined;

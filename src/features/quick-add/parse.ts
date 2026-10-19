@@ -195,6 +195,11 @@ type DateRule = {
   resolve: (m: RegExpExecArray, today: Date) => Date | null;
   /** « ce soir » already carries its time. */
   time?: string;
+  /** Extra condition on the match (`end` after the part of the day; `marked`: after an `@`). */
+  accept?: (
+    m: RegExpExecArray,
+    at: { folded: string; end: number; marked: boolean },
+  ) => boolean;
   dayPart?: boolean;
   /**
    * An impossible date here (« le 30 fev », « 31/02 ») stays text: no later rule may read a
@@ -343,23 +348,34 @@ const FR: DateWords = {
 
 const EN_WEEKDAYS: Record<string, number> = {
   sunday: 0,
-  sun: 0,
   monday: 1,
-  mon: 1,
   tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
+
+/**
+ * Short weekday names are everyday words too (« sun », « sat », « wed »): they are a date only
+ * after `next`, `on`, `this` or `@`, or at the end of the title ("Call Ana fri").
+ */
+const EN_SHORT_WEEKDAYS: Record<string, number> = {
+  sun: 0,
+  mon: 1,
   tues: 2,
   tue: 2,
-  wednesday: 3,
   wed: 3,
-  thursday: 4,
   thurs: 4,
   thur: 4,
   thu: 4,
-  friday: 5,
   fri: 5,
-  saturday: 6,
   sat: 6,
 };
+
+/** Only other tokens (`#project`, `!1`, `>claude`…) or punctuation follow `end`. */
+const endsTitle = (folded: string, end: number) =>
+  /^[,.;:!?)]*(?:\s+[#/!>@]\S*)*\s*$/.test(folded.slice(end));
 
 const EN_MONTHS: [string, number][] = [
   ["january", 1],
@@ -398,7 +414,7 @@ const twelveHour = (h: number, m: number, half: string) =>
 const EN: DateWords = {
   dateRules: [
     { re: /today/y, resolve: (_m, today) => today, dayPart: true },
-    { re: /tonight/y, resolve: (_m, today) => today, time: "18:00" },
+    { re: /tonight/y, resolve: (_m, today) => today, time: "20:00" },
     {
       re: /(?:the\s+)?day\s+after\s+tomorrow/y,
       resolve: (_m, today) => addDays(today, 2),
@@ -421,8 +437,21 @@ const EN: DateWords = {
     {
       // The next occurrence, never today; "next monday" is the same day (the Monday strictly
       // after today, like the date picker).
-      re: new RegExp(`(?:next\\s+|on\\s+)?(${weekdayRe(EN_WEEKDAYS)})`, "y"),
+      re: new RegExp(
+        `(?:next\\s+|on\\s+|this\\s+)?(${weekdayRe(EN_WEEKDAYS)})`,
+        "y",
+      ),
       resolve: (m, today) => nextWeekday(today, EN_WEEKDAYS[m[1]]),
+      dayPart: true,
+    },
+    {
+      re: new RegExp(
+        `(next\\s+|on\\s+|this\\s+)?(${weekdayRe(EN_SHORT_WEEKDAYS)})`,
+        "y",
+      ),
+      resolve: (m, today) => nextWeekday(today, EN_SHORT_WEEKDAYS[m[2]]),
+      accept: (m, at) =>
+        m[1] !== undefined || at.marked || endsTitle(at.folded, at.end),
       dayPart: true,
     },
     {
@@ -466,7 +495,7 @@ const EN: DateWords = {
     noon: "12:00",
     afternoon: "14:00",
     evening: "18:00",
-    night: "18:00",
+    night: "20:00",
   },
   timeRules: [
     {
@@ -504,6 +533,7 @@ function matchDate(
   folded: string,
   i: number,
   today: Date,
+  marked: boolean,
 ): DateMatch | null {
   for (const rule of words.dateRules) {
     rule.re.lastIndex = i;
@@ -520,6 +550,7 @@ function matchDate(
       }
     }
     if (!endsWord(folded, end)) continue;
+    if (rule.accept && !rule.accept(m, { folded, end, marked })) continue;
     const date = rule.resolve(m, today);
     if (!date) {
       if (rule.final) return null;
@@ -712,7 +743,7 @@ function matchAt(ctx: Ctx, i: number): QuickToken | null {
   // Taido V2.4: `@vendredi`, `@13/10`, `@demain 10h`, `@10h` — the `@`
   // only marks a date or a time, which reads as without it.
   const at = ch === "@" ? i + 1 : i;
-  const date = matchDate(ctx.words, folded, at, ctx.today);
+  const date = matchDate(ctx.words, folded, at, ctx.today, at !== i);
   if (date) {
     return {
       kind: "date",
