@@ -1,0 +1,26 @@
+Taido
+Copyright (c) 2026 NUOPS
+
+Taido is free software: you can redistribute it and/or modify it under the terms of the GNU
+Affero General Public License as published by the Free Software Foundation, either version 3
+of the License, or (at your option) any later version. The full text is in the LICENSE file.
+
+Third-party material
+--------------------
+
+Fonts: Geist and Geist Mono (Vercel), bundled through the @fontsource-variable/geist and
+@fontsource-variable/geist-mono packages. SIL Open Font License 1.1.
+
+Icons: lucide icons (lucide-react). ISC licence.
+
+Dictation model: the speech-to-text model is NOT part of this repository or of the app
+bundle. It is downloaded at runtime, the first time dictation is enabled, from Hugging Face
+(https://huggingface.co/handy-computer/parakeet-tdt-0.6b-v3-gguf, a GGUF conversion by the
+Handy project of NVIDIA's parakeet-tdt-0.6b-v3). The model card of that repository and the
+card of the NVIDIA original (https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) both state
+the licence "cc-by-4.0" (Creative Commons Attribution 4.0 International,
+https://creativecommons.org/licenses/by/4.0/legalcode.en); the NVIDIA card adds: "Use of this
+model is governed by the CC-BY-4.0 license". Attribution: Parakeet TDT 0.6B v3 by NVIDIA;
+GGUF conversion by handy-computer. The file is checked against a pinned SHA-256 before use.
+
+Other dependencies (npm and Rust crates) keep their own licences; see their packages.

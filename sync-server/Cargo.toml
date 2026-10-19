@@ -1,0 +1,65 @@
+[package]
+name = "taido-sync-server"
+version = "0.1.0"
+edition = "2021"
+description = "Sync server of Taido: accounts by e-mail, serves the phone web app"
+authors = ["Shyhn"]
+license = "AGPL-3.0-or-later"
+publish = false
+
+# Standalone crate (no Cargo workspace).
+
+[lib]
+name = "taido_sync_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "taido-sync-server"
+path = "src/main.rs"
+
+[dependencies]
+sync-proto = { path = "../crates/sync-proto" }
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
+tokio = { version = "1", features = ["macros", "net", "rt", "rt-multi-thread", "signal", "sync", "time", "io-util"] }
+tower-http = { version = "0.7", features = ["fs", "trace"] }
+rusqlite = { version = "0.40", features = ["bundled"] }
+rusqlite_migration = "2.6"
+argon2 = "0.6"
+sha2 = "0.11"
+base64 = "0.23"
+getrandom = "0.4"
+uuid = { version = "1.26", features = ["v4"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+clap = { version = "4", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+thiserror = "2"
+# statvfs: the free space of the disk of the attachment files (V2.7 bis floor).
+libc = "0.2"
+# SMTP over implicit TLS (rustls + ring + webpki-roots, no OpenSSL), async on Tokio.
+# Attachment files on Cloudflare R2 (S3 API): presigned requests (sans-IO) sent by reqwest over
+# rustls + ring + webpki-roots, like lettre (no OpenSSL, no system certificates in the image).
+rusty-s3 = { version = "0.10.2", default-features = false, features = ["rustcrypto"] }
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls-no-provider", "stream"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
+webpki-roots = "1"
+lettre = { version = "0.11.23", default-features = false, features = ["builder", "hostname", "smtp-transport", "tokio1-rustls-tls"] }
+
+[dev-dependencies]
+tempfile = "3"
+http-body-util = { version = "0.1", features = ["channel"] }
+tower = { version = "0.5", features = ["util"] }
+
+# argon2 is very slow unoptimised: keep the login tests fast in debug builds.
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true

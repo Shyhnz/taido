@@ -1,0 +1,135 @@
+/*
+ * The phone app's only stylesheet (docs/SYNC.md § 6.5). With `root: "mobile"` the Tailwind
+ * plugin would scan only mobile/**: `@source "../"` (relative to this file) adds all of src/,
+ * so every class used by the shared components is generated. Mobile rules are scoped under
+ * the `.mobile` root class; the desktop never loads this file.
+ */
+
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+@import "../styles/globals.css";
+@source "../";
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile {
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.mobile .mobile-main {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
+.mobile .mobile-fab {
+  bottom: calc(16px + env(safe-area-inset-bottom));
+}
+
+.mobile .mobile-sheet,
+.mobile .mobile-drawer {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* The sidebar fills the drawer. */
+.mobile .mobile-drawer > aside {
+  width: min(320px, 85vw);
+}
+
+/* Inputs of at least 16 px: Chrome on Android does not zoom on focus. */
+.mobile input,
+.mobile textarea,
+.mobile select {
+  font-size: max(16px, 1em);
+}
+
+/* Touch targets of at least 44 px for the list rows, menu items and sidebar lines. */
+.mobile [role="menuitem"],
+.mobile nav button,
+.mobile nav a {
+  min-height: 44px;
+}
+
+/* A group's line grows to 44 px, its colored label keeps its size (the 44 px minimum above
+   made the label taller than its 32 px line, so it covered the next line): the touch area is
+   the invisible 44 px one of `.touch-target` below, here on the label. */
+.mobile nav [data-group] > div:first-child {
+  height: 44px;
+}
+.mobile nav [data-group] button[data-nav-item] {
+  min-height: 0;
+  position: relative;
+}
+.mobile nav [data-group] button[data-nav-item]::after {
+  content: "";
+  position: absolute;
+  inset: -8px 0;
+}
+
+/* Small controls (completion ring, sub-task chevron, Réglages gear): an invisible 44 px hit
+   area centred on them, without moving anything. */
+.mobile .touch-target::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+/* Room for the sub-task chevron, which sits left of its row. */
+.mobile .mobile-main {
+  padding-left: 24px;
+}
+
+/* No hover on a touch screen: actions revealed on hover are always shown. */
+@media (hover: none) {
+  .mobile .group-hover\:opacity-100,
+  .mobile .group-hover\/header\:opacity-100,
+  .mobile .group-hover\/column\:opacity-100,
+  .mobile .group-hover\/segment\:opacity-100 {
+    opacity: 1;
+  }
+  .mobile .group-hover\:block {
+    display: block;
+  }
+  .mobile .group-hover\:invisible {
+    visibility: hidden;
+  }
+}
+
+/* A long press on a task, or on a « À faire » group header, picks it up: no text selection
+   nor callout under the finger. */
+.mobile .task-row,
+.mobile .drag-header {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* A touch screen drags with a long press on the item itself: the mouse grips are hidden. */
+@media (hover: none) {
+  .mobile .drag-grip {
+    display: none;
+  }
+}
+
+/* Long-press drag surfaces: no text selection nor callout under the finger. */
+.mobile .touch-drag,
+.mobile [data-project-id] > div,
+.mobile [data-inbox-row] > div {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}

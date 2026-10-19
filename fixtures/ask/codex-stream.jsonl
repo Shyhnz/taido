@@ -1,0 +1,6 @@
+{"type":"thread.started","thread_id":"01a14036-a3a4-75c0-9d3c-3d4fa8455fd2"}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_0","type":"command_execution","command":"/bin/zsh -lc 'cat a.txt'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_0","type":"command_execution","command":"/bin/zsh -lc 'cat a.txt'","aggregated_output":"Le prix pilote est de 25 euros.\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_1","type":"agent_message","text":"{\"answer\":\"25 €\",\"sources\":[{\"kind\":\"file\",\"ref\":\"a.txt\",\"quote\":\"Le prix pilote est de 25 euros.\"}]}"}}
+{"type":"turn.completed","usage":{"input_tokens":33032,"cached_input_tokens":16128,"cache_write_input_tokens":0,"output_tokens":77,"reasoning_output_tokens":0}}

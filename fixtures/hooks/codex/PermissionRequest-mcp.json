@@ -1,0 +1,13 @@
+{
+  "session_id": "01a129fe-8f34-7970-a745-a0860b436429",
+  "turn_id": "01a129fe-a205-76a1-bee7-be924bd10b22",
+  "transcript_path": "/Users/user/.codex/sessions/2026/10/11/rollout-2026-10-11T10-05-11-01a129fe-8f34-7970-a745-a0860b436429.jsonl",
+  "cwd": "/Users/user/todo-agents/sandbox/codex-spike/projet",
+  "hook_event_name": "PermissionRequest",
+  "model": "gpt-6-luna",
+  "permission_mode": "default",
+  "tool_name": "mcp__taido__create_subtask",
+  "tool_input": {
+    "text": "Acheter du pain"
+  }
+}

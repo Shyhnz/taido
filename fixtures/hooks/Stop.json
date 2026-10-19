@@ -1,0 +1,16 @@
+{
+  "background_tasks": [],
+  "cwd": "/Users/user/todo-agents/sandbox/projet-test",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "Stop",
+  "last_assistant_message": "OK",
+  "permission_mode": "auto",
+  "prompt_id": "a4a995f4-d3a4-42c2-9267-713adeb58def",
+  "scratchpad_dir": "/private/tmp/claude-501/-Users-user-todo-agents-sandbox-projet-test/7282d690-922c-4a41-84c7-48ad1a476b66/scratchpad",
+  "session_crons": [],
+  "session_id": "7282d690-922c-4a41-84c7-48ad1a476b66",
+  "stop_hook_active": false,
+  "transcript_path": "/Users/user/.claude/projects/-Users-user-todo-agents-sandbox-projet-test/7282d690-922c-4a41-84c7-48ad1a476b66.jsonl"
+}

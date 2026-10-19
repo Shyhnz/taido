@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1024 1024">
+  <defs>
+    <path id="brand-m-tile" d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4-20.2 195a185 185 0 0 1-80.8 80.8c-39.6 20.2-91.4 20.2-195 20.2H396c-103.6 0-155.4 0-195-20.2a185 185 0 0 1-80.8-80.8c-20.2-39.6-20.2-91.4-20.2-195V396c0-103.6 0-155.4 20.2-195a185 185 0 0 1 80.8-80.8c39.6-20.2 91.4-20.2 195-20.2Z"/>
+    <clipPath id="brand-m-clip"><use href="#brand-m-tile" xlink:href="#brand-m-tile"/></clipPath>
+    <linearGradient id="brand-m-body" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2242A0"/>
+      <stop offset="1" stop-color="#0C1A4C"/>
+    </linearGradient>
+    <radialGradient id="brand-m-sheen" cx="512" cy="40" r="620" gradientTransform="matrix(1.25 0 0 .85 -128 6)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF" stop-opacity="0.12"/>
+      <stop offset=".45" stop-color="#FFF" stop-opacity="0.048"/>
+      <stop offset="1" stop-color="#FFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="brand-m-rim" x1="0" y1="100" x2="0" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF" stop-opacity="0.32"/>
+      <stop offset=".35" stop-color="#FFF" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#FFF" stop-opacity="0.1"/>
+    </linearGradient>
+    <filter id="brand-m-drop" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#000" flood-opacity="0.28"/>
+    </filter>
+    <filter id="brand-m-lift" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#071030" flood-opacity="0.35"/>
+    </filter>
+    <linearGradient id="brand-m-white" x1="0" y1="296" x2="0" y2="722" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D5DEF6"/>
+    </linearGradient>
+    <linearGradient id="brand-m-green" x1="0" y1="286" x2="0" y2="602" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#55CF85"/>
+      <stop offset="1" stop-color="#16803C"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#brand-m-body)"/>
+  <rect width="1024" height="1024" fill="url(#brand-m-sheen)"/>
+  <g filter="url(#brand-m-lift)" transform="translate(512 512) scale(1) translate(-512 -504)">
+    <path d="M260 339 390 444 260 549" fill="none" stroke="url(#brand-m-white)" stroke-width="86" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="649" cy="444" r="158" fill="url(#brand-m-green)"/>
+    <path d="M580.3 449.7 628.6 496.1 725 395.8" fill="none" stroke="#FFFFFF" stroke-width="52.3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M402 672Q490 712 578 672" fill="none" stroke="url(#brand-m-white)" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

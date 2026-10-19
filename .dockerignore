@@ -1,0 +1,16 @@
+# Docker build context = repository root (sync-server/Dockerfile).
+.git
+.claude
+**/node_modules
+**/target
+src-tauri/target
+sandbox
+mobile/dist
+dist
+dist-ssr
+logs
+*.log
+.DS_Store
+.vscode
+.idea
+sync-server/data

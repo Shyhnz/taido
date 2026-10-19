@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Merged by the Tauri CLI into the generated Info.plist (« Télécharger »): the sentence macOS shows when Taido first copies a file into the
+	     Downloads folder. -->
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>Taido enregistre dans Téléchargements les pièces jointes que tu télécharges.</string>
+	<!-- Dictation: the sentence macOS shows the first time Taido
+	     asks for the microphone. The voice is transcribed on this Mac. -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Taido écoute le micro seulement pendant que tu dictes à Claude ou Codex. Ta voix est transcrite sur cet ordinateur et n'est envoyée nulle part.</string>
+</dict>
+</plist>

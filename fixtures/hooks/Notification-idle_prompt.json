@@ -1,0 +1,10 @@
+{
+  "cwd": "/Users/user/todo-agents/sandbox/projet-test",
+  "hook_event_name": "Notification",
+  "message": "Claude is waiting for your input",
+  "notification_type": "idle_prompt",
+  "prompt_id": "81d4924b-192d-44c9-b7cc-25bb23c4d755",
+  "scratchpad_dir": "/private/tmp/claude-501/-Users-user-todo-agents-sandbox-projet-test/8bee49a3-36da-4efa-ba96-a7e3daf02667/scratchpad",
+  "session_id": "8bee49a3-36da-4efa-ba96-a7e3daf02667",
+  "transcript_path": "/Users/user/.claude/projects/-Users-user-todo-agents-sandbox-projet-test/8bee49a3-36da-4efa-ba96-a7e3daf02667.jsonl"
+}

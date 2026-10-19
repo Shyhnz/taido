@@ -1,0 +1,92 @@
+[package]
+name = "taido"
+version = "0.1.0"
+description = "Taido desktop app"
+authors = ["Shyhn"]
+edition = "2021"
+license = "AGPL-3.0-or-later"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "taido_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+portable-pty = "0.9"
+libc = "0.2"
+tracing = "0.1"
+rusqlite = { version = "0.40", features = ["bundled"] }
+rusqlite_migration = "2.6"
+uuid = { version = "1.26", features = ["v4", "v7"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "2"
+specta = { version = "=2.0.0-rc.25", features = ["derive"] }
+specta-typescript = "0.0.12"
+tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
+tauri-plugin-single-instance = "2.5"
+tauri-plugin-window-state = "2.5"
+tauri-plugin-log = "2.10"
+tauri-plugin-dialog = "2.8"
+log = "0.4"
+# Taido V2.3: pasted screenshots arrive base64-encoded; image previews go back as data URLs.
+base64 = "0.22"
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
+tokio = { version = "1", features = ["macros", "net", "rt", "rt-multi-thread", "sync", "time"] }
+# Sync (docs/SYNC.md § 3.6): rustls with aws-lc-rs and the platform verifier, no
+# OpenSSL; no system proxy.
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "json"] }
+sync-proto = { path = "../crates/sync-proto" }
+# Taido V2.7 bis: SHA-256 of attachment files (same version as sync-server).
+sha2 = "0.11"
+
+# Notifications that say which one was clicked (tauri-plugin-notification cannot on desktop):
+# macOS's own UserNotifications framework, same objc2 family as Tauri's.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+block2 = "0.6"
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSDictionary", "NSArray", "NSError", "NSBundle", "NSObject", "block2"] }
+objc2-user-notifications = { version = "0.3", default-features = false, features = ["std", "block2", "UNNotification", "UNNotificationContent", "UNNotificationRequest", "UNNotificationResponse", "UNNotificationTrigger", "UNUserNotificationCenter", "bitflags"] }
+# Voice dictation: microphone through CoreAudio, on-device
+# transcription with Parakeet v3 (ggml + Metal), microphone permission through AVFoundation.
+# macOS only for now; pinned because transcribe-cpp is 0.x.
+cpal = "=0.18.2"
+transcribe-cpp = { version = "=0.4.0", default-features = false, features = ["metal"] }
+objc2-av-foundation = { version = "0.3", default-features = false, features = ["std", "block2", "AVCaptureDevice", "AVMediaFormat"] }
+
+
+# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
+
+[dev-dependencies]
+tempfile = "3"
+# Codex launch tests read back the `-c` TOML values (already in the tree through Tauri).
+toml = "1"
+# End-to-end sync tests (src/sync/e2e_tests.rs) run the real server in process. Same
+# rusqlite / rusqlite_migration majors as this crate (docs/SYNC.md § 3.8).
+taido-sync-server = { path = "../sync-server" }
+
+# argon2 is very slow unoptimised: keep the e2e logins fast in debug builds (as in
+# sync-server/Cargo.toml).
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3
+# Attachment hashes in the file tests: keep SHA-256 fast in debug builds.
+[profile.dev.package.sha2]
+opt-level = 3

@@ -1,0 +1,16 @@
+{
+  "background_tasks": [],
+  "cwd": "/Users/user/todo-agents/sandbox/projet-test",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "Stop",
+  "last_assistant_message": "Je n'ai pas pu créer `spike-2.txt` : un hook a refusé la commande `touch spike-2.txt` (« Permission denied by hook »).",
+  "permission_mode": "default",
+  "prompt_id": "1cbc076f-526a-4b43-aaa9-4344d8851dcf",
+  "scratchpad_dir": "/private/tmp/claude-501/-Users-user-todo-agents-sandbox-projet-test/29c40d9b-bcb5-44c0-981d-0a61e47cd186/scratchpad",
+  "session_crons": [],
+  "session_id": "29c40d9b-bcb5-44c0-981d-0a61e47cd186",
+  "stop_hook_active": false,
+  "transcript_path": "/Users/user/.claude/projects/-Users-user-todo-agents-sandbox-projet-test/29c40d9b-bcb5-44c0-981d-0a61e47cd186.jsonl"
+}

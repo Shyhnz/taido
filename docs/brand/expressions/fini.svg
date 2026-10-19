@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1024 1024">
+  <defs>
+    <path id="r3c2-xf-tile" d="M628 100c103.6 0 155.4 0 195 20.2a185 185 0 0 1 80.8 80.8c20.2 39.6 20.2 91.4 20.2 195V628c0 103.6 0 155.4-20.2 195a185 185 0 0 1-80.8 80.8c-39.6 20.2-91.4 20.2-195 20.2H396c-103.6 0-155.4 0-195-20.2a185 185 0 0 1-80.8-80.8c-20.2-39.6-20.2-91.4-20.2-195V396c0-103.6 0-155.4 20.2-195a185 185 0 0 1 80.8-80.8c39.6-20.2 91.4-20.2 195-20.2Z"/>
+    <clipPath id="r3c2-xf-clip"><use href="#r3c2-xf-tile" xlink:href="#r3c2-xf-tile"/></clipPath>
+    <linearGradient id="r3c2-xf-body" x1="0" y1="100" x2="0" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3456BA"/>
+      <stop offset="1" stop-color="#142663"/>
+    </linearGradient>
+    <radialGradient id="r3c2-xf-sheen" cx="512" cy="40" r="620" gradientTransform="matrix(1.25 0 0 .85 -128 6)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF" stop-opacity="0.12"/>
+      <stop offset=".45" stop-color="#FFF" stop-opacity="0.048"/>
+      <stop offset="1" stop-color="#FFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="r3c2-xf-rim" x1="0" y1="100" x2="0" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF" stop-opacity="0.32"/>
+      <stop offset=".35" stop-color="#FFF" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#FFF" stop-opacity="0.1"/>
+    </linearGradient>
+    <filter id="r3c2-xf-drop" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#000" flood-opacity="0.28"/>
+    </filter>
+    <filter id="r3c2-xf-lift" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#071030" flood-opacity="0.35"/>
+    </filter>
+    <linearGradient id="r3c2-xf-screen" x1="0" y1="156" x2="0" y2="868" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#091338"/>
+      <stop offset="1" stop-color="#0F2262"/>
+    </linearGradient>
+    <linearGradient id="r3c2-xf-bezel" x1="0" y1="156" x2="0" y2="868" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#000" stop-opacity="0.35"/>
+      <stop offset=".5" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FFF" stop-opacity="0.16"/>
+    </linearGradient>
+    <linearGradient id="r3c2-xf-gloss" x1="156" y1="156" x2="547.6" y2="654.4" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="#FFF" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="r3c2-xf-backlight" cx="512" cy="470" r="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3A62D8" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#3A62D8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="r3c2-xf-white" x1="0" y1="360" x2="0" y2="710" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D5DEF6"/>
+    </linearGradient>
+    <linearGradient id="r3c2-xf-green" x1="0" y1="314" x2="0" y2="622" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#55CF85"/>
+      <stop offset="1" stop-color="#16803C"/>
+    </linearGradient>
+    <filter id="r3c2-xf-glow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+  </defs>
+  <use href="#r3c2-xf-tile" xlink:href="#r3c2-xf-tile" fill="url(#r3c2-xf-body)" filter="url(#r3c2-xf-drop)"/>
+  <rect x="156" y="156" width="712" height="712" rx="136" fill="url(#r3c2-xf-screen)"/>
+  <rect x="156" y="156" width="712" height="712" rx="136" fill="none" stroke="url(#r3c2-xf-bezel)" stroke-width="10"/>
+  <rect x="156" y="156" width="712" height="712" rx="136" fill="url(#r3c2-xf-gloss)"/>
+  <rect x="156" y="156" width="712" height="712" rx="136" fill="url(#r3c2-xf-backlight)"/>
+  <use href="#r3c2-xf-tile" xlink:href="#r3c2-xf-tile" fill="url(#r3c2-xf-sheen)"/>
+  <use href="#r3c2-xf-tile" xlink:href="#r3c2-xf-tile" fill="none" stroke="url(#r3c2-xf-rim)" stroke-width="6" clip-path="url(#r3c2-xf-clip)"/>
+  <g filter="url(#r3c2-xf-glow)" opacity="0.55">
+    <path d="M237.5 509 336.5 403 435.5 509" fill="none" stroke="url(#r3c2-xf-white)" stroke-width="86" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="675.5" cy="468" r="154" fill="url(#r3c2-xf-green)"/>
+    <path d="M608.5 473.5 655.6 518.8 749.6 421" fill="none" stroke="#FFFFFF" stroke-width="51" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M406 652Q496 724 586 652" fill="none" stroke="url(#r3c2-xf-white)" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g filter="url(#r3c2-xf-lift)">
+    <path d="M237.5 509 336.5 403 435.5 509" fill="none" stroke="url(#r3c2-xf-white)" stroke-width="86" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="675.5" cy="468" r="154" fill="url(#r3c2-xf-green)"/>
+    <path d="M608.5 473.5 655.6 518.8 749.6 421" fill="none" stroke="#FFFFFF" stroke-width="51" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M406 652Q496 724 586 652" fill="none" stroke="url(#r3c2-xf-white)" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

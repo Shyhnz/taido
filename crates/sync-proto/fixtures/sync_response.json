@@ -1,0 +1,53 @@
+{
+  "protocol": 3,
+  "server_epoch": "0199a3d0-5e5e-7000-8000-00000000e9c0",
+  "cursor": 47,
+  "changes": [
+    {
+      "entity": "task",
+      "id": "0199a3f0-0000-7000-8000-000000000007",
+      "updated_at": "2026-10-04T08:00:00.000Z",
+      "device_id": "0199a3e0-1111-7000-8000-00000000aaaa",
+      "data": {
+        "subject_id": null,
+        "section_id": null,
+        "parent_id": null,
+        "title": "Acheter du pain",
+        "description": "",
+        "due_date": "2026-10-04",
+        "due_time": null,
+        "priority": 1,
+        "completed_at": null,
+        "position": 3.0,
+        "created_at": "2026-10-04T08:00:00.000Z",
+        "deleted_at": null,
+        "board_column_id": null
+      }
+    },
+    {
+      "entity": "task",
+      "id": "0199a3f0-0000-7000-8000-000000000008",
+      "updated_at": "2026-10-04T08:30:00.000Z",
+      "device_id": "0199a3e0-1111-7000-8000-00000000aaaa",
+      "data": null
+    },
+    {
+      "entity": "setting",
+      "id": "inbox_position",
+      "updated_at": "2026-10-04T08:45:00.000Z",
+      "device_id": "0199a3e0-1111-7000-8000-00000000aaaa",
+      "data": {
+        "value": 2.5
+      }
+    }
+  ],
+  "has_more": false,
+  "rejected": [
+    {
+      "entity": "task",
+      "id": "0199a3f0-0000-7000-8000-000000000009"
+    }
+  ],
+  "accepted": 5,
+  "server_time": "2026-10-04T09:20:00.004Z"
+}

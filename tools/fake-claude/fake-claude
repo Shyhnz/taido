@@ -1,0 +1,1012 @@
+#!/usr/bin/env node
+// fake-claude: stands in for the `claude` binary in automated tests, so no
+// tokens are spent. Dependency-free, Node >= 20. It accepts the options the app passes,
+// reads the `--settings` hooks and sends hook payloads shaped like the real ones
+// (fixtures/hooks/), driven line by line (see README.md for the commands).
+"use strict";
+
+const crypto = require("node:crypto");
+const fs = require("node:fs");
+const http = require("node:http");
+const https = require("node:https");
+const os = require("node:os");
+const path = require("node:path");
+const readline = require("node:readline");
+const { spawn } = require("node:child_process");
+
+// ---------------------------------------------------------------------------------------
+// Options
+
+const VALUE_OPTIONS = new Set([
+  "--session-id",
+  "--resume",
+  "--settings",
+  "--name",
+  "--permission-mode",
+  "--append-system-prompt-file",
+  "--mcp-config",
+  "--script",
+]);
+
+function parseArgs(argv) {
+  const opts = {};
+  let prompt = null;
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (VALUE_OPTIONS.has(arg)) {
+      opts[arg.slice(2)] = argv[i + 1] ?? "";
+      i++;
+    } else if (arg.startsWith("--") && arg.includes("=")) {
+      const eq = arg.indexOf("=");
+      opts[arg.slice(2, eq)] = arg.slice(eq + 1);
+    } else if (arg.startsWith("-") && arg !== "-") {
+      // Unknown flag: ignored, like an option this fake does not need.
+    } else if (prompt === null) {
+      prompt = arg;
+    }
+  }
+  return { opts, prompt };
+}
+
+const argv = process.argv.slice(2);
+const { opts, prompt: argPrompt } = parseArgs(argv);
+const speedEnv = Number.parseFloat(process.env.TAIDO_FAKE_SPEED ?? "1");
+const SPEED = Number.isFinite(speedEnv) && speedEnv > 0 ? speedEnv : 1;
+const DEBUG = Boolean(process.env.TAIDO_FAKE_DEBUG);
+const CWD = process.cwd();
+const PERMISSION_MODE = opts["permission-mode"] || "default";
+const SESSION_TITLE = opts.name || null;
+const MODEL = "claude-opus-5-5";
+/// Default hook timeout in seconds when the settings give none.
+const DEFAULT_HOOK_TIMEOUT = 600;
+
+let sessionId = opts.resume || opts["session-id"] || crypto.randomUUID();
+let promptId = crypto.randomUUID();
+
+// ---------------------------------------------------------------------------------------
+// Output
+
+const out = process.stdout;
+out.on("error", () => {});
+process.stderr.on("error", () => {});
+
+function print(line = "") {
+  out.write(`${line}\n`);
+}
+
+function debug(msg) {
+  if (DEBUG) process.stderr.write(`[fake-claude] ${msg}\n`);
+}
+
+const isTty = Boolean(process.stdin.isTTY) && !opts.script;
+let exiting = false;
+
+function exit(code) {
+  if (exiting) return;
+  exiting = true;
+  if (isTty) {
+    try {
+      process.stdin.setRawMode(false);
+    } catch {
+      // The terminal may already be gone.
+    }
+  }
+  // Pipes are asynchronous on macOS: wait for the flush before exiting.
+  out.write("", () => process.exit(code));
+  setTimeout(() => process.exit(code), 500).unref();
+}
+
+// ---------------------------------------------------------------------------------------
+// Settings and hooks
+
+function loadSettings() {
+  const value = opts.settings;
+  if (!value) return {};
+  try {
+    const text = value.trim().startsWith("{")
+      ? value
+      : fs.readFileSync(value, "utf8");
+    const parsed = JSON.parse(text);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (err) {
+    debug(`settings ignored: ${err.message}`);
+    return {};
+  }
+}
+
+const settings = loadSettings();
+
+const TOOL_EVENTS = new Set([
+  "PreToolUse",
+  "PostToolUse",
+  "PostToolUseFailure",
+  "PermissionRequest",
+]);
+
+/// Value the matcher of an event is compared with.
+function matcherTarget(event, payload) {
+  if (TOOL_EVENTS.has(event)) return payload.tool_name;
+  switch (event) {
+    case "SessionStart":
+      return payload.source;
+    case "SessionEnd":
+      return payload.reason;
+    case "Notification":
+      return payload.notification_type;
+    case "StopFailure":
+      return payload.error;
+    default:
+      return undefined;
+  }
+}
+
+function matches(matcher, target) {
+  if (matcher === undefined || matcher === null) return true;
+  if (matcher === "" || matcher === "*" || target === undefined) return true;
+  if (matcher === target) return true;
+  try {
+    return new RegExp(`^(?:${matcher})$`).test(target);
+  } catch {
+    return false;
+  }
+}
+
+function hooksFor(event, payload) {
+  const groups = settings.hooks?.[event];
+  if (!Array.isArray(groups)) return [];
+  const target = matcherTarget(event, payload);
+  const hooks = [];
+  for (const group of groups) {
+    if (!group || !matches(group.matcher, target)) continue;
+    for (const hook of Array.isArray(group.hooks) ? group.hooks : []) {
+      if (hook && typeof hook === "object") hooks.push(hook);
+    }
+  }
+  return hooks;
+}
+
+/// `$VAR` / `${VAR}` replaced by the environment value for names listed in
+/// `allowedEnvVars`, by an empty string otherwise.
+function interpolate(value, allowed) {
+  return String(value).replace(
+    /\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g,
+    (_, braced, bare) => {
+      const name = braced ?? bare;
+      return allowed.includes(name) ? (process.env[name] ?? "") : "";
+    },
+  );
+}
+
+function timeoutMs(hook) {
+  const secs = Number(hook.timeout);
+  return (
+    (Number.isFinite(secs) && secs > 0 ? secs : DEFAULT_HOOK_TIMEOUT) * 1000
+  );
+}
+
+/// POSTs the payload. `sent` resolves once the request is written (or failed), `done` with
+/// `{ ok, status, body }`. Failures are not blocking, like in Claude Code.
+function runHttpHook(hook, body) {
+  let markSent;
+  const sent = new Promise((resolve) => {
+    markSent = resolve;
+  });
+  const done = new Promise((resolve) => {
+    let url;
+    try {
+      url = new URL(String(hook.url));
+    } catch {
+      markSent();
+      resolve({ ok: false, error: "bad url" });
+      return;
+    }
+    const allowed = Array.isArray(hook.allowedEnvVars)
+      ? hook.allowedEnvVars.map(String)
+      : [];
+    const headers = {
+      "Content-Type": "application/json",
+      "Content-Length": Buffer.byteLength(body),
+    };
+    for (const [name, value] of Object.entries(hook.headers ?? {})) {
+      headers[name] = interpolate(value, allowed);
+    }
+    const client = url.protocol === "https:" ? https : http;
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      markSent();
+      resolve(result);
+    };
+    const req = client.request(
+      url,
+      { method: "POST", headers, agent: false },
+      (res) => {
+        const chunks = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () =>
+          finish({
+            ok: res.statusCode >= 200 && res.statusCode < 300,
+            status: res.statusCode,
+            body: Buffer.concat(chunks).toString("utf8"),
+          }),
+        );
+        res.on("error", (err) => finish({ ok: false, error: err.message }));
+      },
+    );
+    const timer = setTimeout(() => {
+      req.destroy(new Error("timeout"));
+    }, timeoutMs(hook));
+    req.on("finish", () => markSent());
+    req.on("error", (err) => finish({ ok: false, error: err.message }));
+    req.end(body);
+  });
+  return { sent, done };
+}
+
+/// Runs a command hook with `/bin/sh -c`, the payload on stdin.
+function runCommandHook(hook, body) {
+  const done = new Promise((resolve) => {
+    let child;
+    try {
+      child = spawn("/bin/sh", ["-c", String(hook.command)], {
+        cwd: CWD,
+        env: { ...process.env, CLAUDE_PROJECT_DIR: CWD },
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+    } catch (err) {
+      resolve({ ok: false, error: err.message });
+      return;
+    }
+    const chunks = [];
+    const timer = setTimeout(() => child.kill("SIGKILL"), timeoutMs(hook));
+    child.stdout.on("data", (c) => chunks.push(c));
+    child.stderr.on("data", () => {});
+    child.stdin.on("error", () => {});
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      resolve({ ok: false, error: err.message });
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      resolve({
+        ok: code === 0,
+        status: code,
+        body: Buffer.concat(chunks).toString("utf8"),
+      });
+    });
+    child.stdin.end(body);
+  });
+  return { sent: Promise.resolve(), done };
+}
+
+// ---------------------------------------------------------------------------------------
+// MCP (the app's server, `--mcp-config`)
+
+/// First server of the `--mcp-config` file (the app passes exactly one), or null.
+function mcpServer() {
+  const file = opts["mcp-config"];
+  if (!file) return null;
+  try {
+    const servers = JSON.parse(fs.readFileSync(file, "utf8")).mcpServers ?? {};
+    return Object.values(servers)[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/// `${VAR}` from the environment: Claude Code expands any variable in MCP headers (no
+/// `allowedEnvVars`, unlike hook headers).
+function expandEnv(value) {
+  return String(value).replace(
+    /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g,
+    (_, name) => process.env[name] ?? "",
+  );
+}
+
+/// POSTs one JSON-RPC message; resolves `{ ok, status, body }` or `{ ok: false, error }`.
+/// The headers are already expanded: `runHttpHook`'s own interpolation finds no `$` left.
+function mcpPost(server, message) {
+  const headers = { Accept: "application/json, text/event-stream" };
+  for (const [name, value] of Object.entries(server.headers ?? {})) {
+    headers[name] = expandEnv(value);
+  }
+  return runHttpHook(
+    { url: server.url, headers, timeout: 10 },
+    JSON.stringify(message),
+  ).done;
+}
+
+/// `/mcp <tool> [json]`: the legacy-era sequence of Claude Code 2.1.289 (`initialize`,
+/// `notifications/initialized`, `tools/call`), then `MCP:<tools/call response body>`.
+async function mcpCall(rest) {
+  const space = rest.indexOf(" ");
+  const name = space < 0 ? rest : rest.slice(0, space);
+  let args = {};
+  if (space >= 0) {
+    try {
+      args = JSON.parse(rest.slice(space + 1));
+    } catch {
+      print("MCP-ERROR:bad json arguments");
+      return;
+    }
+  }
+  const server = mcpServer();
+  if (!server) {
+    print("MCP-ERROR:no --mcp-config server");
+    return;
+  }
+  const init = await mcpPost(server, {
+    jsonrpc: "2.0",
+    id: 0,
+    method: "initialize",
+    params: {
+      protocolVersion: "2025-11-25",
+      capabilities: {},
+      clientInfo: { name: "fake-claude", version: "0" },
+    },
+  });
+  if (!init.ok) {
+    print(`MCP-ERROR:initialize ${init.status ?? init.error}`);
+    return;
+  }
+  await mcpPost(server, {
+    jsonrpc: "2.0",
+    method: "notifications/initialized",
+  });
+  const call = await mcpPost(server, {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "tools/call",
+    params: { name, arguments: args },
+  });
+  if (!call.ok) {
+    print(`MCP-ERROR:tools/call ${call.status ?? call.error}`);
+    return;
+  }
+  print(`MCP:${call.body}`);
+}
+
+/// Sends `event` to every matching hook, in parallel.
+function dispatch(event, payload) {
+  const body = JSON.stringify(payload);
+  const runs = hooksFor(event, payload).map((hook) => {
+    if (hook.type === "http" && hook.url) return runHttpHook(hook, body);
+    if (hook.type === "command" && hook.command)
+      return runCommandHook(hook, body);
+    return { sent: Promise.resolve(), done: Promise.resolve({ ok: false }) };
+  });
+  const done = Promise.all(runs.map((r) => r.done)).then((results) => {
+    for (const r of results) {
+      debug(`${event}: ${r.ok ? "ok" : "failed"} ${r.error ?? r.status ?? ""}`);
+    }
+    return results;
+  });
+  return { sent: Promise.all(runs.map((r) => r.sent)), done };
+}
+
+function emit(event, payload) {
+  return dispatch(event, payload).done;
+}
+
+// ---------------------------------------------------------------------------------------
+// Payloads (same fields as fixtures/hooks/*.json)
+
+function projectKey() {
+  return CWD.replace(/[^A-Za-z0-9]/g, "-");
+}
+
+function base(event) {
+  const uid = typeof process.getuid === "function" ? process.getuid() : "user";
+  return {
+    cwd: CWD,
+    hook_event_name: event,
+    scratchpad_dir: path.join(
+      os.tmpdir(),
+      `claude-${uid}`,
+      projectKey(),
+      sessionId,
+      "scratchpad",
+    ),
+    session_id: sessionId,
+    transcript_path: path.join(
+      os.homedir(),
+      ".claude",
+      "projects",
+      projectKey(),
+      `${sessionId}.jsonl`,
+    ),
+  };
+}
+
+function withTitle(payload) {
+  if (SESSION_TITLE) payload.session_title = SESSION_TITLE;
+  return payload;
+}
+
+const EFFORT = { level: "medium" };
+
+function sessionStart(source) {
+  const p = { ...base("SessionStart"), source };
+  if (source === "startup") p.model = MODEL;
+  if (source === "resume") {
+    Object.assign(p, {
+      context_tokens: 1200,
+      estimated_cache_write_usd: 0.01,
+      prompt_cache_likely_expired: false,
+      seconds_since_last_response: 5,
+    });
+  }
+  return withTitle(p);
+}
+
+function userPromptSubmit(prompt) {
+  return withTitle({
+    ...base("UserPromptSubmit"),
+    permission_mode: PERMISSION_MODE,
+    prompt,
+    prompt_id: promptId,
+  });
+}
+
+function bashInput(command) {
+  return { command, description: `Run ${command}` };
+}
+
+function preToolUse(command, toolUseId) {
+  return {
+    ...base("PreToolUse"),
+    effort: EFFORT,
+    permission_mode: PERMISSION_MODE,
+    prompt_id: promptId,
+    tool_input: bashInput(command),
+    tool_name: "Bash",
+    tool_use_id: toolUseId,
+  };
+}
+
+function postToolUse(command, toolUseId) {
+  return {
+    ...base("PostToolUse"),
+    duration_ms: 12,
+    effort: EFFORT,
+    permission_mode: PERMISSION_MODE,
+    prompt_id: promptId,
+    tool_input: bashInput(command),
+    tool_name: "Bash",
+    tool_response: {
+      interrupted: false,
+      isImage: false,
+      noOutputExpected: false,
+      stderr: "",
+      stdout: "",
+    },
+    tool_use_id: toolUseId,
+  };
+}
+
+function permissionRequest(command) {
+  // No tool_use_id in a real PermissionRequest.
+  return {
+    ...base("PermissionRequest"),
+    effort: EFFORT,
+    permission_mode: PERMISSION_MODE,
+    permission_suggestions: [
+      {
+        destination: "session",
+        directories: [CWD],
+        type: "addDirectories",
+      },
+      { destination: "session", mode: "acceptEdits", type: "setMode" },
+    ],
+    prompt_id: promptId,
+    tool_input: bashInput(command),
+    tool_name: "Bash",
+  };
+}
+
+function notification(type, message) {
+  return {
+    ...base("Notification"),
+    message,
+    notification_type: type,
+    prompt_id: promptId,
+  };
+}
+
+function stop(message) {
+  return {
+    ...base("Stop"),
+    background_tasks: [],
+    effort: EFFORT,
+    last_assistant_message: message,
+    permission_mode: PERMISSION_MODE,
+    prompt_id: promptId,
+    session_crons: [],
+    stop_hook_active: false,
+  };
+}
+
+function stopFailure(error, details) {
+  return {
+    ...base("StopFailure"),
+    error,
+    error_details: details,
+    last_assistant_message: "",
+    prompt_id: promptId,
+  };
+}
+
+function sessionEnd(reason) {
+  return { ...base("SessionEnd"), prompt_id: promptId, reason };
+}
+
+function toolUseId() {
+  return `toolu_fake_${crypto.randomBytes(9).toString("hex")}`;
+}
+
+// ---------------------------------------------------------------------------------------
+// Input: a queue of lines, plus Escape handled at once (out of band).
+
+/// Items: `{ type: "line", text }`, `{ type: "eof" }` (Ctrl+D, end of stdin) or
+/// `{ type: "end" }` (end of the script).
+const queue = [];
+const watchers = new Set();
+let pushed = 0;
+let taken = 0;
+
+function push(item) {
+  pushed++;
+  queue.push(item);
+  for (const check of [...watchers]) check();
+}
+
+/// Resolves with the front item (left in the queue) once `accept(front)` holds, or `null`
+/// when `signal` aborts first.
+function waitFront(accept, signal) {
+  return new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve(null);
+      return;
+    }
+    const cleanup = () => {
+      watchers.delete(check);
+      signal?.removeEventListener("abort", onAbort);
+    };
+    function check() {
+      if (queue.length === 0 || !accept(queue[0])) return false;
+      cleanup();
+      resolve(queue[0]);
+      return true;
+    }
+    function onAbort() {
+      cleanup();
+      resolve(null);
+    }
+    if (check()) return;
+    watchers.add(check);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+function take() {
+  taken++;
+  return queue.shift();
+}
+
+async function nextInput() {
+  await waitFront(() => true);
+  return take();
+}
+
+let turn = null;
+
+/// Escape: interrupts the running turn, no hook.
+function interrupt() {
+  if (turn && !turn.signal.aborted) turn.abort();
+}
+
+let hungUp = false;
+
+/// The terminal went away: SessionEnd(other), like Claude Code when its PTY closes.
+async function hangup(code) {
+  if (hungUp || exiting) return;
+  hungUp = true;
+  const timer = new Promise((resolve) => setTimeout(resolve, 2000));
+  await Promise.race([emit("SessionEnd", sessionEnd("other")), timer]);
+  exit(code);
+}
+
+function startTtyInput() {
+  const stdin = process.stdin;
+  stdin.setRawMode(true);
+  stdin.setEncoding("utf8");
+  let line = "";
+  let lastCr = false;
+  stdin.on("data", (chunk) => {
+    if (chunk === "\x1b") {
+      interrupt();
+      return;
+    }
+    const chars = Array.from(chunk);
+    for (let i = 0; i < chars.length; i++) {
+      const c = chars[i];
+      const wasCr = lastCr;
+      lastCr = c === "\r";
+      if (c === "\x1b") {
+        const n = chars[i + 1];
+        if (n === undefined) {
+          interrupt();
+        } else if (n === "[" || n === "O") {
+          // CSI / SS3 sequence (arrows…): skipped up to its final byte.
+          i += 2;
+          while (i < chars.length && !/[\x40-\x7e]/.test(chars[i])) i++;
+        } else if (n === "\r") {
+          line += "\n";
+          out.write("\n");
+          i++;
+        } else {
+          i++;
+        }
+      } else if (c === "\r" || c === "\n") {
+        if (c === "\n" && wasCr) continue;
+        out.write("\n");
+        push({ type: "line", text: line });
+        line = "";
+      } else if (c === "\x7f" || c === "\b") {
+        if (line.length > 0) {
+          line = Array.from(line).slice(0, -1).join("");
+          out.write("\b \b");
+        }
+      } else if (c === "\x04") {
+        if (line === "") push({ type: "eof" });
+      } else if (c === "\x03") {
+        if (turn && !turn.signal.aborted) interrupt();
+        else if (line !== "") {
+          line = "";
+          out.write("\n");
+        }
+      } else if (c >= " ") {
+        line += c;
+        out.write(c);
+      }
+    }
+  });
+  stdin.on("end", () => hangup(129));
+  stdin.on("error", () => hangup(129));
+}
+
+function startLineInput() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    crlfDelay: Number.POSITIVE_INFINITY,
+    terminal: false,
+  });
+  rl.on("line", (text) => {
+    if (text === "\x1b") interrupt();
+    else push({ type: "line", text });
+  });
+  rl.on("close", () => push({ type: "eof" }));
+}
+
+/// `--script`: lines fed in order. `/wait <ms>` waits until every previous line is being
+/// handled, then `<ms>` (divided by the speed); a line holding only Escape (or `/esc`)
+/// interrupts at that moment. The end of the script exits 0.
+async function runScript(file) {
+  let text;
+  try {
+    text = fs.readFileSync(file, "utf8");
+  } catch (err) {
+    process.stderr.write(`fake-claude: cannot read script: ${err.message}\n`);
+    exit(2);
+    return;
+  }
+  const lines = text.split(/\r?\n/);
+  if (lines.at(-1) === "") lines.pop();
+  for (const line of lines) {
+    const wait = /^\/wait\s+(\d+(?:\.\d+)?)\s*$/.exec(line);
+    if (wait) {
+      while (taken < pushed) await realSleep(5);
+      await realSleep(Number(wait[1]) / SPEED);
+    } else if (line === "\x1b" || line === "/esc") {
+      interrupt();
+    } else {
+      push({ type: "line", text: line });
+    }
+  }
+  push({ type: "end" });
+}
+
+// ---------------------------------------------------------------------------------------
+// Turns
+
+function realSleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/// Waits `ms` of fake time; `false` if `signal` aborted first.
+function sleep(ms, signal) {
+  return new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve(true);
+    }, ms / SPEED);
+    function onAbort() {
+      clearTimeout(timer);
+      resolve(false);
+    }
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+function aborted(signal) {
+  return new Promise((resolve) => {
+    if (signal.aborted) resolve(true);
+    else signal.addEventListener("abort", () => resolve(true), { once: true });
+  });
+}
+
+function beginTurn() {
+  turn = new AbortController();
+  return turn.signal;
+}
+
+function endTurn(signal, interrupted) {
+  if (interrupted || signal.aborted) {
+    print("Interrupted");
+  }
+  turn = null;
+}
+
+const STEPS = 5;
+const STEP_MS = 500;
+const DONE_MESSAGE = "OK, c'est fait.";
+const QUESTION_MESSAGE = "Tu veux un café ?";
+
+/// Ordinary text: UserPromptSubmit, a Bash Pre/PostToolUse every 500 ms, Stop after 3 s.
+async function ordinaryTurn(prompt) {
+  const signal = beginTurn();
+  promptId = crypto.randomUUID();
+  await emit("UserPromptSubmit", userPromptSubmit(prompt));
+  for (let step = 1; step <= STEPS; step++) {
+    if (!(await sleep(STEP_MS, signal))) return endTurn(signal, true);
+    const command = `echo step ${step}`;
+    const id = toolUseId();
+    await emit("PreToolUse", preToolUse(command, id));
+    if (signal.aborted) return endTurn(signal, true);
+    print(`⏺ Bash(${command})`);
+    await emit("PostToolUse", postToolUse(command, id));
+    print(`  ⎿  step ${step}`);
+    if (signal.aborted) return endTurn(signal, true);
+  }
+  if (!(await sleep(STEP_MS, signal))) return endTurn(signal, true);
+  print(`⏺ ${DONE_MESSAGE}`);
+  await emit("Stop", stop(DONE_MESSAGE));
+  endTurn(signal, false);
+}
+
+function decisionOf(results) {
+  for (const r of results) {
+    if (!r.ok || !r.body) continue;
+    try {
+      const behavior = JSON.parse(r.body)?.hookSpecificOutput?.decision
+        ?.behavior;
+      if (behavior === "allow" || behavior === "deny") return behavior;
+    } catch {
+      // Not JSON: no decision.
+    }
+  }
+  return null;
+}
+
+const ALLOW_ANSWERS = new Set(["", "1", "2", "y", "yes", "o", "oui"]);
+const DENY_ANSWERS = new Set(["3", "n", "no", "non"]);
+
+function answerOf(item) {
+  return item?.type === "line" ? item.text.trim().toLowerCase() : null;
+}
+
+function isAnswer(item) {
+  const a = answerOf(item);
+  return a !== null && (ALLOW_ANSWERS.has(a) || DENY_ANSWERS.has(a));
+}
+
+/// `/p`: PreToolUse, then PermissionRequest. The dialog shows at once: the
+/// first of the hook decision or a terminal answer (`1`, `y`, `n`…) wins. `{}` leaves the
+/// terminal to answer; any other input then closes the dialog, unread, like Escape.
+async function permissionTurn() {
+  const signal = beginTurn();
+  const command = "touch fake-claude.txt";
+  const id = toolUseId();
+  await emit("PreToolUse", preToolUse(command, id));
+  if (signal.aborted) return endTurn(signal, true);
+  print(`⏺ Bash(${command})`);
+  const request = dispatch("PermissionRequest", permissionRequest(command));
+  await Promise.race([request.sent, realSleep(1000)]);
+  print("Do you want to proceed?");
+  print("❯ 1. Yes");
+  print("  2. Yes, and don't ask again for this command");
+  print("  3. No, and tell Claude what to do differently (esc)");
+  const reminder = setTimeout(() => {
+    emit(
+      "Notification",
+      notification("permission_prompt", "Claude needs your permission"),
+    );
+  }, 6000 / SPEED);
+  const abortP = aborted(signal).then(() => ({ kind: "abort" }));
+  const waitLine = (accept) => {
+    const stopWaiting = new AbortController();
+    const lineP = waitFront(accept, stopWaiting.signal).then((item) => ({
+      kind: "line",
+      item,
+    }));
+    return { lineP, stopWaiting };
+  };
+  // Phase 1: the hook decision, a typed answer or Escape. Other input waits its turn.
+  const first = waitLine(isAnswer);
+  let outcome = await Promise.race([
+    request.done.then((results) => ({ kind: "hook", results })),
+    first.lineP,
+    abortP,
+  ]);
+  first.stopWaiting.abort();
+  let behavior = null;
+  if (outcome.kind === "hook") {
+    const decision = outcome.results.find((r) => r.ok)?.body ?? "";
+    print(`DECISION:${decision.trim() || "{}"}`);
+    behavior = decisionOf(outcome.results);
+    if (behavior === null) {
+      // Phase 2 (`{}`): the terminal answers; anything else closes the dialog.
+      const second = waitLine(() => true);
+      outcome = await Promise.race([second.lineP, abortP]);
+      second.stopWaiting.abort();
+    }
+  }
+  clearTimeout(reminder);
+  if (outcome.kind === "abort") return endTurn(signal, true);
+  if (outcome.kind === "line") {
+    if (!isAnswer(outcome.item)) return endTurn(signal, true);
+    const answer = answerOf(take());
+    if (DENY_ANSWERS.has(answer)) {
+      // Unverified against the real Claude Code: modelled like Escape (no hook).
+      print("Rejected · What should Claude do instead?");
+      turn = null;
+      return;
+    }
+    behavior = "allow";
+  } else {
+    print(
+      behavior === "allow"
+        ? "Allowed by PermissionRequest hook"
+        : "Denied by PermissionRequest hook",
+    );
+  }
+  if (behavior === "allow") {
+    if (!(await sleep(200, signal))) return endTurn(signal, true);
+    await emit("PostToolUse", postToolUse(command, id));
+    print("  ⎿  (no output)");
+    if (!(await sleep(300, signal))) return endTurn(signal, true);
+    const message = "C'est fait : `fake-claude.txt` est créé.";
+    print(`⏺ ${message}`);
+    await emit("Stop", stop(message));
+  } else {
+    if (!(await sleep(300, signal))) return endTurn(signal, true);
+    const message = `Je n'ai pas pu exécuter \`${command}\` : un hook a refusé la commande (« Permission denied by hook »).`;
+    print(`⏺ ${message}`);
+    await emit("Stop", stop(message));
+  }
+  endTurn(signal, false);
+}
+
+async function clearConversation() {
+  await emit("SessionEnd", sessionEnd("clear"));
+  sessionId = crypto.randomUUID();
+  promptId = crypto.randomUUID();
+  await sleep(55);
+  await emit("SessionStart", sessionStart("clear"));
+  print("(no content)");
+  print(`SESSION:${sessionId}`);
+}
+
+async function exitCleanly() {
+  await emit("SessionEnd", sessionEnd("prompt_input_exit"));
+  exit(0);
+}
+
+/// Handles one input item; `false` once the process is exiting.
+async function handle(item) {
+  if (item.type === "eof") {
+    await exitCleanly();
+    return false;
+  }
+  if (item.type === "end") {
+    exit(0);
+    return false;
+  }
+  const text = item.text;
+  const command = text.trim();
+  if (command === "/mcp" || command.startsWith("/mcp ")) {
+    await mcpCall(command.slice(4).trim());
+    return true;
+  }
+  switch (command) {
+    case "":
+      return true;
+    case "exit":
+    case "/exit":
+      await exitCleanly();
+      return false;
+    case "/x":
+      process.stderr.write("fake-claude: simulated crash\n");
+      exit(1);
+      return false;
+    case "/p":
+      await permissionTurn();
+      return true;
+    case "/q":
+      print(`⏺ ${QUESTION_MESSAGE}`);
+      await emit("Stop", stop(QUESTION_MESSAGE));
+      return true;
+    case "/e":
+      print("API Error: Rate limit reached");
+      await emit(
+        "StopFailure",
+        stopFailure("rate_limit", "Rate limit reached"),
+      );
+      return true;
+    case "/n":
+      await emit(
+        "Notification",
+        notification("idle_prompt", "Claude is waiting for your input"),
+      );
+      return true;
+    case "/clear":
+      await clearConversation();
+      return true;
+    default:
+      print(`GOT:${text}`);
+      await ordinaryTurn(text);
+      return true;
+  }
+}
+
+// ---------------------------------------------------------------------------------------
+// Main
+
+async function main() {
+  if (isTty) startTtyInput();
+  print("fake-claude started");
+  for (const arg of argv) print(`ARG:${arg}`);
+  print(`CWD:${CWD}`);
+  print(`TERMINAL:${process.env.TAIDO_TERMINAL_ID ?? ""}`);
+  print(`TOKEN:${process.env.TAIDO_HOOK_TOKEN ? "set" : "unset"}`);
+  print(`NESTED:${process.env.CLAUDECODE ? "yes" : "no"}`);
+  print("READY");
+  print(`SESSION:${sessionId}`);
+  process.on("SIGHUP", () => hangup(129));
+
+  if (opts.script) runScript(opts.script);
+  else if (!isTty) startLineInput();
+
+  await sleep(200);
+  await emit("SessionStart", sessionStart(opts.resume ? "resume" : "startup"));
+  const first = argPrompt?.trim();
+  if (first) {
+    print(`> ${first}`);
+    await ordinaryTurn(first);
+  }
+  for (;;) {
+    const item = await nextInput();
+    if (!(await handle(item))) return;
+  }
+}
+
+main().catch((err) => {
+  process.stderr.write(`fake-claude: ${err?.stack ?? err}\n`);
+  exit(70);
+});

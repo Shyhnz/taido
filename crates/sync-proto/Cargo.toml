@@ -1,0 +1,15 @@
+[package]
+name = "sync-proto"
+version = "0.1.0"
+edition = "2021"
+description = "Wire types and conflict rule of the Taido sync protocol (docs/SYNC.md)"
+authors = ["Shyhn"]
+license = "AGPL-3.0-or-later"
+publish = false
+
+# Path dependency of `src-tauri` and `sync-server`; no Cargo workspace. Mirrored by hand in `src/lib/sync-proto.ts`.
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+# `SettingData.value` is a free JSON value (protocol 2).
+serde_json = "1"

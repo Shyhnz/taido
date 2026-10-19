@@ -1,0 +1,9 @@
+{
+  "cwd": "/Users/user/todo-agents/sandbox/projet-test",
+  "hook_event_name": "SessionEnd",
+  "prompt_id": "9530e598-e62f-4cb1-8d05-a6221b101805",
+  "reason": "other",
+  "scratchpad_dir": "/private/tmp/claude-501/-Users-user-todo-agents-sandbox-projet-test/aaca4a35-ff37-4e34-b787-ea695597be8a/scratchpad",
+  "session_id": "aaca4a35-ff37-4e34-b787-ea695597be8a",
+  "transcript_path": "/Users/user/.claude/projects/-Users-user-todo-agents-sandbox-projet-test/aaca4a35-ff37-4e34-b787-ea695597be8a.jsonl"
+}

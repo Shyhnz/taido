@@ -1,0 +1,76 @@
+/*
+ * Task rows: focus ring of the roving tab stop and the completion animation.
+ * « Réduire les animations » is honoured twice: globals.css zeroes every duration, and the
+ * completion skips its hold entirely (src/features/task-row/actions.ts).
+ */
+
+/* The title button is the row's single tab stop; the ring goes around the whole row. */
+.task-row [data-row-focus]:focus-visible {
+  outline: none;
+}
+
+.task-row:has([data-row-focus]:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* 1. The circle fills and the check draws itself. */
+@keyframes ring-fill-in {
+  from {
+    fill-opacity: 0;
+  }
+  to {
+    fill-opacity: 1;
+  }
+}
+
+@keyframes ring-check-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.ring-complete [data-part="base"] {
+  animation: ring-fill-in 160ms ease-out both;
+}
+
+.ring-complete [data-part="check"] {
+  stroke-dasharray: 1;
+  animation: ring-check-draw 200ms ease-out 80ms both;
+}
+
+/* 2. The title is struck through from left to right. */
+.task-row-strike {
+  background:
+    linear-gradient(currentColor, currentColor) no-repeat 0 58% / 0% 1px;
+}
+
+.task-row[data-completing] .task-row-title {
+  color: var(--text-3);
+  transition: color 200ms ease-out;
+}
+
+.task-row[data-completing] .task-row-strike {
+  background-size: 100% 1px;
+  transition: background-size 280ms ease-out 120ms;
+}
+
+/* 3. After the hold, the row folds away. */
+@keyframes row-collapse {
+  from {
+    max-height: 48px;
+    opacity: 1;
+  }
+  to {
+    max-height: 0;
+    opacity: 0;
+  }
+}
+
+.task-row[data-completing="collapsing"] {
+  overflow: hidden;
+  animation: row-collapse 200ms ease-in forwards;
+}

@@ -1,0 +1,13 @@
+{
+  "cwd": "/Users/user/todo-agents/sandbox/projet-test",
+  "delta": "OK",
+  "final": true,
+  "hook_event_name": "MessageDisplay",
+  "index": 0,
+  "message_id": "42126b78-dcc3-4667-b8ec-5ba1b5136223",
+  "prompt_id": "a4a995f4-d3a4-42c2-9267-713adeb58def",
+  "scratchpad_dir": "/private/tmp/claude-501/-Users-user-todo-agents-sandbox-projet-test/7282d690-922c-4a41-84c7-48ad1a476b66/scratchpad",
+  "session_id": "7282d690-922c-4a41-84c7-48ad1a476b66",
+  "transcript_path": "/Users/user/.claude/projects/-Users-user-todo-agents-sandbox-projet-test/7282d690-922c-4a41-84c7-48ad1a476b66.jsonl",
+  "turn_id": "0e01c8ce-f480-42e1-8ffe-775f222fc58e"
+}

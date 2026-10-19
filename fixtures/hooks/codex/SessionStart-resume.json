@@ -1,0 +1,9 @@
+{
+  "session_id": "01a129fe-8f34-7970-a745-a0860b436429",
+  "transcript_path": "/Users/user/.codex/sessions/2026/10/11/rollout-2026-10-11T10-05-11-01a129fe-8f34-7970-a745-a0860b436429.jsonl",
+  "cwd": "/Users/user/todo-agents/sandbox/codex-spike/projet",
+  "hook_event_name": "SessionStart",
+  "model": "gpt-6-luna",
+  "permission_mode": "default",
+  "source": "resume"
+}

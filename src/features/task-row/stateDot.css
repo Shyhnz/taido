@@ -1,0 +1,53 @@
+/*
+ * Claude's dot: orange breathes gently while Claude works, red pulses with a
+ * halo while it waits. No spin. « Réduire les animations » stops both (globals.css also zeroes
+ * every duration).
+ */
+
+@keyframes state-dot-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes state-dot-halo {
+  0% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+
+.state-dot-breathe {
+  animation: state-dot-breathe 1.8s ease-in-out infinite;
+}
+
+.state-dot-pulse {
+  animation: ring-pulse 1.4s ease-in-out infinite;
+}
+
+.state-dot-halo {
+  transform-origin: 6px 6px;
+  transform-box: view-box;
+  animation: state-dot-halo 1.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-dot-breathe,
+  .state-dot-pulse,
+  .state-dot-halo {
+    animation: none;
+  }
+
+  /* Without motion the halo would sit as a still blot: hide it. */
+  .state-dot-halo {
+    opacity: 0;
+  }
+}

@@ -1,0 +1,101 @@
+<!doctype html>
+<!-- Background of the .dmg window (660 × 400 points). Rendered by render.sh at 1x and 2x.
+     Finder draws the two icons (128 px) and their black labels at the positions set in
+     tauri.conf.json (bundle.macOS.dmg): Taido at (170, 178), Applications at (490, 178). -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Geist";
+    src: url("../../../node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2") format("woff2");
+    font-weight: 100 900;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 660px; height: 400px; overflow: hidden; }
+  body {
+    position: relative;
+    font-family: "Geist", system-ui, sans-serif;
+    color: #0c1a4c;
+    background:
+      radial-gradient(420px 260px at 12% -10%, rgba(47, 91, 211, 0.13), transparent 70%),
+      radial-gradient(380px 240px at 100% 105%, rgba(22, 128, 60, 0.10), transparent 70%),
+      linear-gradient(180deg, #fbfcfe 0%, #f3f5fa 100%);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Faint dot grid, like a sheet of paper. */
+  .dots {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(12, 26, 76, 0.07) 1px, transparent 1.2px);
+    background-size: 16px 16px;
+    mask-image: radial-gradient(520px 300px at 50% 46%, #000 30%, transparent 80%);
+  }
+  header {
+    position: absolute; top: 26px; left: 0; right: 0;
+    text-align: center;
+  }
+  h1 {
+    font-size: 21px; font-weight: 640; letter-spacing: -0.01em;
+  }
+  h1 em { font-style: normal; color: #2f5bd3; }
+  header p {
+    margin-top: 5px;
+    font-size: 13px; font-weight: 450; color: #5b6478;
+  }
+  .slot {
+    position: absolute; top: 96px;
+    width: 172px; height: 192px; margin-left: -86px;
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(12, 26, 76, 0.07);
+    box-shadow: 0 1px 2px rgba(12, 26, 76, 0.05), 0 10px 28px -12px rgba(12, 26, 76, 0.22);
+  }
+  .slot.app { left: 170px; }
+  .slot.apps { left: 490px; }
+  .arrow { position: absolute; left: 262px; top: 140px; }
+  .tip {
+    position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%);
+    width: 548px;
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 9px 14px;
+    border-radius: 12px;
+    background: rgba(47, 91, 211, 0.07);
+    border: 1px solid rgba(47, 91, 211, 0.14);
+    font-size: 11.5px; line-height: 1.45; font-weight: 450; color: #3a4357;
+  }
+  .tip svg { flex: none; margin-top: 1px; }
+  .tip b { font-weight: 620; color: #0c1a4c; }
+</style>
+</head>
+<body>
+  <div class="dots"></div>
+  <header>
+    <h1>Glisse <em>Taido</em> dans Applications</h1>
+    <p>Puis ouvre-le depuis le dossier Applications ou avec Spotlight.</p>
+  </header>
+  <div class="slot app"></div>
+  <div class="slot apps"></div>
+  <svg class="arrow" width="136" height="76" viewBox="0 0 136 76" fill="none">
+    <defs>
+      <linearGradient id="flow" x1="0" y1="0" x2="136" y2="0" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#2f5bd3"/>
+        <stop offset="1" stop-color="#1f9a50"/>
+      </linearGradient>
+    </defs>
+    <path d="M10 46 C 42 14, 88 14, 112 34" stroke="url(#flow)" stroke-width="4.5"
+          stroke-linecap="round" stroke-dasharray="0.1 11"/>
+    <!-- Chevron along the curve's end tangent. -->
+    <path d="M112.5 24.4 L116 38 L102.1 36.7" stroke="#1f9a50" stroke-width="4.5"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div class="tip">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="7.25" stroke="#2f5bd3" stroke-width="1.5"/>
+      <path d="M8 7.2v4" stroke="#2f5bd3" stroke-width="1.6" stroke-linecap="round"/>
+      <circle cx="8" cy="4.8" r="1" fill="#2f5bd3"/>
+    </svg>
+    <span><b>Premier lancement :</b> si macOS refuse d'ouvrir Taido, va dans Réglages Système ›
+      Confidentialité et sécurité, puis clique sur « Ouvrir quand même ».</span>
+  </div>
+</body>
+</html>

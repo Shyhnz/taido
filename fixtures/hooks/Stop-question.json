@@ -1,0 +1,16 @@
+{
+  "background_tasks": [],
+  "cwd": "/Users/user/todo-agents/sandbox/projet-test",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "Stop",
+  "last_assistant_message": "Tu veux un café ?",
+  "permission_mode": "default",
+  "prompt_id": "6d7370dc-c185-47ce-bcf7-1e278361596c",
+  "scratchpad_dir": "/private/tmp/claude-501/-Users-user-todo-agents-sandbox-projet-test/fe1774ff-3862-4bd6-9086-9005d09519ab/scratchpad",
+  "session_crons": [],
+  "session_id": "fe1774ff-3862-4bd6-9086-9005d09519ab",
+  "stop_hook_active": false,
+  "transcript_path": "/Users/user/.claude/projects/-Users-user-todo-agents-sandbox-projet-test/fe1774ff-3862-4bd6-9086-9005d09519ab.jsonl"
+}

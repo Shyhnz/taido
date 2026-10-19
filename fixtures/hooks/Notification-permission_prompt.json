@@ -1,0 +1,10 @@
+{
+  "cwd": "/Users/user/todo-agents/sandbox/projet-test",
+  "hook_event_name": "Notification",
+  "message": "Claude needs your permission",
+  "notification_type": "permission_prompt",
+  "prompt_id": "6abd4713-9b8a-4eb0-aefb-0d3b0c2780d7",
+  "scratchpad_dir": "/private/tmp/claude-501/-Users-user-todo-agents-sandbox-projet-test/29c40d9b-bcb5-44c0-981d-0a61e47cd186/scratchpad",
+  "session_id": "29c40d9b-bcb5-44c0-981d-0a61e47cd186",
+  "transcript_path": "/Users/user/.claude/projects/-Users-user-todo-agents-sandbox-projet-test/29c40d9b-bcb5-44c0-981d-0a61e47cd186.jsonl"
+}

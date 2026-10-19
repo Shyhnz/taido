@@ -1,0 +1,292 @@
+/*
+ * The page's text: reading first, about 70 characters wide,
+ * the app's tokens for colours, both themes. 16 px at least on the phone (no zoom on focus).
+ */
+
+:root,
+[data-theme="light"] {
+  --note-mark: #fbeeb0;
+}
+[data-theme="dark"] {
+  --note-mark: rgb(234 179 8 / 0.3);
+}
+
+.note-editor {
+  outline: none;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  min-height: 8rem;
+}
+.note-editor > * + * {
+  margin-top: 0.6em;
+}
+.note-editor h1 {
+  font-size: 1.45em;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 1.2em;
+}
+.note-editor h2 {
+  font-size: 1.2em;
+  font-weight: 650;
+  line-height: 1.35;
+  margin-top: 1.1em;
+}
+.note-editor h3 {
+  font-size: 1.05em;
+  font-weight: 650;
+  margin-top: 1em;
+}
+.note-editor > :first-child {
+  margin-top: 0;
+}
+.note-editor ul,
+.note-editor ol {
+  padding-left: 1.4em;
+}
+.note-editor ul {
+  list-style: disc;
+}
+.note-editor ol {
+  list-style: decimal;
+}
+.note-editor li + li,
+.note-editor li > ul,
+.note-editor li > ol {
+  margin-top: 0.2em;
+}
+.note-editor ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.1em;
+}
+.note-editor ul[data-type="taskList"] ul[data-type="taskList"] {
+  padding-left: 1.6em;
+}
+.note-editor ul[data-type="taskList"] > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+.note-editor ul[data-type="taskList"] > li > label {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 1.75em;
+}
+.note-editor ul[data-type="taskList"] > li > label input {
+  width: 1.05em;
+  height: 1.05em;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.note-editor ul[data-type="taskList"] > li > div {
+  flex: 1;
+  min-width: 0;
+}
+.note-editor ul[data-type="taskList"] > li[data-checked="true"] > div {
+  color: var(--text-3);
+  text-decoration: line-through;
+}
+.note-editor blockquote {
+  border-left: 3px solid var(--border-input);
+  padding-left: 0.9em;
+  color: var(--text-2);
+}
+.note-editor code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.88em;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.05em 0.3em;
+}
+.note-editor pre {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.86em;
+  line-height: 1.55;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.7em 0.9em;
+  overflow-x: auto;
+  white-space: pre;
+}
+.note-editor pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+.note-editor a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.note-editor mark {
+  background: var(--note-mark);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 0.1em;
+}
+.note-editor hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 1.2em 0;
+}
+/* Markdown kept as written (tables, HTML, embeds not handled yet). */
+.note-editor .note-raw,
+.note-editor .note-raw-block {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.85em;
+  color: var(--text-2);
+  background: var(--bg-hover);
+  border-radius: 4px;
+}
+.note-editor .note-raw {
+  padding: 0.05em 0.3em;
+}
+/* Beats Tiptap's `.ProseMirror [contenteditable="false"] { white-space: normal }`. */
+.note-editor pre.note-raw-block {
+  padding: 0.6em 0.8em;
+  white-space: pre-wrap;
+}
+.note-editor .ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.note-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--text-3);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+/* The `[[` being typed. */
+.note-editor .suggestion {
+  color: var(--accent);
+}
+
+/* Images of the page (task 8): a share of the column, a grey frame until the file is here. */
+.note-image {
+  position: relative;
+  display: inline-block;
+  vertical-align: top;
+  max-width: 100%;
+  min-width: 2.5rem;
+  line-height: 0;
+}
+.note-image-body {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 0;
+}
+.note-image-body:disabled {
+  cursor: default;
+}
+.note-image-body img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.note-image-body:focus-visible,
+.note-image.is-open .note-image-body {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.note-image-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  aspect-ratio: 4 / 3;
+  max-height: 16rem;
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 6px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+}
+.note-image-frame.is-file {
+  color: var(--text-2);
+  padding-bottom: 4rem;
+}
+.note-image-open {
+  position: absolute;
+  left: 50%;
+  bottom: 0.75rem;
+  transform: translateX(-50%);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.2;
+}
+.note-image-open:hover {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+}
+/* The corner handle: on hover (a mouse) or while held; never on the phone. */
+.note-image-handle {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--bg);
+  border-radius: 4px;
+  background: var(--accent);
+  cursor: nwse-resize;
+  opacity: 0;
+  touch-action: none;
+  transition: opacity 120ms ease-out;
+}
+.note-image:hover .note-image-handle,
+.note-image.is-open .note-image-handle,
+.note-image.is-resizing .note-image-handle,
+.note-image-handle:focus-visible {
+  opacity: 1;
+}
+.note-image.is-resizing,
+.note-image.is-resizing * {
+  cursor: nwse-resize;
+}
+.note-image-sizes {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  white-space: nowrap;
+  line-height: 1.2;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.14);
+}
+
+/* The phone's bar: the scrolling part fades on its right edge (more buttons that way). */
+.note-bar-scroll {
+  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - 24px),
+    transparent
+  );
+  /* The last button can scroll clear of the fade. */
+  padding-right: 24px;
+}

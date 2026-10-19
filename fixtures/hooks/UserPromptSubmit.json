@@ -1,0 +1,11 @@
+{
+  "cwd": "/Users/user/todo-agents/sandbox/projet-test",
+  "hook_event_name": "UserPromptSubmit",
+  "permission_mode": "auto",
+  "prompt": "Réponds juste OK",
+  "prompt_id": "a4a995f4-d3a4-42c2-9267-713adeb58def",
+  "scratchpad_dir": "/private/tmp/claude-501/-Users-user-todo-agents-sandbox-projet-test/7282d690-922c-4a41-84c7-48ad1a476b66/scratchpad",
+  "session_id": "7282d690-922c-4a41-84c7-48ad1a476b66",
+  "session_title": "Spike · tour simple",
+  "transcript_path": "/Users/user/.claude/projects/-Users-user-todo-agents-sandbox-projet-test/7282d690-922c-4a41-84c7-48ad1a476b66.jsonl"
+}

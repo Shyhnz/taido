@@ -1,0 +1,71 @@
+<!doctype html>
+<!-- Left image of the Windows installer's welcome and finish pages (164 × 314, NSIS
+     MUI_WELCOMEFINISHPAGE_BITMAP). Rendered by render.sh at 2x: NSIS stretches it to the
+     control, so it stays sharp on high-DPI screens. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Geist";
+    src: url("../../../node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2") format("woff2");
+    font-weight: 100 900;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 164px; height: 314px; overflow: hidden; }
+  body {
+    position: relative;
+    font-family: "Geist", system-ui, sans-serif;
+    color: #fff;
+    background:
+      radial-gradient(180px 140px at 50% -6%, rgba(255, 255, 255, 0.16), transparent 70%),
+      radial-gradient(150px 120px at 105% 100%, rgba(85, 207, 133, 0.20), transparent 70%),
+      linear-gradient(180deg, #2242a0 0%, #16307a 45%, #0c1a4c 100%);
+    -webkit-font-smoothing: antialiased;
+  }
+  .rings {
+    position: absolute; left: 50%; top: 112px; transform: translate(-50%, -50%);
+  }
+  .glyph {
+    position: absolute; left: 50%; top: 112px; transform: translate(-50%, -50%);
+    filter: drop-shadow(0 6px 10px rgba(5, 12, 40, 0.45));
+  }
+  .name {
+    position: absolute; left: 0; right: 0; top: 214px;
+    text-align: center;
+    font-size: 25px; font-weight: 680; letter-spacing: -0.02em;
+  }
+  .tagline {
+    position: absolute; left: 14px; right: 14px; top: 248px;
+    text-align: center;
+    font-size: 10.5px; line-height: 1.4; font-weight: 450; color: rgba(225, 232, 252, 0.78);
+  }
+</style>
+</head>
+<body>
+  <svg class="rings" width="164" height="164" viewBox="0 0 164 164" fill="none">
+    <circle cx="82" cy="82" r="56" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
+    <circle cx="82" cy="82" r="72" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <circle cx="82" cy="82" r="80" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+  </svg>
+  <!-- The icon's glyph (docs/brand/icon.svg), without its tile. -->
+  <svg class="glyph" width="96" height="76" viewBox="200 270 620 490">
+    <defs>
+      <linearGradient id="white" x1="0" y1="296" x2="0" y2="722" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#ffffff"/>
+        <stop offset="1" stop-color="#d5def6"/>
+      </linearGradient>
+      <linearGradient id="green" x1="0" y1="286" x2="0" y2="602" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#55cf85"/>
+        <stop offset="1" stop-color="#16803c"/>
+      </linearGradient>
+    </defs>
+    <path d="M260 339 390 444 260 549" fill="none" stroke="url(#white)" stroke-width="86" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="649" cy="444" r="158" fill="url(#green)"/>
+    <path d="M580.3 449.7 628.6 496.1 725 395.8" fill="none" stroke="#fff" stroke-width="52.3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M402 672Q490 712 578 672" fill="none" stroke="url(#white)" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div class="name">Taido</div>
+  <div class="tagline">Tes tâches, et Claude Code qui travaille dedans.</div>
+</body>
+</html>

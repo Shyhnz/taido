@@ -1,0 +1,173 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* Expose the tokens to Tailwind utilities (bg-sidebar, text-text-2, border-border-row…). */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-sidebar: var(--bg-sidebar);
+  --color-aside: var(--bg-aside);
+  --color-hover: var(--bg-hover);
+  --color-selected: var(--bg-selected);
+  --color-nav-active: var(--bg-nav-active);
+  --color-sidebar-hover: var(--bg-sidebar-hover);
+  --color-terminal: var(--bg-terminal);
+  --color-elevated: var(--bg-elevated);
+  --color-border: var(--border);
+  --color-border-row: var(--border-row);
+  --color-border-terminal: var(--border-terminal);
+  --color-border-input: var(--border-input);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-text-nav-active: var(--text-nav-active);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-waiting: var(--state-waiting);
+  --color-on-waiting: var(--on-state-waiting);
+  --color-waiting-fill: var(--state-waiting-fill);
+  --color-waiting-text: var(--state-waiting-text);
+  --color-done: var(--state-done);
+  --color-done-text: var(--state-done-text);
+  --color-due-overdue: var(--due-overdue);
+  /* Relation icons of a row (2026-10-13, like Linear): blocked by = brick orange,
+     blocks = the waiting red (exception to D8: a stop sign), related = the priority-2 yellow. */
+  --color-relation-blocks: var(--state-waiting);
+  --color-relation-related: var(--priority-2);
+  --color-token-project: var(--token-project-text);
+  --color-token-project-bg: var(--token-project-bg);
+  --color-token-agent: var(--token-agent-text);
+  --color-token-agent-bg: var(--token-agent-bg);
+  --color-token-date: var(--token-date-text);
+  --color-token-date-bg: var(--token-date-bg);
+  --color-overlay: var(--overlay);
+  --font-sans: var(--font-ui);
+  /* 4-level type scale (V3): text-title, text-body, text-label, text-meta. */
+  --text-title: var(--font-size-title);
+  --text-body: var(--font-size-body);
+  --text-label: var(--font-size-label);
+  --text-meta: var(--font-size-meta);
+  --shadow-pop: var(--shadow-popover);
+}
+
+/* Base styles live in the base layer so Tailwind utilities can override them. */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  /* Visible focus ring everywhere. */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+
+  button:disabled {
+    cursor: default;
+  }
+}
+
+/*
+ * Sidebar rows (bug B1). The active row is set by `.nav-row-active` with no transition, so the
+ * highlight never lingers on the previous item. Hover has its own token and only applies on
+ * devices that really hover, so a pointer resting after a click is not mistaken for a
+ * selection.
+ */
+.nav-row-active::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+}
+
+@media (hover: hover) {
+  .nav-row:not(.nav-row-active):hover {
+    background: var(--bg-sidebar-hover);
+  }
+}
+
+/* Unlayered so it wins over the transition utilities. */
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none;
+}
+
+/* State ring animations. */
+@keyframes ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ring-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.ring-spin {
+  transform-origin: 10px 10px;
+  transform-box: view-box;
+  animation: ring-spin 1.2s linear infinite;
+}
+
+.ring-pulse {
+  animation: ring-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring-spin,
+  .ring-pulse {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override every transition */
+    transition-duration: 0s !important;
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override every animation */
+    animation-duration: 0s !important;
+  }
+}
+
+/* Files dragged over a terminal: where they will be dropped. */
+/* Taido V2.3: a task files are dropped on (row, kanban card, attachments zone). */
+[data-file-over] {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
+[data-terminal-host][data-drop-target] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}

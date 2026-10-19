@@ -1,0 +1,351 @@
+#!/usr/bin/env node
+// fake-codex: stands in for the `codex` binary in automated tests, so no tokens are spent.
+// Dependency-free, Node >= 20. It reads the `-c` overrides the app passes (hooks, MCP server),
+// runs the hook commands with payloads shaped like the real ones (fixtures/hooks/codex/), and
+// is driven line by line (see README.md).
+"use strict";
+
+const crypto = require("node:crypto");
+const http = require("node:http");
+const { spawn } = require("node:child_process");
+
+// ---------------------------------------------------------------------------------------
+// Options
+
+function parseArgs(argv) {
+  const overrides = [];
+  let resume = null;
+  let prompt = null;
+  const flags = [];
+  let i = 0;
+  if (argv[0] === "resume") {
+    resume = argv[1] ?? null;
+    i = 2;
+  }
+  for (; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "-c" || arg === "--config") {
+      overrides.push(argv[i + 1] ?? "");
+      i++;
+    } else if (arg === "--add-dir" || arg === "-m" || arg === "--model") {
+      flags.push(arg, argv[i + 1] ?? "");
+      i++;
+    } else if (arg.startsWith("-") && arg.trim() !== "" && !arg.startsWith(" ")) {
+      flags.push(arg);
+    } else if (prompt === null) {
+      prompt = arg.trim();
+    }
+  }
+  return { overrides, resume, prompt, flags };
+}
+
+/** A TOML basic string at the start of `text` (the app writes JSON-compatible escapes). */
+function tomlString(text) {
+  const m = /^"((?:[^"\\]|\\.)*)"/.exec(text);
+  return m ? JSON.parse(`"${m[1]}"`) : null;
+}
+
+/** Hooks (`hooks.<Event>=[...]`) and the MCP server (`mcp_servers.<id>.*`) of the overrides. */
+function readConfig(overrides) {
+  const hooks = {};
+  const mcp = { url: null, headers: {} };
+  for (const o of overrides) {
+    const eq = o.indexOf("=");
+    if (eq < 0) continue;
+    const key = o.slice(0, eq).trim();
+    const value = o.slice(eq + 1).trim();
+    const hook = /^hooks\.(\w+)$/.exec(key);
+    if (hook) {
+      const at = value.indexOf("command = ");
+      const command = at >= 0 ? tomlString(value.slice(at + 10)) : null;
+      const timeout = /timeout = (\d+)/.exec(value);
+      if (command) {
+        hooks[hook[1]] = {
+          command,
+          timeout: timeout ? Number(timeout[1]) : 600,
+        };
+      }
+    } else if (/^mcp_servers\.\w+\.url$/.test(key)) {
+      mcp.url = tomlString(value);
+    } else if (/^mcp_servers\.\w+\.env_http_headers$/.test(key)) {
+      for (const m of value.matchAll(/"([^"]+)"\s*=\s*"([^"]+)"/g)) {
+        mcp.headers[m[1]] = process.env[m[2]] ?? "";
+      }
+    }
+  }
+  return { hooks, mcp };
+}
+
+const argv = process.argv.slice(2);
+const opts = parseArgs(argv);
+const config = readConfig(opts.overrides);
+const speedEnv = Number.parseFloat(process.env.TAIDO_FAKE_SPEED ?? "1");
+const SPEED = Number.isFinite(speedEnv) && speedEnv > 0 ? speedEnv : 1;
+const CWD = process.cwd();
+const delay = (ms) => new Promise((r) => setTimeout(r, ms / SPEED));
+
+// ---------------------------------------------------------------------------------------
+// Conversation
+
+const newId = () => crypto.randomUUID();
+let sessionId = opts.resume ?? newId();
+/** Source of the `SessionStart` still to send (Codex sends it with the first message). */
+let pendingStart = opts.resume ? "resume" : "startup";
+
+function common(event) {
+  return {
+    session_id: sessionId,
+    transcript_path: `/tmp/fake-codex/rollout-${sessionId}.jsonl`,
+    cwd: CWD,
+    hook_event_name: event,
+    model: "fake-codex",
+    permission_mode: "default",
+  };
+}
+
+/** Runs the hook command of `event` with the payload on stdin; failures ignored. */
+function hook(event, fields = {}) {
+  const h = config.hooks[event];
+  if (!h) return Promise.resolve();
+  const payload = JSON.stringify({ ...common(event), ...fields });
+  return new Promise((resolve) => {
+    const child = spawn("/bin/sh", ["-c", h.command], {
+      stdio: ["pipe", "ignore", "ignore"],
+    });
+    const timer = setTimeout(() => child.kill("SIGKILL"), h.timeout * 1000);
+    child.on("error", () => {
+      clearTimeout(timer);
+      resolve();
+    });
+    child.on("exit", () => {
+      clearTimeout(timer);
+      resolve();
+    });
+    child.stdin.on("error", () => {});
+    child.stdin.end(payload);
+  });
+}
+
+/** One JSON-RPC request to the MCP server; resolves with the response body or null. */
+function mcpPost(body) {
+  if (!config.mcp.url) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const data = JSON.stringify(body);
+    const req = http.request(
+      config.mcp.url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json, text/event-stream",
+          "Content-Length": Buffer.byteLength(data),
+          ...config.mcp.headers,
+        },
+        timeout: 5000,
+      },
+      (res) => {
+        let out = "";
+        res.on("data", (c) => {
+          out += c;
+        });
+        res.on("end", () => resolve(out));
+      },
+    );
+    req.on("error", () => resolve(null));
+    req.on("timeout", () => req.destroy());
+    req.end(data);
+  });
+}
+
+async function mcpConnect() {
+  await mcpPost({
+    jsonrpc: "2.0",
+    id: 0,
+    method: "initialize",
+    params: {
+      protocolVersion: "2025-06-18",
+      capabilities: {},
+      clientInfo: { name: "codex-mcp-client", version: "fake" },
+    },
+  });
+  await mcpPost({ jsonrpc: "2.0", method: "notifications/initialized" });
+}
+
+// ---------------------------------------------------------------------------------------
+// Turns
+
+let busy = false;
+let interrupted = false;
+/** Set while a permission question waits for the typed answer. */
+let permission = null;
+const queue = [];
+
+async function startIfNeeded() {
+  if (pendingStart) {
+    const source = pendingStart;
+    pendingStart = null;
+    await hook("SessionStart", { source });
+  }
+}
+
+async function turn(line) {
+  const turnId = newId();
+  await startIfNeeded();
+  await hook("UserPromptSubmit", { turn_id: turnId, prompt: line });
+  if (line === "/p") {
+    const input = { command: "curl -sI https://example.com" };
+    await hook("PreToolUse", {
+      turn_id: turnId,
+      tool_name: "Bash",
+      tool_input: input,
+      tool_use_id: newId(),
+    });
+    await hook("PermissionRequest", { turn_id: turnId, tool_name: "Bash", tool_input: input });
+    out("Would you like to run the following command?");
+    const allowed = await new Promise((resolve) => {
+      permission = resolve;
+    });
+    if (interrupted) return;
+    if (allowed) {
+      await hook("PostToolUse", {
+        turn_id: turnId,
+        tool_name: "Bash",
+        tool_input: input,
+        tool_response: "HTTP/2 200",
+        tool_use_id: newId(),
+      });
+    }
+    await hook("Stop", {
+      turn_id: turnId,
+      stop_hook_active: false,
+      last_assistant_message: allowed ? "C'est fait." : "D'accord, je ne le lance pas.",
+    });
+    return;
+  }
+  const mcp = /^\/mcp (\w+)\s*(.*)$/.exec(line);
+  if (mcp) {
+    const args = mcp[2] ? JSON.parse(mcp[2]) : {};
+    const name = `mcp__taido__${mcp[1]}`;
+    await hook("PreToolUse", { turn_id: turnId, tool_name: name, tool_input: args });
+    const res = await mcpPost({
+      jsonrpc: "2.0",
+      id: 2,
+      method: "tools/call",
+      params: { name: mcp[1], arguments: args },
+    });
+    out(res === null ? "MCP-ERROR:no response" : `MCP:${res}`);
+    await hook("PostToolUse", { turn_id: turnId, tool_name: name, tool_input: args });
+    await hook("Stop", { turn_id: turnId, stop_hook_active: false, last_assistant_message: "Ajouté." });
+    return;
+  }
+  const last = line === "/q" ? "Tu veux un café ?" : "OK, c'est fait.";
+  for (let step = 1; step <= 2 && !interrupted; step++) {
+    await delay(250);
+    if (interrupted) return;
+    const input = { command: `echo step ${step}` };
+    await hook("PreToolUse", { turn_id: turnId, tool_name: "Bash", tool_input: input });
+    await delay(100);
+    if (interrupted) return;
+    await hook("PostToolUse", {
+      turn_id: turnId,
+      tool_name: "Bash",
+      tool_input: input,
+      tool_response: `step ${step}`,
+    });
+  }
+  await delay(300);
+  if (interrupted) return;
+  await hook("Stop", { turn_id: turnId, stop_hook_active: false, last_assistant_message: last });
+}
+
+async function exitWith(code, reason) {
+  if (reason) await hook("SessionEnd", { reason });
+  process.exit(code);
+}
+
+async function handle(line) {
+  if (permission) {
+    const answer = line.trim().toLowerCase();
+    const resolve = permission;
+    permission = null;
+    resolve(["", "1", "y", "yes", "oui", "2"].includes(answer));
+    return;
+  }
+  if (line === "/exit" || line === "exit") return exitWith(0, "other");
+  if (line === "/x") return process.exit(1);
+  if (line === "/new" || line === "/clear") {
+    sessionId = newId();
+    pendingStart = line === "/new" ? "startup" : "clear";
+    out(`SESSION:${sessionId}`);
+    return;
+  }
+  out(`GOT:${line}`);
+  queue.push(line);
+  if (busy) return;
+  busy = true;
+  while (queue.length > 0) {
+    interrupted = false;
+    await turn(queue.shift());
+  }
+  busy = false;
+}
+
+async function escape() {
+  if (!busy && !permission) return;
+  interrupted = true;
+  queue.length = 0;
+  if (permission) {
+    const resolve = permission;
+    permission = null;
+    resolve(false);
+  }
+  out("Interrupted");
+  await hook("Interrupt", {});
+}
+
+// ---------------------------------------------------------------------------------------
+// Terminal
+
+function out(text) {
+  process.stdout.write(`${text}\r\n`);
+}
+
+async function main() {
+  out("fake-codex started");
+  for (const a of argv) out(`ARG:${a}`);
+  out(`CWD:${CWD}`);
+  out(`TERMINAL:${process.env.TAIDO_TERMINAL_ID ?? ""}`);
+  out(`TOKEN:${process.env.TAIDO_HOOK_TOKEN ? "set" : "unset"}`);
+  await mcpConnect();
+  out("READY");
+  process.on("SIGHUP", () => exitWith(0, "other"));
+  if (opts.prompt) handle(opts.prompt);
+  let buffer = "";
+  if (process.stdin.isTTY) process.stdin.setRawMode(true);
+  process.stdin.setEncoding("utf8");
+  process.stdin.on("data", (chunk) => {
+    if (chunk === "\x1b") {
+      escape();
+      return;
+    }
+    for (const c of chunk) {
+      if (c === "\r" || c === "\n") {
+        const line = buffer;
+        buffer = "";
+        process.stdout.write("\r\n");
+        if (line === "\x1b") escape();
+        else handle(line);
+      } else if (c === "\x03" || c === "\x04") {
+        exitWith(0, "other");
+      } else if (c === "\x7f") {
+        buffer = buffer.slice(0, -1);
+      } else {
+        buffer += c;
+        process.stdout.write(c);
+      }
+    }
+  });
+  process.stdin.on("end", () => exitWith(0, "other"));
+}
+
+main();

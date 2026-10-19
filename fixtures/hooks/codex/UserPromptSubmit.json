@@ -1,0 +1,10 @@
+{
+  "session_id": "01a129fc-0c89-7030-bec0-093c909a00c7",
+  "turn_id": "01a129fc-2717-7b12-8f82-e74ac3f65542",
+  "transcript_path": "/Users/user/.codex/sessions/2026/10/11/rollout-2026-10-11T10-02-26-01a129fc-0c89-7030-bec0-093c909a00c7.jsonl",
+  "cwd": "/Users/user/todo-agents/sandbox/codex-spike/projet",
+  "hook_event_name": "UserPromptSubmit",
+  "model": "gpt-6-luna",
+  "permission_mode": "default",
+  "prompt": "Réponds juste OK"
+}

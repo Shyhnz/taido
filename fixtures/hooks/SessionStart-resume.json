@@ -1,0 +1,13 @@
+{
+  "context_tokens": 79148,
+  "cwd": "/Users/user/todo-agents/sandbox/projet-test",
+  "estimated_cache_write_usd": 0.6332,
+  "hook_event_name": "SessionStart",
+  "prompt_cache_likely_expired": false,
+  "scratchpad_dir": "/private/tmp/claude-501/-Users-user-todo-agents-sandbox-projet-test/76c00e93-aae9-4025-9ad6-2d9afbbeef63/scratchpad",
+  "seconds_since_last_response": 7,
+  "session_id": "76c00e93-aae9-4025-9ad6-2d9afbbeef63",
+  "session_title": "Spike · reprise",
+  "source": "resume",
+  "transcript_path": "/Users/user/.claude/projects/-Users-user-todo-agents-sandbox-projet-test/76c00e93-aae9-4025-9ad6-2d9afbbeef63.jsonl"
+}

@@ -1,0 +1,31 @@
+{
+  "cwd": "/Users/user/todo-agents/sandbox/projet-test",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "PermissionRequest",
+  "permission_mode": "default",
+  "permission_suggestions": [
+    {
+      "destination": "session",
+      "directories": [
+        "/Users/user/todo-agents/sandbox/projet-test"
+      ],
+      "type": "addDirectories"
+    },
+    {
+      "destination": "session",
+      "mode": "acceptEdits",
+      "type": "setMode"
+    }
+  ],
+  "prompt_id": "e3b55e88-e42a-41de-929b-b8982eaffc57",
+  "scratchpad_dir": "/private/tmp/claude-501/-Users-user-todo-agents-sandbox-projet-test/29c40d9b-bcb5-44c0-981d-0a61e47cd186/scratchpad",
+  "session_id": "29c40d9b-bcb5-44c0-981d-0a61e47cd186",
+  "tool_input": {
+    "command": "touch spike-1.txt",
+    "description": "Create empty file spike-1.txt"
+  },
+  "tool_name": "Bash",
+  "transcript_path": "/Users/user/.claude/projects/-Users-user-todo-agents-sandbox-projet-test/29c40d9b-bcb5-44c0-981d-0a61e47cd186.jsonl"
+}

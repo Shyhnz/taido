@@ -1,0 +1,9 @@
+{
+  "cwd": "/Users/user/todo-agents/sandbox/projet-test",
+  "hook_event_name": "SessionStart",
+  "scratchpad_dir": "/private/tmp/claude-501/-Users-user-todo-agents-sandbox-projet-test/8b722854-a341-495c-af8c-b3b2118a26ed/scratchpad",
+  "session_id": "8b722854-a341-495c-af8c-b3b2118a26ed",
+  "session_title": "Spike · cycle",
+  "source": "clear",
+  "transcript_path": "/Users/user/.claude/projects/-Users-user-todo-agents-sandbox-projet-test/8b722854-a341-495c-af8c-b3b2118a26ed.jsonl"
+}

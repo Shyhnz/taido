@@ -1,0 +1,15 @@
+{
+  "session_id": "01a129fe-2bf2-7a02-953c-be4376303d75",
+  "turn_id": "01a129fe-3edd-7ad1-9e9e-a2db2a495a1e",
+  "transcript_path": "/Users/user/.codex/sessions/2026/10/11/rollout-2026-10-11T10-04-45-01a129fe-2bf2-7a02-953c-be4376303d75.jsonl",
+  "cwd": "/Users/user/todo-agents/sandbox/codex-spike/projet",
+  "hook_event_name": "PostToolUse",
+  "model": "gpt-6-luna",
+  "permission_mode": "default",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "curl -sI https://example.com | head -1"
+  },
+  "tool_response": "HTTP/2 200 \r\n",
+  "tool_use_id": "exec-d8de1d7a-502d-42ff-82eb-5dfcddef2459"
+}
