@@ -167,15 +167,17 @@ pub fn kill_tree(pid: u32) {
 }
 
 /// Arguments for `program`, made safe when it is a batch file (`.cmd`, `.bat`) that is not an
-/// npm shim Taido can skip (`agents::launch_command`). Windows runs a batch file through
-/// `cmd.exe /c` without `/s`: with more than two quotes on the line, cmd drops the first and
-/// the last one, which shifts every quoted argument, so no quoting can be trusted. Every
-/// argument is therefore made free of what cmd.exe interprets: `"` becomes `'`, line breaks
-/// become spaces, and `& | < > ^ % !` become their full-width look-alikes (`＆ ｜ ＜ ＞ ＾ ％ ！`).
-/// Parentheses stay: outside a block they are plain text (the attachments folders have them).
-/// The outer-quote form `cmd /d /s /c "…"` (Rust's std) cannot be built here: portable-pty 0.9
-/// writes every inner `"` as `\"`, which cmd.exe does not understand. Any other program gets
-/// its arguments untouched.
+/// npm or pnpm shim Taido can skip (`agents::launch_command`). Windows runs a batch file
+/// through `cmd.exe /c` without `/s`: with more than two quotes on the line, cmd drops the
+/// first and the last one, which shifts every quoted argument, so no quoting can be trusted;
+/// and `%*` expands inside the batch body before it is parsed, where a `)` closes an
+/// `IF … ( … )` block. Every argument is therefore made free of what cmd.exe interprets: `"`
+/// becomes `'`, line breaks become spaces, and `& | < > ^ % ! ( )` become their full-width
+/// look-alikes (`＆ ｜ ＜ ＞ ＾ ％ ！ （ ）`). Paths passed as arguments that contain these
+/// characters (an attachments folder `Task (abc123)`) then point nowhere: a limit of such
+/// unrecognised launchers only. The outer-quote form `cmd /d /s /c "…"` (Rust's std) cannot
+/// be built here: portable-pty 0.9 writes every inner `"` as `\"`, which cmd.exe does not
+/// understand. Any other program gets its arguments untouched.
 pub fn batch_safe_args(program: &str, args: &[String]) -> Vec<String> {
     let lower = program.to_ascii_lowercase();
     if !(lower.ends_with(".cmd") || lower.ends_with(".bat")) {
@@ -194,6 +196,8 @@ pub fn batch_safe_args(program: &str, args: &[String]) -> Vec<String> {
                     '^' => '\u{FF3E}',
                     '%' => '\u{FF05}',
                     '!' => '\u{FF01}',
+                    '(' => '\u{FF08}',
+                    ')' => '\u{FF09}',
                     c => c,
                 })
                 .collect()
@@ -420,6 +424,7 @@ mod tests {
             "b\" & echo pwned2> p2.txt",
             "solo|x",
             "%PATH%!x!^",
+            "x)else(calc",
             "C:\\Users\\Jane Doe\\Taido\\Attachments\\Globex\\Task (abc123)",
         ]
         .map(String::from)
@@ -428,13 +433,17 @@ mod tests {
         // Whatever cmd.exe does with the quotes, no operator nor expansion is left.
         let line = as_cmd_runs_it(program, &safe);
         let after_program = &line[line.find("run.cmd").expect("program") + 7..];
-        for c in ['&', '|', '<', '>', '^', '%', '!'] {
+        for c in ['&', '|', '<', '>', '^', '%', '!', '(', ')'] {
             assert!(!after_program.contains(c), "{c:?} in {line}");
         }
         assert_eq!(safe[1], "a \u{FF06} echo pwned\u{FF1E} p.txt");
         assert_eq!(safe[2], "b' \u{FF06} echo pwned2\u{FF1E} p2.txt");
-        // Parentheses stay (the attachments folders have them); they are not operators here.
-        assert_eq!(safe[5], args[5]);
+        // `%*` inside an `IF … ( … )` block: a `)` would close it.
+        assert_eq!(safe[5], "x\u{FF09}else\u{FF08}calc");
+        assert_eq!(
+            safe[6],
+            "C:\\Users\\Jane Doe\\Taido\\Attachments\\Globex\\Task \u{FF08}abc123\u{FF09}"
+        );
     }
 
     #[test]

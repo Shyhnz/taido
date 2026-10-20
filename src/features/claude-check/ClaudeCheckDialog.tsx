@@ -10,6 +10,7 @@ import { Button } from "../../components/Button";
 import { Dialog } from "../../components/Dialog";
 import { t as strings } from "../../i18n";
 import { errorMessage } from "../../lib/ipc";
+import { OS } from "../../lib/platform";
 import { type ClaudeProblem, useUi } from "../../stores/ui";
 import {
   checkAgentStatus,
@@ -74,6 +75,7 @@ export function ClaudeCheckDialog({
       <div className="flex flex-col gap-2 px-5 pt-2 text-[13.5px] text-text-2">
         <p>{missing ? t.missingText(agent) : t.loggedOutText(agent)}</p>
         {missing && <p>{t.missingSettings}</p>}
+        {missing && OS === "windows" && <p>{t.missingNode}</p>}
         {detail && (
           <p className="font-mono text-[12px] break-all text-text-3">
             {detail}

@@ -99,7 +99,9 @@ impl PtyManager {
         };
         let pair = native_pty_system().openpty(size).map_err(pty_err)?;
         // Windows: an npm shim (`codex.cmd`) runs its script with node, never through cmd.exe.
-        let (program, args) = crate::agents::launch_command(&spec.program, &spec.args, &spec.env);
+        let (program, args) =
+            crate::agents::launch_command(&spec.program, &spec.args, &spec.env)
+                .map_err(|e| AppError::Internal(format!("cannot start {}: {e}", spec.program)))?;
         let mut cmd = CommandBuilder::new(&program);
         cmd.args(&args);
         cmd.cwd(&spec.cwd);

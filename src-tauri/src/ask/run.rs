@@ -198,7 +198,16 @@ fn run(
 ) -> AskUpdate {
     // Windows: an npm shim runs its script with node (`agents::launch_command`).
     let (program, args) =
-        crate::agents::launch_command(&l.program.to_string_lossy(), &l.args, &l.env);
+        match crate::agents::launch_command(&l.program.to_string_lossy(), &l.args, &l.env) {
+            Ok(launch) => launch,
+            Err(e) => {
+                log::warn!("ask: cannot run {}: {e}", l.program.display());
+                return AskUpdate::Failed {
+                    message: Some(e.to_string()),
+                    timed_out: false,
+                };
+            }
+        };
     let mut command = Command::new(program);
     crate::env::hide_console(&mut command)
         .args(&args)

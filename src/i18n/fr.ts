@@ -792,6 +792,9 @@ export const fr = {
       `L'appli ne trouve pas le programme ${agent === "codex" ? "codex" : "claude"}. Installe ${agentProduct(agent)} (par exemple avec ${agentInstallCommand(agent)}), puis réessaie.`,
     missingSettings:
       "S'il est déjà installé ailleurs, indique son chemin dans Réglages › Agents.",
+    /** Windows only: an npm or pnpm shim without node.exe reads as not installed. */
+    missingNode:
+      "Installé avec npm ou pnpm ? Node.js doit alors être installé aussi (node.exe dans le PATH).",
     loggedOutTitle: (agent: Agent) =>
       `${agentProduct(agent)} n'est pas connecté`,
     loggedOutText: (agent: Agent) =>

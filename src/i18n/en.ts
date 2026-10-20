@@ -690,6 +690,8 @@ const en: Strings = {
       `The app can't find the ${agent === "codex" ? "codex" : "claude"} program. Install ${agentProduct(agent)} (for example with ${agentInstallCommand(agent)}), then try again.`,
     missingSettings:
       "If it's already installed somewhere else, set its path in Settings › Agents.",
+    missingNode:
+      "Installed with npm or pnpm? Then Node.js must be installed too (node.exe on the PATH).",
     loggedOutTitle: (agent: Agent) => `${agentProduct(agent)} is signed out`,
     loggedOutText: (agent: Agent) =>
       `Run ${agentLoginCommand(agent)} in a terminal and sign in, then try again.`,

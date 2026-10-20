@@ -68,7 +68,7 @@ pub fn resolve_binary_on(
         .find(|b| !b.is_empty());
     if let Some(bin) = explicit {
         let path = PathBuf::from(bin);
-        return is_executable(&path, os).then_some(path);
+        return runnable(&path, os, env).then_some(path);
     }
     let home = crate::env::home_dir(env).unwrap_or_default();
     let names: Vec<String> = match os {
@@ -107,43 +107,66 @@ pub fn resolve_binary_on(
         .filter(|dir| !dir.as_os_str().is_empty())
         .flat_map(|dir| names.iter().map(move |n| dir.join(n)))
         .chain(common)
-        .find(|p| is_executable(p, os))
+        .find(|p| runnable(p, os, env))
 }
 
-/// The program and arguments that actually start `program args…` (a terminal or a question):
-/// see [`launch_command_on`].
-pub fn launch_command(
-    program: &str,
-    args: &[String],
-    env: &BTreeMap<String, String>,
-) -> (String, Vec<String>) {
-    launch_command_on(Os::CURRENT, program, args, env)
-}
-
-/// On Windows an npm shim (`codex.cmd`, `claude.cmd`) is skipped: its script runs with
-/// `node` directly, so no argument goes through `cmd.exe` (Codex's `-c` values are full of
-/// quotes). Any other batch file runs as is with [`crate::env::batch_safe_args`]. A real
-/// program, and anything on macOS, is untouched.
-pub fn launch_command_on(
-    os: Os,
-    program: &str,
-    args: &[String],
-    env: &BTreeMap<String, String>,
-) -> (String, Vec<String>) {
-    let lower = program.to_ascii_lowercase();
-    if os != Os::Windows || !(lower.ends_with(".cmd") || lower.ends_with(".bat")) {
-        return (program.to_string(), args.to_vec());
+/// An executable file, except on Windows an npm or pnpm shim without node (never run, see
+/// [`LaunchError::NodeMissing`]): the agent then reads as not installed.
+fn runnable(path: &Path, os: Os, env: &BTreeMap<String, String>) -> bool {
+    if !is_executable(path, os) {
+        return false;
     }
-    let shim = Path::new(program);
+    if os == Os::Windows && is_batch(&path.to_string_lossy()) {
+        let without_node = classify_batch(path, env) == BatchKind::ShimWithoutNode;
+        if without_node {
+            log::warn!("{}: Node.js not found (node.exe), not used", path.display());
+        }
+        return !without_node;
+    }
+    true
+}
+
+/// Why a found agent cannot start.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LaunchError {
+    /// An npm or pnpm shim whose `node.exe` is nowhere: its fallback branch would run the
+    /// arguments inside a cmd.exe block, so it is never run (the agent reads as not installed).
+    NodeMissing,
+}
+
+impl std::fmt::Display for LaunchError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LaunchError::NodeMissing => f.write_str("Node.js not found (node.exe)"),
+        }
+    }
+}
+
+/// What a batch file found for an agent is, on Windows.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BatchKind {
+    /// An npm or pnpm shim: its script runs with this node.
+    Shim { node: PathBuf, script: PathBuf },
+    /// An npm or pnpm shim, but no `node.exe` beside it nor on `PATH`.
+    ShimWithoutNode,
+    /// Any other batch file: runs through cmd.exe with [`crate::env::batch_safe_args`].
+    Other,
+}
+
+/// Reads the batch file `shim` (see [`BatchKind`]); `env` gives the `PATH` node is looked for in.
+pub fn classify_batch(shim: &Path, env: &BTreeMap<String, String>) -> BatchKind {
     let script = shim.parent().and_then(|dir| {
         let text = std::fs::read_to_string(shim).ok()?;
         npm_shim_script(&text, dir).filter(|s| s.is_file())
     });
-    let node = script.as_ref().and_then(|_| {
-        let beside = shim.parent()?.join("node.exe");
-        if beside.is_file() {
-            return Some(beside);
-        }
+    let Some(script) = script else {
+        return BatchKind::Other;
+    };
+    let beside = shim
+        .parent()
+        .map(|d| d.join("node.exe"))
+        .filter(|p| p.is_file());
+    let node = beside.or_else(|| {
         env.get("PATH")
             .map(String::as_str)
             .unwrap_or("")
@@ -153,22 +176,60 @@ pub fn launch_command_on(
             .map(|d| d.join("node.exe"))
             .find(|p| p.is_file())
     });
-    match (script, node) {
-        (Some(script), Some(node)) => {
+    match node {
+        Some(node) => BatchKind::Shim { node, script },
+        None => BatchKind::ShimWithoutNode,
+    }
+}
+
+fn is_batch(path: &str) -> bool {
+    let lower = path.to_ascii_lowercase();
+    lower.ends_with(".cmd") || lower.ends_with(".bat")
+}
+
+/// The program and arguments that actually start `program args…` (a terminal or a question):
+/// see [`launch_command_on`].
+pub fn launch_command(
+    program: &str,
+    args: &[String],
+    env: &BTreeMap<String, String>,
+) -> Result<(String, Vec<String>), LaunchError> {
+    launch_command_on(Os::CURRENT, program, args, env)
+}
+
+/// On Windows an npm or pnpm shim (`codex.cmd`, `claude.cmd`) is skipped: its script runs
+/// with `node` directly, so no argument goes through `cmd.exe` (Codex's `-c` values are full
+/// of quotes). A shim without node is refused ([`LaunchError::NodeMissing`]). Any other batch
+/// file runs as is with [`crate::env::batch_safe_args`]. A real program, and anything on
+/// macOS, is untouched.
+pub fn launch_command_on(
+    os: Os,
+    program: &str,
+    args: &[String],
+    env: &BTreeMap<String, String>,
+) -> Result<(String, Vec<String>), LaunchError> {
+    if os != Os::Windows || !is_batch(program) {
+        return Ok((program.to_string(), args.to_vec()));
+    }
+    match classify_batch(Path::new(program), env) {
+        BatchKind::Shim { node, script } => {
             let mut launched = vec![script.to_string_lossy().into_owned()];
             launched.extend(args.iter().cloned());
-            (node.to_string_lossy().into_owned(), launched)
+            Ok((node.to_string_lossy().into_owned(), launched))
         }
-        _ => (
+        BatchKind::ShimWithoutNode => Err(LaunchError::NodeMissing),
+        BatchKind::Other => Ok((
             program.to_string(),
             crate::env::batch_safe_args(program, args),
-        ),
+        )),
     }
 }
 
 /// The script an npm shim runs: the last `"%dp0%\…"` (npm's cmd-shim) or `"%~dp0\…"` (pnpm)
 /// of its line ending in `%*`, `%dp0%` / `%~dp0` being the shim's folder `dir`. `..` goes up
-/// (pnpm points into its store from `bin\`).
+/// (pnpm points into its store from `bin\`). Accepting `..` is safe: the path comes from a
+/// shim file already on disk, found where the user installed the agent (or set in
+/// Réglages), not from user text, and the caller only runs it once it exists as a file.
 fn npm_shim_script(text: &str, dir: &Path) -> Option<PathBuf> {
     let line = text.lines().rev().find(|l| l.trim_end().ends_with("%*"))?;
     let start = ["\"%dp0%\\", "\"%~dp0\\"]
@@ -312,32 +373,34 @@ title %COMSPEC% & \"%_prog%\"  \"%dp0%\\node_modules\\@openai\\codex\\bin\\codex
         let shim_s = shim.to_string_lossy().into_owned();
 
         // node from PATH, the shim's script first, the arguments untouched.
-        let (program, launched) = launch_command_on(Os::Windows, &shim_s, &args, &env);
+        let (program, launched) =
+            launch_command_on(Os::Windows, &shim_s, &args, &env).expect("launch");
         assert_eq!(PathBuf::from(&program), nodejs.join("node.exe"));
         assert_eq!(launched[0], script.to_string_lossy());
         assert_eq!(&launched[1..], args.as_slice());
 
         // The node next to the shim wins, as in the shim itself.
         touch(&npm.join("node.exe"));
-        let (program, _) = launch_command_on(Os::Windows, &shim_s, &args, &env);
+        let (program, _) = launch_command_on(Os::Windows, &shim_s, &args, &env).expect("launch");
         assert_eq!(PathBuf::from(&program), npm.join("node.exe"));
 
         // Any other batch file runs as is, with arguments made safe for cmd.exe.
         let other = npm.join("other.cmd");
         std::fs::write(&other, "@echo off\r\nreal.exe %*\r\n").expect("write");
         let other_s = other.to_string_lossy().into_owned();
-        let (program, launched) = launch_command_on(Os::Windows, &other_s, &args, &env);
+        let (program, launched) =
+            launch_command_on(Os::Windows, &other_s, &args, &env).expect("launch");
         assert_eq!(program, other_s);
         assert_eq!(launched, crate::env::batch_safe_args(&other_s, &args));
 
         // A real program, or macOS: untouched.
         assert_eq!(
             launch_command_on(Os::Windows, "C:\\x\\claude.exe", &args, &env),
-            ("C:\\x\\claude.exe".to_string(), args.clone())
+            Ok(("C:\\x\\claude.exe".to_string(), args.clone()))
         );
         assert_eq!(
             launch_command_on(Os::Unix, &shim_s, &args, &env),
-            (shim_s.clone(), args.clone())
+            Ok((shim_s.clone(), args.clone()))
         );
     }
 
@@ -365,7 +428,7 @@ node  \"%~dp0\\..\\node_modules\\@openai\\codex\\bin\\codex.js\" %*\r\n)\r\n";
         let env = windows_env(dir.path(), &nodejs);
         let args = vec!["-c".to_string(), "a=\"b\"".to_string()];
         let (program, launched) =
-            launch_command_on(Os::Windows, &shim.to_string_lossy(), &args, &env);
+            launch_command_on(Os::Windows, &shim.to_string_lossy(), &args, &env).expect("launch");
         assert_eq!(PathBuf::from(program), nodejs.join("node.exe"));
         assert_eq!(PathBuf::from(&launched[0]), script);
         assert_eq!(&launched[1..], args.as_slice());
@@ -386,11 +449,44 @@ node  \"%~dp0\\..\\node_modules\\@openai\\codex\\bin\\codex.js\" %*\r\n)\r\n";
             assert!(text.contains("\r\n"), "{name}.cmd needs CRLF line endings");
             let args = vec!["--x".to_string()];
             let (program, launched) =
-                launch_command_on(Os::Windows, &shim.to_string_lossy(), &args, &env);
+                launch_command_on(Os::Windows, &shim.to_string_lossy(), &args, &env)
+                    .expect("launch");
             assert_eq!(PathBuf::from(program), nodejs.join("node.exe"));
             assert_eq!(PathBuf::from(&launched[0]), tools.join(name).join(name));
             assert_eq!(&launched[1..], args.as_slice());
         }
+    }
+
+    #[test]
+    fn a_shim_without_node_is_not_run_through_cmd() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let home = dir.path().join("Jane Doe");
+        let npm = home.join("AppData").join("Roaming").join("npm");
+        let shim = npm.join("codex.cmd");
+        std::fs::create_dir_all(&npm).expect("mkdir");
+        std::fs::write(&shim, NPM_SHIM).expect("write");
+        touch(
+            &["node_modules", "@openai", "codex", "bin", "codex.js"]
+                .iter()
+                .fold(npm.clone(), |d, p| d.join(p)),
+        );
+        // No node.exe beside the shim nor on PATH: its ELSE branch would run `%*` in a block.
+        let env = windows_env(&home, &dir.path().join("empty"));
+        let shim_s = shim.to_string_lossy().into_owned();
+        assert_eq!(
+            launch_command_on(Os::Windows, &shim_s, &["x)else(calc".to_string()], &env),
+            Err(LaunchError::NodeMissing)
+        );
+        // Lookups treat it as not installed: the « install » state, never a launch.
+        assert_eq!(
+            resolve_binary_on(Os::Windows, &codex::BINARY, None, None, &env),
+            None
+        );
+        assert_eq!(
+            resolve_binary_on(Os::Windows, &codex::BINARY, None, Some(&shim_s), &env),
+            None
+        );
+        assert_eq!(classify_batch(&shim, &env), BatchKind::ShimWithoutNode);
     }
 
     #[test]
