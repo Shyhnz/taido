@@ -141,6 +141,7 @@ import {
   isActiveToday,
   isClaudeWaiting,
   MockAgents,
+  mockText,
   ringUrgency,
   type SessionRec,
   sessionLine,
@@ -2496,14 +2497,14 @@ export class MockBackend {
       };
       const banner =
         input.kind === "agent"
-          ? `Claude Code (simulé) dans ${workdir.path}${
+          ? `${mockText("Claude Code (simulé) dans", "Claude Code in")} ${workdir.path}${
               input.initialPrompt?.trim()
                 ? `\r\n> ${input.initialPrompt.trim().replace(/\n/g, "\r\n  ")}`
                 : ""
             }`
           : input.kind === "command"
             ? `$ ${command}`
-            : `Shell (simulé) dans ${workdir.path}`;
+            : `${mockText("Shell (simulé) dans", "Shell in")} ${workdir.path}`;
       const opened = this.terminals.open(
         info,
         { cols: input.cols, rows: input.rows },
@@ -2685,7 +2686,7 @@ export class MockBackend {
           agent: "claude",
         },
         { cols, rows },
-        `Claude Code (simulé) dans ${cwd}`,
+        `${mockText("Claude Code (simulé) dans", "Claude Code in")} ${cwd}`,
       );
       this.changed(["terminals"]);
       return opened;
@@ -2781,7 +2782,7 @@ export class MockBackend {
       const opened = this.terminals.open(
         info,
         { cols: input.cols, rows: input.rows },
-        `Claude Code (simulé) · conversation reprise dans ${workdir.path}`,
+        `${mockText("Claude Code (simulé) · conversation reprise dans", "Claude Code · conversation resumed in")} ${workdir.path}`,
       );
       this.agents.resume(session.id, opened);
       this.board.advanceOnClaude(t);

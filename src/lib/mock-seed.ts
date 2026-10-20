@@ -5,10 +5,13 @@
 
 import { addDays, subDays, subHours, subMinutes } from "date-fns";
 import type { SubjectColor } from "../bindings";
+import { activeLanguage } from "../i18n";
 import { toLocalDateString } from "./dates";
 import type { MockBackend } from "./mock-backend";
+import { defaultColumnId } from "./mock-board";
+import { INBOX_EN, SUBJECTS_EN } from "./mock-seed-en";
 
-interface SeedTask {
+export interface SeedTask {
   title: string;
   description?: string;
   section?: string;
@@ -22,9 +25,11 @@ interface SeedTask {
   completedHoursAgo?: number;
   createdDaysAgo: number;
   notes?: [string, number][];
+  /** Kanban column index (0 = first); default: the first column, or Done when completed. */
+  column?: number;
 }
 
-interface SeedSubject {
+export interface SeedSubject {
   name: string;
   color: SubjectColor;
   /** `null`: project without folder on disk (D5). */
@@ -37,7 +42,7 @@ interface SeedSubject {
   group?: boolean;
 }
 
-const SUBJECTS: SeedSubject[] = [
+const SUBJECTS_FR: SeedSubject[] = [
   {
     name: "Acme Studio",
     color: "violet",
@@ -227,7 +232,7 @@ const SUBJECTS: SeedSubject[] = [
   },
 ];
 
-const INBOX: SeedTask[] = [
+const INBOX_FR: SeedTask[] = [
   { title: "Tester Raycast pour les snippets", createdDaysAgo: 1 },
   {
     title: "Lire l'article sur les worktrees git",
@@ -238,6 +243,9 @@ const INBOX: SeedTask[] = [
 
 export function seedMockData(backend: MockBackend): void {
   const now = backend.now();
+  const french = activeLanguage === "fr";
+  const SUBJECTS = french ? SUBJECTS_FR : SUBJECTS_EN;
+  const INBOX = french ? INBOX_FR : INBOX_EN;
 
   const addTask = (
     task: SeedTask,
@@ -268,6 +276,10 @@ export function seedMockData(backend: MockBackend): void {
       createdAt,
       updatedAt: completedAt ?? createdAt,
       priority: task.priority ?? 1,
+      boardColumnId:
+        task.column !== undefined && subjectId !== null
+          ? defaultColumnId(subjectId, task.column)
+          : null,
     });
     for (const [text, done, dueIn] of task.subtasks ?? []) {
       const child = backend.insertSubtask(rec.id, text, done, createdAt);

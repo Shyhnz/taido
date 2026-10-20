@@ -27,7 +27,7 @@ import type {
   TerminalInfo,
   WaitingKind,
 } from "../bindings";
-import { agentErrorLabel } from "../i18n";
+import { activeLanguage, agentErrorLabel } from "../i18n";
 import type { MockTerminals } from "./mock-terminals";
 
 /** Delays of the simulation (ms). */
@@ -42,11 +42,26 @@ export const AGENT_DELAYS = {
   summary: 300,
 } as const;
 
-export const MOCK_ACTIVITY = "Commande : npm test";
-export const MOCK_PERMISSION = "Commande : rm -rf dist";
-export const MOCK_QUESTION = "Tu veux que je continue ?";
-export const MOCK_DONE_MESSAGE =
-  "Les tests passent : 42 réussis, aucun échec. J'ai aussi retiré un import inutile.";
+/** Simulated texts follow the UI language (tests pin French). */
+export const mockText = (fr: string, en: string): string =>
+  activeLanguage === "fr" ? fr : en;
+
+export const MOCK_ACTIVITY = mockText(
+  "Commande : npm test",
+  "Command: npm test",
+);
+export const MOCK_PERMISSION = mockText(
+  "Commande : rm -rf dist",
+  "Command: rm -rf dist",
+);
+export const MOCK_QUESTION = mockText(
+  "Tu veux que je continue ?",
+  "Shall I continue?",
+);
+export const MOCK_DONE_MESSAGE = mockText(
+  "Les tests passent : 42 réussis, aucun échec. J'ai aussi retiré un import inutile.",
+  "Done. All 42 tests pass.",
+);
 
 export interface SessionRec {
   id: string;
@@ -386,7 +401,10 @@ export class MockAgents {
     const timer = setTimeout(() => {
       this.summaryTimers.delete(timer);
       if (s.endedAt === null || s.aiSummary !== null) return;
-      s.aiSummary = clip(`Résumé simulé : ${first}`, TITLE_MAX);
+      s.aiSummary = clip(
+        `${mockText("Résumé simulé :", "Simulated summary:")} ${first}`,
+        TITLE_MAX,
+      );
       this.deps.changed(s.taskId);
     }, AGENT_DELAYS.summary);
     this.summaryTimers.add(timer);
@@ -487,7 +505,10 @@ export class MockAgents {
     const s = this.sessions.find((x) => x.terminalId === info.id);
     const term = this.deps.terminals;
     if (!s) {
-      term.print(info.id, `${DIM("(simulé)")} ${line}\r\n`);
+      term.print(
+        info.id,
+        `${DIM(mockText("(simulé)", "(simulated)"))} ${line}\r\n`,
+      );
       term.prompt(info.id);
       return;
     }
@@ -499,7 +520,10 @@ export class MockAgents {
         term.exitProcess(info.id, 0);
         return;
       case "/x":
-        term.print(info.id, `${DIM("Plantage simulé.")}\r\n`);
+        term.print(
+          info.id,
+          `${DIM(mockText("Plantage simulé.", "Simulated crash."))}\r\n`,
+        );
         term.exitProcess(info.id, 1);
         return;
       case "/clear":
@@ -525,7 +549,7 @@ export class MockAgents {
         });
         return;
       case "/q": {
-        const message = `J'ai fini l'analyse du job. ${MOCK_QUESTION}`;
+        const message = `${mockText("J'ai fini l'analyse du job.", "I finished analysing the job.")} ${MOCK_QUESTION}`;
         this.hook(s, "Stop", { last_assistant_message: message });
         this.record(s, "reply", message);
         term.print(info.id, `${message}\r\n`);
@@ -678,7 +702,10 @@ export class MockAgents {
     this.sessions.push(next);
     this.deps.terminals.setAgentSession(info.id, next.id);
     this.hook(next, "SessionStart", { source: "clear" });
-    this.deps.terminals.print(info.id, `${DIM("(conversation effacée)")}\r\n`);
+    this.deps.terminals.print(
+      info.id,
+      `${DIM(mockText("(conversation effacée)", "(conversation cleared)"))}\r\n`,
+    );
     this.deps.terminals.prompt(info.id);
     this.deps.changed(next.taskId);
   }
