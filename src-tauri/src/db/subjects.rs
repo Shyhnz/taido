@@ -897,8 +897,8 @@ mod tests {
         assert!(matches!(bad, Err(AppError::Invalid(_))));
         let unlinked = update(&conn, &patch(None, None, Some(""))).expect("unlink");
         assert_eq!(unlinked.root_path, None);
-        let linked = update(&conn, &patch(None, None, Some("/new"))).expect("link");
-        assert_eq!(linked.root_path.as_deref(), Some("/new"));
+        let linked = update(&conn, &patch(None, None, Some(crate::abs!("/new")))).expect("link");
+        assert_eq!(linked.root_path.as_deref(), Some(crate::abs!("/new")));
         let missing = update(
             &conn,
             &UpdateSubjectInput {

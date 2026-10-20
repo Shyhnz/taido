@@ -124,7 +124,8 @@ fn claude_is_launched_with_the_spec_arguments_and_environment() {
 
     let args: Vec<&str> = out
         .lines()
-        .filter_map(|l| l.trim_end_matches('\r').strip_prefix("ARG:"))
+        // ConPTY prefixes the first line with terminal escape sequences.
+        .filter_map(|l| l.trim_end_matches('\r').split_once("ARG:").map(|(_, a)| a))
         .collect();
     let claude_id = args[1];
     assert_eq!(args[0], "--session-id");

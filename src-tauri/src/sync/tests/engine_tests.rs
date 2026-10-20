@@ -216,7 +216,7 @@ async fn local_only_columns_survive_an_apply() {
     assert_eq!(
         mac.text(&format!("SELECT root_path FROM subjects WHERE id = '{s}'"))
             .as_deref(),
-        Some("/tmp/Alpha")
+        Some(crate::abs!("/tmp/Alpha"))
     );
     assert_eq!(
         mac.text(&format!("SELECT subpath FROM sections WHERE id = '{sec}'"))

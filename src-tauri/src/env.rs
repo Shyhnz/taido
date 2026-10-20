@@ -172,7 +172,9 @@ pub fn kill_tree(pid: u32) {
 /// first and the last one, which shifts every quoted argument, so no quoting can be trusted;
 /// and `%*` expands inside the batch body before it is parsed, where a `)` closes an
 /// `IF … ( … )` block. Every argument is therefore made free of what cmd.exe interprets: `"`
-/// becomes `'`, line breaks become spaces, and `& | < > ^ % ! ( )` become their full-width
+/// becomes `'`, line breaks become spaces, blanks become no-break spaces (a blank would make
+/// the command line quote the argument, and a path with blanks quotes the program: three
+/// quotes or more and cmd drops the first one, which cuts the program's path), and `& | < > ^ % ! ( )` become their full-width
 /// look-alikes (`＆ ｜ ＜ ＞ ＾ ％ ！ （ ）`). Paths passed as arguments that contain these
 /// characters (an attachments folder `Task (abc123)`) then point nowhere: a limit of such
 /// unrecognised launchers only. The outer-quote form `cmd /d /s /c "…"` (Rust's std) cannot
@@ -185,10 +187,14 @@ pub fn batch_safe_args(program: &str, args: &[String]) -> Vec<String> {
     }
     args.iter()
         .map(|arg| {
+            if arg.is_empty() {
+                // An empty argument would be written as `""`.
+                return "\u{A0}".to_string();
+            }
             arg.chars()
                 .map(|c| match c {
                     '"' => '\'',
-                    '\r' | '\n' => ' ',
+                    ' ' | '\t' | '\r' | '\n' => '\u{A0}',
                     '&' => '\u{FF06}',
                     '|' => '\u{FF5C}',
                     '<' => '\u{FF1C}',
@@ -372,10 +378,10 @@ mod tests {
             safe,
             [
                 "--name",
-                "Acme · 'Q\u{FF06}A' 100\u{FF05}",
+                "Acme\u{A0}·\u{A0}'Q\u{FF06}A'\u{A0}100\u{FF05}",
                 "a\u{FF06}b\u{FF5C}c\u{FF1E}d\u{FF1C}e\u{FF3E}f",
-                "two lines",
-                "C:\\Users\\Jane Doe\\AppData\\Roaming\\taido\\claude-hooks.json",
+                "two\u{A0}lines",
+                "C:\\Users\\Jane\u{A0}Doe\\AppData\\Roaming\\taido\\claude-hooks.json",
             ]
         );
         // A real program gets its arguments untouched.
@@ -436,13 +442,19 @@ mod tests {
         for c in ['&', '|', '<', '>', '^', '%', '!', '(', ')'] {
             assert!(!after_program.contains(c), "{c:?} in {line}");
         }
-        assert_eq!(safe[1], "a \u{FF06} echo pwned\u{FF1E} p.txt");
-        assert_eq!(safe[2], "b' \u{FF06} echo pwned2\u{FF1E} p2.txt");
+        assert_eq!(
+            safe[1],
+            "a\u{A0}\u{FF06}\u{A0}echo\u{A0}pwned\u{FF1E}\u{A0}p.txt"
+        );
+        assert_eq!(
+            safe[2],
+            "b'\u{A0}\u{FF06}\u{A0}echo\u{A0}pwned2\u{FF1E}\u{A0}p2.txt"
+        );
         // `%*` inside an `IF … ( … )` block: a `)` would close it.
         assert_eq!(safe[5], "x\u{FF09}else\u{FF08}calc");
         assert_eq!(
             safe[6],
-            "C:\\Users\\Jane Doe\\Taido\\Attachments\\Globex\\Task \u{FF08}abc123\u{FF09}"
+            "C:\\Users\\Jane\u{A0}Doe\\Taido\\Attachments\\Globex\\Task\u{A0}\u{FF08}abc123\u{FF09}"
         );
     }
 

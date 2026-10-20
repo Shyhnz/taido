@@ -868,7 +868,13 @@ mod tests {
         );
         assert_eq!(
             wd(&in_web),
-            Some((format!("{root}/apps/web"), WorkdirSource::Section))
+            Some((
+                std::path::Path::new(&root)
+                    .join("apps/web")
+                    .to_string_lossy()
+                    .into_owned(),
+                WorkdirSource::Section
+            ))
         );
         assert_eq!(wd(&in_plain), Some((root.clone(), WorkdirSource::Subject)));
         let set = |id: &str, path: Option<&str>| {
@@ -919,7 +925,7 @@ mod tests {
             &conn,
             &SetWorkdirOverrideInput {
                 id: c.clone(),
-                path: Some("/custom".into()),
+                path: Some(crate::abs!("/custom").into()),
             },
         )
         .expect("override");
@@ -936,11 +942,11 @@ mod tests {
         };
         // Reorder inside the same place: keeps the override.
         let d = mv(&c, Some(&s1), None, Some(0)).expect("move");
-        assert_eq!(d.workdir_override.as_deref(), Some("/custom"));
+        assert_eq!(d.workdir_override.as_deref(), Some(crate::abs!("/custom")));
         assert_eq!(titles_in(&conn, Some(&s1), None), vec!["c", "a", "b"]);
         // To a section of the same subject: keeps the override.
         let d = mv(&c, Some(&s1), Some(&sec1), None).expect("move");
-        assert_eq!(d.workdir_override.as_deref(), Some("/custom"));
+        assert_eq!(d.workdir_override.as_deref(), Some(crate::abs!("/custom")));
         assert_eq!(d.section.map(|s| s.id), Some(sec1.clone()));
         // To another subject: clears it.
         let d = mv(&c, Some(&s2), None, None).expect("move");
@@ -1421,7 +1427,7 @@ mod tests {
             (c.subject_id.as_deref(), c.section_id),
             (Some(s1.as_str()), None)
         );
-        assert_eq!(c.workdir_override.as_deref(), Some("/child"));
+        assert_eq!(c.workdir_override.as_deref(), Some(crate::abs!("/child")));
         // Another subject: cleared, like the parent's.
         mv(&parent, Some(&s2), None).expect("move");
         let c = load(&conn, &child).expect("child");
