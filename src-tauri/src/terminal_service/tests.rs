@@ -189,7 +189,7 @@ fn without_task_context_no_file_is_passed() {
 
 #[test]
 fn folder_and_binary_errors_create_nothing() {
-    let f = fixture(Some("/nope/fake-claude"));
+    let f = fixture(Some(crate::abs!("/nope/fake-claude")));
     let inbox = task(&f.db.lock().expect("lock"), "Sans dossier", None, None);
     assert!(matches!(
         f.service.open(&f.db, &f.input(&inbox, TerminalKind::Shell)),
@@ -237,7 +237,7 @@ fn set_claude_path(f: &Fixture, path: &str) {
 fn the_claude_path_setting_is_read_at_each_launch() {
     let f = fixture(None);
     let t = f.task_with_folder();
-    set_claude_path(&f, "/nope/claude");
+    set_claude_path(&f, crate::abs!("/nope/claude"));
     assert!(matches!(
         f.service.open(&f.db, &f.input(&t, TerminalKind::Agent)),
         Err(AppError::ClaudeMissing)
@@ -257,7 +257,7 @@ fn the_claude_path_setting_is_read_at_each_launch() {
 fn the_override_wins_over_the_claude_path_setting() {
     let f = fixture(Some(&fake_claude()));
     let t = f.task_with_folder();
-    set_claude_path(&f, "/nope/claude");
+    set_claude_path(&f, crate::abs!("/nope/claude"));
     let info = f
         .service
         .open(&f.db, &f.input(&t, TerminalKind::Agent))
@@ -297,7 +297,7 @@ fn check_claude_uses_the_binary_a_launch_would_use() {
             logged_in: Some(false),
         }
     );
-    set_claude_path(&f, "/nope/claude");
+    set_claude_path(&f, crate::abs!("/nope/claude"));
     let missing = f
         .service
         .check_agent(&f.db, crate::model::Agent::Claude, Duration::from_secs(5))
@@ -434,7 +434,7 @@ fn installed_agents_lists_only_the_binaries_found() {
     settings::update(
         &f.db.lock().expect("lock"),
         &crate::model::SettingsPatch {
-            codex_path: Some("/nope/codex".into()),
+            codex_path: Some(crate::abs!("/nope/codex").into()),
             ..Default::default()
         },
     )
@@ -443,7 +443,7 @@ fn installed_agents_lists_only_the_binaries_found() {
         f.service.installed_agents(&f.db).expect("installed"),
         vec![crate::model::Agent::Claude]
     );
-    set_claude_path(&f, "/nope/claude");
+    set_claude_path(&f, crate::abs!("/nope/claude"));
     assert!(f
         .service
         .installed_agents(&f.db)

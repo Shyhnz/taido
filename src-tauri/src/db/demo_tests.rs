@@ -80,7 +80,8 @@ fn demo_survives_a_restart() {
                     name: (*name).into(),
                     color: Some(color),
                     // "Perso" has no folder on disk (D5).
-                    root_path: (*name != "Perso").then(|| format!("/tmp/demo/{name}")),
+                    root_path: (*name != "Perso")
+                        .then(|| crate::db::test_support::abs(&format!("/tmp/demo/{name}"))),
                     parent_id: None,
                 },
             )

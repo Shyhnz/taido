@@ -519,15 +519,19 @@ mod tests {
                 },
             )
         };
+        let spaced = format!("  {} ", crate::abs!("/opt/claude/bin/claude"));
         let cases: [(Option<&str>, Option<&str>); 5] = [
             (
-                Some("  /opt/claude/bin/claude "),
-                Some("/opt/claude/bin/claude"),
+                Some(spaced.as_str()),
+                Some(crate::abs!("/opt/claude/bin/claude")),
             ),
             // Absent from the patch: unchanged.
-            (None, Some("/opt/claude/bin/claude")),
+            (None, Some(crate::abs!("/opt/claude/bin/claude"))),
             (Some(""), None),
-            (Some("/usr/local/bin/claude"), Some("/usr/local/bin/claude")),
+            (
+                Some(crate::abs!("/usr/local/bin/claude")),
+                Some(crate::abs!("/usr/local/bin/claude")),
+            ),
             (Some("   "), None),
         ];
         for (input, expected) in cases {
@@ -535,12 +539,12 @@ mod tests {
             assert_eq!(s.claude_path.as_deref(), expected, "{input:?}");
             assert_eq!(get(&conn).expect("get").claude_path.as_deref(), expected);
         }
-        set(Some("/usr/bin/claude")).expect("update");
+        set(Some(crate::abs!("/usr/bin/claude"))).expect("update");
         assert!(matches!(set(Some("bin/claude")), Err(AppError::Invalid(_))));
         // A refused patch changes nothing.
         assert_eq!(
             get(&conn).expect("get").claude_path.as_deref(),
-            Some("/usr/bin/claude")
+            Some(crate::abs!("/usr/bin/claude"))
         );
     }
 
@@ -556,14 +560,17 @@ mod tests {
             &conn,
             &SettingsPatch {
                 default_agent: Some(Agent::Codex),
-                codex_path: Some(" /opt/homebrew/bin/codex ".into()),
+                codex_path: Some(format!(" {} ", crate::abs!("/opt/homebrew/bin/codex"))),
                 agent_chosen: Some(true),
                 ..Default::default()
             },
         )
         .expect("update");
         assert_eq!(s.default_agent, Agent::Codex);
-        assert_eq!(s.codex_path.as_deref(), Some("/opt/homebrew/bin/codex"));
+        assert_eq!(
+            s.codex_path.as_deref(),
+            Some(crate::abs!("/opt/homebrew/bin/codex"))
+        );
         assert!(s.agent_chosen);
         let s = update(
             &conn,

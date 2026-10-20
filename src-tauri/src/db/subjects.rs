@@ -698,7 +698,7 @@ mod tests {
         CreateSubjectInput {
             name: name.into(),
             color: Some(SubjectColor::Teal),
-            root_path: Some("/Users/me/projects".into()),
+            root_path: Some(crate::abs!("/Users/me/projects").into()),
             parent_id: None,
         }
     }
@@ -791,7 +791,10 @@ mod tests {
         let b = create(&conn, &input("Beta")).expect("create");
         assert_eq!(a.name, "Alpha");
         assert_eq!(a.color, SubjectColor::Teal);
-        assert_eq!(a.root_path.as_deref(), Some("/Users/me/projects"));
+        assert_eq!(
+            a.root_path.as_deref(),
+            Some(crate::abs!("/Users/me/projects"))
+        );
         assert_eq!(a.position, 1.0);
         assert_eq!(b.position, 2.0);
         assert_eq!(a.open_count, 0);
@@ -839,11 +842,15 @@ mod tests {
         /// (name, folder, expected stored folder or an `Invalid` error)
         type Case<'a> = (&'a str, Option<&'a str>, Result<Option<&'a str>, ()>);
         let cases: &[Case] = &[
-            ("Ok", Some("/abs/path"), Ok(Some("/abs/path"))),
+            (
+                "Ok",
+                Some(crate::abs!("/abs/path")),
+                Ok(Some(crate::abs!("/abs/path"))),
+            ),
             ("Ok", None, Ok(None)),
             ("Ok", Some(""), Ok(None)),
             ("Ok", Some("  "), Ok(None)),
-            ("", Some("/abs/path"), Err(())),
+            ("", Some(crate::abs!("/abs/path")), Err(())),
             ("   ", None, Err(())),
             ("Ok", Some("relative/path"), Err(())),
             ("Ok", Some("./here"), Err(())),

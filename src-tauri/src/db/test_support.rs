@@ -7,6 +7,27 @@ use crate::model::{
     CreateSectionInput, CreateSubjectInput, CreateTaskInput, SubjectColor, TerminalKind,
 };
 
+/// An absolute path literal that is absolute on this OS too: `/x` on Unix, `C:/x` on Windows.
+#[macro_export]
+macro_rules! abs {
+    ($path:literal) => {
+        if cfg!(windows) {
+            concat!("C:", $path)
+        } else {
+            $path
+        }
+    };
+}
+
+/// `abs!` for a path built at run time.
+pub fn abs(path: &str) -> String {
+    if cfg!(windows) {
+        format!("C:{path}")
+    } else {
+        path.to_string()
+    }
+}
+
 /// Creates a subject rooted at `/tmp/<name>` and returns its id.
 pub fn subject(conn: &Connection, name: &str) -> String {
     subjects::create(
@@ -14,7 +35,7 @@ pub fn subject(conn: &Connection, name: &str) -> String {
         &CreateSubjectInput {
             name: name.into(),
             color: Some(SubjectColor::Violet),
-            root_path: Some(format!("/tmp/{name}")),
+            root_path: Some(abs(&format!("/tmp/{name}"))),
             parent_id: None,
         },
     )

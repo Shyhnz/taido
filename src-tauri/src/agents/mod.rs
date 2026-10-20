@@ -304,7 +304,7 @@ mod tests {
             (
                 "PATH".to_string(),
                 format!(
-                    "C:\\Windows\\System32;\"{}\";C:\\Program Files\\nodejs\\",
+                    "C:\\Windows\\System32;\"{}\";C:\\Taido-test-no-such-dir\\nodejs\\",
                     extra_path.to_string_lossy()
                 ),
             ),
@@ -495,7 +495,7 @@ node  \"%~dp0\\..\\node_modules\\@openai\\codex\\bin\\codex.js\" %*\r\n)\r\n";
             ("USERPROFILE".to_string(), "C:\\Users\\Jane Doe".to_string()),
             (
                 "PATH".to_string(),
-                "C:\\Windows\\System32;C:\\Program Files\\nodejs\\".to_string(),
+                "C:\\Windows\\System32;C:\\Taido-test-no-such-dir\\nodejs\\".to_string(),
             ),
         ]);
         let bin = resolve_binary_on(Os::Windows, &claude::BINARY, None, None, &env);

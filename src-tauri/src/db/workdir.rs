@@ -108,7 +108,16 @@ mod tests {
         ];
         for &(o, root, sub, expected) in cases {
             let got = resolve(o, root, sub).map(|w| (w.path, w.source));
-            let expected = expected.map(|(p, s)| (p.to_string(), s));
+            let expected = expected.map(|(p, s)| {
+                // Joined with the OS separator, like the code under test.
+                let p = match (s, root, sub) {
+                    (WorkdirSource::Section, Some(root), Some(sub)) => {
+                        Path::new(root).join(sub).to_string_lossy().into_owned()
+                    }
+                    _ => p.to_string(),
+                };
+                (p, s)
+            });
             assert_eq!(got, expected, "{o:?} {root:?} {sub:?}");
         }
     }

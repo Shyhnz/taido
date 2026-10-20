@@ -322,6 +322,20 @@ fn read_loop(mut reader: Box<dyn Read + Send>, tx: mpsc::Sender<Vec<u8>>) {
     }
 }
 
+/// Tests only: ConPTY asks the terminal for the cursor position (`ESC [ 6 n`) when it starts
+/// and holds the process back until it gets an answer. In the app xterm.js answers; here
+/// nothing does, so answer like a terminal at the top left.
+#[cfg(all(test, windows))]
+fn answer_cursor_queries(term: &Term, bytes: &[u8]) {
+    let queries = bytes.windows(4).filter(|w| *w == b"\x1b[6n").count();
+    for _ in 0..queries {
+        if let Ok(mut writer) = term.writer.lock() {
+            let _ = writer.write_all(b"\x1b[1;1R");
+            let _ = writer.flush();
+        }
+    }
+}
+
 /// Coalesces chunks (fewer, larger IPC messages) and appends them to the buffer.
 fn batch_loop(rx: mpsc::Receiver<Vec<u8>>, term: &Term) {
     let mut pending: Vec<u8> = Vec::with_capacity(FLUSH_BYTES);
@@ -341,6 +355,8 @@ fn batch_loop(rx: mpsc::Receiver<Vec<u8>>, term: &Term) {
         };
         if !pending.is_empty() {
             let bytes = std::mem::replace(&mut pending, Vec::with_capacity(FLUSH_BYTES));
+            #[cfg(all(test, windows))]
+            answer_cursor_queries(term, &bytes);
             if let Ok(mut out) = term.out.lock() {
                 out.ring.push(&bytes);
                 if let Some(sink) = out.subscriber.as_mut() {

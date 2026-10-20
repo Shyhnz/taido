@@ -1226,13 +1226,13 @@ mod tests {
             &conn,
             &SetWorkdirOverrideInput {
                 id: t.clone(),
-                path: Some("/picked".into()),
+                path: Some(crate::abs!("/picked").into()),
             },
         )
         .expect("override");
         assert_eq!(
             d.workdir.map(|w| (w.path, w.source)),
-            Some(("/picked".to_string(), WorkdirSource::Task))
+            Some((crate::abs!("/picked").to_string(), WorkdirSource::Task))
         );
     }
 
@@ -1374,11 +1374,20 @@ mod tests {
                 .workdir
                 .map(|w| (w.path, w.source))
         };
-        assert_eq!(wd(&child), Some(("/tmp/S1".into(), WorkdirSource::Subject)));
-        set_override(&parent, Some("/parent"));
-        assert_eq!(wd(&child), Some(("/parent".into(), WorkdirSource::Task)));
-        set_override(&child, Some("/child"));
-        assert_eq!(wd(&child), Some(("/child".into(), WorkdirSource::Task)));
+        assert_eq!(
+            wd(&child),
+            Some((crate::abs!("/tmp/S1").into(), WorkdirSource::Subject))
+        );
+        set_override(&parent, Some(crate::abs!("/parent")));
+        assert_eq!(
+            wd(&child),
+            Some((crate::abs!("/parent").into(), WorkdirSource::Task))
+        );
+        set_override(&child, Some(crate::abs!("/child")));
+        assert_eq!(
+            wd(&child),
+            Some((crate::abs!("/child").into(), WorkdirSource::Task))
+        );
         let d = detail(&conn, &child).expect("child detail");
         assert_eq!(
             d.parent,
