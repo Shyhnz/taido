@@ -27,13 +27,13 @@ export interface PersistedState {
    */
   syncedSettings?: Record<string, unknown>;
   /**
-   * Attachments (Taido V2.7 bis): synced rows plus where their file stands here (`file`); the
+   * Attachments: synced rows plus where their file stands here (`file`); the
    * files themselves are in the IndexedDB database `todo-files` (src/mobile/files.ts).
    * Optional: absent in a set saved before; a linked one then pulls everything again once.
    */
   attachments?: AttachmentRec[];
   /**
-   * Kanban columns, time segments and task relations (Taido V2.8). Optional: absent in a set
+   * Kanban columns, time segments and task relations. Optional: absent in a set
    * saved before; a linked one then pulls everything again once (the earlier build ignored
    * their rows).
    */
@@ -77,21 +77,21 @@ export interface PersistedSync {
   /** Keys whose deletion waits for the user's confirmation (deletion guard, § 6.2). */
   heldDeletions: string[];
   /**
-   * The linked account (`GET /api/account`, Taido V2.7), read after login and after each
+   * The linked account (`GET /api/account`), read after login and after each
    * successful sync, `null` when unlinked or not read yet. Optional: absent in a set saved
-   * before V2.7.
+   * by an older build.
    */
   account?: AccountInfo | null;
   /**
-   * V2.7 bis: the set was last written by a build that did not keep attachments (its
+   * The set was last written by a build that did not keep attachments (its
    * `state.attachments` was missing). Until the first successful sync of this link, kept
    * attachment files are never dropped; that run then gives back the copies that are still the
    * only ones (`MobileBackend.endFilesRecovery`). Absent otherwise.
    */
   filesRecovery?: boolean;
   /**
-   * V2.8: a whole pull of this link has succeeded (set at the end of each successful run,
-   * cleared at login and when a set from before V2.8 is pulled again). While linked and not
+   * A whole pull of this link has succeeded (set at the end of each successful run,
+   * cleared at login and when a set from an older build is pulled again). While linked and not
    * set, the default Kanban columns are not created: they may still come from the Mac
    * (docs/SYNC.md § 0.7). Absent: not yet.
    */
@@ -123,23 +123,23 @@ export const PERSISTED_KEYS = [
 ] as const satisfies readonly (keyof Persisted)[];
 
 /**
- * Key of `sync` in the store since the project notebook (`sync.3` in V2.8, `sync.2` in V2.7
- * bis, `sync` before). Older builds
+ * Key of `sync` in the store since the project notebook (`sync.3` before it, `sync.2` before that,
+ * `sync` before). Older builds
  * read `sync` under one of `LEGACY_SYNC_KEYS`: once this build has saved, they find four parts
  * out of five, refuse the set (`InconsistentStoreError`) and never save nor sync. An older web
  * app served from the service worker's cache would otherwise send a deletion of every row it
- * does not know (attachments before V2.7 bis, docs/SYNC.md § 0.13 « Rollback »; Kanban
- * columns, time segments and relations before V2.8).
+ * does not know (attachments, Kanban columns, time segments and relations in the earlier
+ * builds, docs/SYNC.md § 0.13 « Rollback »).
  */
 export const SYNC_KEY = "sync.4";
 /**
- * Where V2.8 keeps `sync`. A V2.8 build that loads a set holding notebook rows would diff them
+ * Where the build before the project notebook kept `sync`. A build that loads a set holding notebook rows would diff them
  * as « rows of an entity I do not know that vanished » and send their tombstones.
  */
 export const V28_SYNC_KEY = "sync.3";
-/** Where V2.7 bis keeps `sync`. */
+/** Where the build before that kept `sync`. */
 export const V27_SYNC_KEY = "sync.2";
-/** Where builds before V2.7 bis keep `sync`. */
+/** Where older builds keep `sync`. */
 export const LEGACY_SYNC_KEY = "sync";
 /** Older keys of `sync`, newest first; the first load moves the set to `SYNC_KEY`. */
 export const LEGACY_SYNC_KEYS = [

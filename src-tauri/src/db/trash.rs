@@ -27,7 +27,7 @@ pub struct Purged {
 /// Deletes for good the subjects, tasks and notebook pages soft-deleted before `now - RETENTION`.
 /// Sections, subtasks, journal entries, notebooks (and their page images) and attachments
 /// follow by cascade; the files of those
-/// attachments are removed after the commit (V2.7 bis: their tombstones free the server's
+/// attachments are removed after the commit (their tombstones free the server's
 /// copies too), unless a live attachment still points at them or the copy is not the
 /// attachment's file any more (edited in place, or never hashed): then it stays.
 ///

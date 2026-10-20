@@ -30,7 +30,7 @@ const nav = () => screen.getByRole("navigation", { name: "Navigation" });
 const main = () => screen.getByRole("main");
 
 const project = (name: string, parentId: string | null = null) => {
-  // Taido V2.2 bis: only a group holds projects.
+  // Only a group holds projects.
   const parent = backend().state.subjects.find((s) => s.id === parentId);
   if (parent) parent.isGroup = true;
   return backend().commands.createSubject({
@@ -110,7 +110,7 @@ describe("« À faire »", () => {
   });
 
   it("shows one section per project, named with its group, « Sans projet » last", async () => {
-    // Taido V2.2 bis: Globex is a group (no tasks, no section of its own).
+    // Globex is a group (no tasks, no section of its own).
     const globex = await project("Globex");
     const client = await project("Client", globex.id);
     const perso = await project("Perso");

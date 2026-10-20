@@ -301,7 +301,7 @@ impl TerminalService {
         Ok(info)
     }
 
-    /// Taido V2.3: the folder of the task's attachments, given to Claude with `--add-dir` (it
+    /// The folder of the task's attachments, given to Claude with `--add-dir` (it
     /// lies outside the working folder, in `~/Taido/Pièces jointes`).
     fn attachments_dir(detail: &TaskDetail) -> Option<PathBuf> {
         detail

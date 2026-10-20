@@ -1,5 +1,5 @@
 /**
- * Kanban (Taido V2.2) and chrono (V2.1) on the mock backend. Product decision (2026-10-09): the columns
+ * Kanban and chrono on the mock backend. Product decision (2026-10-09): the columns
  * are the progress of the tasks (« À faire · En cours · À valider · Terminé », renamable);
  * Claude's state shows on the cards. Launching Claude moves a task « À faire » to « En cours »,
  * once; the chrono runs while Claude works and pauses while it waits.
@@ -117,7 +117,7 @@ describe("kanban", () => {
     ).rejects.toMatchObject({ kind: "invalid" });
   });
 
-  it("V2.8: default columns have the core's fixed ids; a card's column is its task's synced column", async () => {
+  it("default columns have the core's fixed ids; a card's column is its task's synced column", async () => {
     const task = await taskWithFolder("T");
     const subjectId = task.subject?.id ?? "";
     let board = await commands.getBoard(subjectId);

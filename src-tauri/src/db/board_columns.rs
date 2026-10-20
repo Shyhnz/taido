@@ -1,4 +1,4 @@
-//! Kanban columns (Taido V2.2, 2026-10-09): the progress of the tasks, per project.
+//! Kanban columns: the progress of the tasks, per project.
 //!
 //! Each project, and « Sans projet » (`subject_id` NULL), has its own ordered columns, created
 //! on first use with [`i18n::default_columns`] (the language of the moment). The last one is the done column: it holds the

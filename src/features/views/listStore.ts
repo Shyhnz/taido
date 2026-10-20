@@ -52,7 +52,7 @@ export const FIRST_ADD_GROUP: Record<ViewKind, string> = {
   upcoming: "day",
   // « À faire » opens « Sans projet » when it is listed.
   all: "no_project",
-  // Taido V2.6: the portfolio has no task list.
+  // The portfolio has no task list.
   portfolio: "none",
 };
 

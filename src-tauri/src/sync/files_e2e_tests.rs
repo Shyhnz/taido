@@ -570,7 +570,7 @@ async fn without_an_account_nothing_is_sent() {
     assert_eq!(
         view(&a, &t, &id),
         AttachmentRemote::None,
-        "as before V2.7 bis"
+        "as before file sync"
     );
 
     // Linked once, then unlinked: a new file stays here too.
@@ -767,7 +767,7 @@ async fn the_sync_service_moves_the_files_after_its_runs() {
     );
 
     let older = a.docs.path().join("ancien.txt");
-    fs::write(&older, b"fait avant V2.7 bis").expect("older file");
+    fs::write(&older, b"made before file sync").expect("older file");
     {
         let conn = a.conn();
         conn.execute(
@@ -782,11 +782,11 @@ async fn the_sync_service_moves_the_files_after_its_runs() {
     wait_for_state(&a, "older", "sent").await;
     assert_eq!(
         fs::read(server_file(&server, "older")).expect("server copy"),
-        b"fait avant V2.7 bis"
+        b"made before file sync"
     );
     assert_eq!(
         a.text("SELECT sha256 FROM attachments WHERE id = ?1", "older"),
-        Some(sha256_bytes(b"fait avant V2.7 bis"))
+        Some(sha256_bytes(b"made before file sync"))
     );
 }
 

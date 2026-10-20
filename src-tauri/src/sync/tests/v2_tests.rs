@@ -1,4 +1,4 @@
-//! Protocol 3 on the Mac (V2.7 task 6): Kanban columns, time segments, relations and
+//! Protocol 3 on the Mac : Kanban columns, time segments, relations and
 //! attachment metadata are pushed, pulled, parked, tombstoned and normalised (N9, N10).
 
 use rusqlite::params;
@@ -670,7 +670,7 @@ fn default_columns_have_fixed_ids() {
 
 const HASH: &str = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";
 
-/// V2.7 bis: the hash travels with the attachment's metadata. A pulled hash is stored (the
+/// The hash travels with the attachment's metadata. A pulled hash is stored (the
 /// whole-row "last writer wins" would otherwise erase another device's hash), a version
 /// without one keeps the local hash, and the hash goes back out with the next local change.
 #[tokio::test]
@@ -715,7 +715,7 @@ async fn a_pulled_hash_is_kept_and_sent_back() {
     );
 }
 
-/// V2.7 bis: an attachment made before has no hash; the file job's first pass hashes its file
+/// An attachment made before has no hash; the file job's first pass hashes its file
 /// and the next sync sends it (its file is sent after that). One whose file is not here
 /// becomes `missing`.
 #[tokio::test]

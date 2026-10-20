@@ -1,5 +1,5 @@
 /**
- * Groups of projects in the sidebar (Taido V2.2 bis): like Brave's tab groups. A
+ * Groups of projects in the sidebar: like Brave's tab groups. A
  * group is a colored label that folds its projects; projects are selected with ⌘-clic and
  * grouped from the right-click menu; « Dégrouper » keeps the projects.
  */

@@ -3,7 +3,7 @@
  * default) and reports them with their paths and position, which the HTML drop event cannot
  * give.
  *
- * Taido V2.3: dropped on a task (its row, its kanban card, or the « Pièces jointes » zone of
+ * Dropped on a task (its row, its kanban card, or the « Pièces jointes » zone of
  * its panel), the files become its attachments. Elsewhere, on a terminal (Claude Code or
  * shell), their paths are typed at the prompt.
  *

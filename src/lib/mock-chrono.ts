@@ -1,10 +1,10 @@
 /**
- * The chrono of the mock backend (Taido V2.1), following the core's `db::time_segments`:
+ * The chrono of the mock backend, following the core's `db::time_segments`:
  * a task's automatic segment runs while one of its own Claude sessions works (or waits for
  * the answer when `chronoCountsWaiting` is on) and the task is open; manual segments are
  * stopped from the start.
  *
- * Taido V2.8 (docs/SYNC.md § 0.8): a running segment is this device's only when it has a
+ * (docs/SYNC.md § 0.8): a running segment is this device's only when it has a
  * session here (`agentSessionId`); one pulled from a Mac never has one, so `reconcile` never
  * stops nor touches it. The views count every running segment up to now. Only « Arrêter »
  * (`stop`, a click) stops any running segment.
@@ -27,7 +27,7 @@ export interface SegmentRec {
   endedAt: string | null;
   stopReason: ChronoStop | null;
   note: string;
-  /** Synced (`TimeSegmentData.created_at`). Optional: absent in a set saved before V2.8. */
+  /** Synced (`TimeSegmentData.created_at`). Optional: absent in a set saved by an older build. */
   createdAt?: string;
   deletedAt: string | null;
 }

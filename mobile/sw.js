@@ -12,7 +12,7 @@
  * - /api/*: never cached (passes through);
  * - message {type: "SKIP_WAITING"}: activates this worker (« Recharger »);
  * - message {type: "SKIP_WAITING_IF_SAME_BUILD", path}: activates this worker only when it
- *   pre-caches `path`, a script of the page that asks (V2.7 bis): that page already runs this
+ *   pre-caches `path`, a script of the page that asks: that page already runs this
  *   build, and until this worker is active an offline opening would get the previous build's
  *   cached app. Answers {skipping} on the message's port.
  */

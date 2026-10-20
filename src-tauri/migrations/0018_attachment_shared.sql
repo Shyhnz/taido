@@ -1,4 +1,4 @@
--- Taido V2.7 bis, final fixes: whether the content of an attachment's hash may be on another
+-- Whether the content of an attachment's hash may be on another
 -- device (local-only, never synced, not followed by the sync triggers). 1 when the row came
 -- from another device or the file was complete on the server once (sent from here, found
 -- there, downloaded). A copy edited in place before it was ever sent (0) is the only content

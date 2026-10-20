@@ -36,7 +36,7 @@ pub fn get_view(conn: &Connection, input: &GetViewInput, today: NaiveDate) -> Ap
         ViewKind::Today => today_view(conn, today),
         ViewKind::All => all_view(conn, today),
         ViewKind::Upcoming => upcoming(conn, input.from.as_deref(), input.days, today),
-        // Taido V2.6: the screen reads `get_portfolio`; the view itself is empty.
+        // The screen reads `get_portfolio`; the view itself is empty.
         ViewKind::Portfolio => Ok(ViewModel {
             kind: ViewKind::Portfolio,
             subject: None,

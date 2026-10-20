@@ -1,4 +1,4 @@
-//! Relations between tasks (Taido V2.3): « Bloque » (read backwards:
+//! Relations between tasks: « Bloque » (read backwards:
 //! « Bloquée par ») and « Liée à » (symmetric), across projects. A task is blocked while one
 //! of the tasks blocking it is open. Purging a task removes its relations (cascade); a
 //! soft-deleted task's relations are hidden.

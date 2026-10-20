@@ -84,19 +84,19 @@ const MIGRATIONS_SLICE: &[M<'static>] = &[
     M::up(include_str!("../../migrations/0011_synced_settings.sql")),
     // Taido V2: time segments, relations, attachments.
     M::up(include_str!("../../migrations/0012_v2_foundations.sql")),
-    // Taido V2.1: the chrono's stop reasons.
+    // The chrono's stop reasons.
     M::up(include_str!(
         "../../migrations/0013_segment_stop_reasons.sql"
     )),
-    // Taido V2.2: kanban columns of progress.
+    // Kanban columns of progress.
     M::up(include_str!("../../migrations/0014_board_columns.sql")),
-    // Taido V2.2 bis: groups replace sub-projects; checks the new `parent_id` references.
+    // Groups replace sub-projects; checks the new `parent_id` references.
     M::up(include_str!("../../migrations/0015_project_groups.sql")).foreign_key_check(),
-    // Taido V2.7: the V2 tables join the sync (protocol 3).
+    // The V2 tables join the sync (protocol 3).
     M::up(include_str!("../../migrations/0016_sync_v2.sql")),
-    // Taido V2.7 bis: attachment files through the server.
+    // Attachment files through the server.
     M::up(include_str!("../../migrations/0017_attachment_files.sql")),
-    // Taido V2.7 bis: whether an attachment's file may be on another device (final fixes).
+    // Whether an attachment's file may be on another device (final fixes).
     M::up(include_str!("../../migrations/0018_attachment_shared.sql")),
     // Codex as a second agent: the agent of each session.
     M::up(include_str!("../../migrations/0019_agents.sql")),

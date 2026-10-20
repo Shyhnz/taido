@@ -29,7 +29,7 @@ export type SettingsTab =
   | "agents"
   | "diagnostic";
 
-/** Tabs of a project's header (Taido V2.2, V2.5); « Notes »: the project notebook. */
+/** Tabs of a project's header; « Notes »: the project notebook. */
 export type ProjectTab = "list" | "board" | "dashboard" | "notes";
 
 /** Why an agent cannot be launched (check before its first launch). */
@@ -97,14 +97,14 @@ interface UiState {
   upcomingMode: UpcomingMode;
   /** First day (`YYYY-MM-01`) of the month the calendar shows; `null` = this month. */
   upcomingMonth: string | null;
-  /** Taido V2.5: period of the dashboards, 7 or 30 days. */
+  /** Period of the dashboards, 7 or 30 days. */
   dashboardDays: 7 | 30;
   /**
    * Sidebar shown: open by default, folded with its button or « M »,
    * remembered in `localStorage`. On the phone it is the drawer over the list.
    */
   sidebarOpen: boolean;
-  /** Taido V2.2: « Liste » or « Kanban », the same for every project (kept across them). */
+  /** « Liste » or « Kanban », the same for every project (kept across them). */
   projectTab: ProjectTab;
   /** « Demander au projet »: the project whose panel is open (Mac only). */
   askSubjectId: string | null;

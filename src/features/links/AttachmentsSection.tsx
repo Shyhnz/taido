@@ -1,9 +1,9 @@
 /**
- * « Pièces jointes » in the task panel (Taido V2.3). Files
+ * « Pièces jointes » in the task panel. Files
  * are copied into the task's folder (`~/Taido/Pièces jointes/<projet>/<tâche>`), readable by
  * Claude. Add them by dropping files on the zone (or on the task's row, see `fileDrop.ts`),
  * pasting a screenshot (⌘V) or « parcourir ». A grid: preview for images, an icon otherwise.
- * V2.7 bis: a tile says where its file stands with the account (`Attachment.remote`, computed
+ * A tile says where its file stands with the account (`Attachment.remote`, computed
  * by the core): only here, being sent, to download, being downloaded, or refused.
  *
  * « Télécharger » (2026-10-10, by design: « propose de télécharger le fichier », like Todoist and

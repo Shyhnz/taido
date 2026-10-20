@@ -22,7 +22,7 @@ pub struct ApplyOutcome {
     pub parked: usize,
     /// Corrections made by the normalisation (queued as local changes).
     pub corrected: usize,
-    /// Files of the attachments this apply deleted (soft delete or tombstone, V2.7 bis): they
+    /// Files of the attachments this apply deleted (soft delete or tombstone): they
     /// are removed once the transaction is committed, when no live attachment points at them
     /// and they are still the attachment's file.
     pub freed_files: Vec<FreedFile>,

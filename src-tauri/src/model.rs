@@ -99,13 +99,13 @@ pub struct Subject {
     /// sub-project has no sub-projects). `list_subjects` stays flat, parents before their
     /// sub-projects; the sidebar nests them. A parent's `dot` includes its sub-projects'.
     pub parent_id: Option<String>,
-    /// Taido V2.2 bis, product decision: a group only gathers projects in the sidebar, like Brave's
+    /// Product decision: a group only gathers projects in the sidebar, like Brave's
     /// tab groups. It holds no task, no section and no folder; its projects name it as
     /// `parent_id`. Only groups have projects inside.
     pub is_group: bool,
 }
 
-/// « Ajouter les projets à un groupe » (Taido V2.2 bis): to `group_id`, or to a new group
+/// « Ajouter les projets à un groupe »: to `group_id`, or to a new group
 /// named `name` (« Nouveau groupe » when empty), placed where the first project was.
 #[derive(Debug, Clone, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -509,13 +509,13 @@ pub struct TaskRow {
     /// subtask: one level only). The task's ring already includes the most critical
     /// state of its subtasks.
     pub children: Vec<TaskRow>,
-    /// Time spent on the task (Taido V2.1); `None` until it has a segment.
+    /// Time spent on the task; `None` until it has a segment.
     pub chrono: Option<TaskChrono>,
-    /// Taido V2.3: number of attachments.
+    /// Number of attachments.
     pub attachment_count: u32,
-    /// Taido V2.3: open tasks this one blocks (« bloque N »).
+    /// Open tasks this one blocks (« bloque N »).
     pub blocks_count: u32,
-    /// Taido V2.3: title of the first open task blocking this one (« bloquée par : … »).
+    /// Title of the first open task blocking this one (« bloquée par : … »).
     pub blocked_by: Option<String>,
     /// Number of open tasks blocking this one (the row's lock and its count).
     pub blocked_by_count: u32,
@@ -524,7 +524,7 @@ pub struct TaskRow {
 }
 
 // ---------------------------------------------------------------------------
-// Portfolio (Taido V2.6)
+// Portfolio
 // ---------------------------------------------------------------------------
 
 /// Every project (groups and « Sans projet » aside) over the last `days` days.
@@ -567,7 +567,7 @@ pub struct PortfolioRow {
 }
 
 // ---------------------------------------------------------------------------
-// Dashboard (Taido V2.5)
+// Dashboard
 // ---------------------------------------------------------------------------
 
 /// A project's (or « Sans projet »'s) dashboard over the last `days` days, today included.
@@ -641,7 +641,7 @@ pub struct DayTime {
 }
 
 // ---------------------------------------------------------------------------
-// Attachments and relations (Taido V2.3)
+// Attachments and relations
 // ---------------------------------------------------------------------------
 
 /// A file copied into the task's folder (`~/Taido/Pièces jointes/<projet>/<tâche>/`).
@@ -660,11 +660,11 @@ pub struct Attachment {
     pub added_at: String,
     /// The copy is still on disk.
     pub exists: bool,
-    /// Where the file stands with the account's server (V2.7 bis): the tile's indicator.
+    /// Where the file stands with the account's server: the tile's indicator.
     pub remote: AttachmentRemote,
 }
 
-/// Indicator of an attachment's file with the account's server (V2.7 bis, computed by the
+/// Indicator of an attachment's file with the account's server (computed by the
 /// core). `none`: nothing to show (on the server and here; always without an account, where
 /// a missing file shows « fichier introuvable » as before); `local_only`: « Sur ce Mac
 /// seulement » (not sent yet); `uploading`: « Envoi… »; `to_download`: « À télécharger »
@@ -741,7 +741,7 @@ pub struct TaskRelations {
 }
 
 // ---------------------------------------------------------------------------
-// Kanban (Taido V2.2)
+// Kanban
 // ---------------------------------------------------------------------------
 
 /// A column of a project's kanban: a step of progress (2026-10-09), renamable.
@@ -800,7 +800,7 @@ pub struct Board {
 }
 
 // ---------------------------------------------------------------------------
-// Chrono (Taido V2.1)
+// Chrono
 // ---------------------------------------------------------------------------
 
 /// Total time of a task: its stopped segments, plus the running one counted by the UI from
@@ -971,9 +971,9 @@ pub struct TaskDetail {
     pub priority: u8,
     /// Set when this task is a subtask: its parent, for the panel's way back.
     pub parent: Option<TaskRef>,
-    /// The task's own chrono (Taido V2.1).
+    /// The task's own chrono.
     pub time: TaskTime,
-    /// Taido V2.3.
+    /// The task's attachments.
     pub attachments: Vec<Attachment>,
     pub relations: TaskRelations,
 }
@@ -1071,7 +1071,7 @@ pub enum ViewKind {
     All,
     /// "Projet" in the UI (D1).
     Subject,
-    /// « Portefeuille » (Taido V2.6): every project on one line; `get_view` gives an empty
+    /// « Portefeuille »: every project on one line; `get_view` gives an empty
     /// model, the screen reads `get_portfolio`.
     Portfolio,
 }
@@ -1265,7 +1265,7 @@ pub struct Settings {
     pub workspace_root: Option<String>,
     /// Where the first-launch guide stands.
     pub tutorial: Tutorial,
-    /// The chrono also runs while Claude waits for the user's answer (Taido V2.1; by design:
+    /// The chrono also runs while Claude waits for the user's answer (by design:
     /// off by default).
     pub chrono_counts_waiting: bool,
     /// The tool ⌘T and the main button launch. Local to this Mac.

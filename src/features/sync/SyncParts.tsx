@@ -1,6 +1,6 @@
 /**
  * Pieces of the sync settings shared by the phone's Réglages › Synchro and the Mac's
- * Réglages › Compte (Taido V2.7): account error texts, the account, the merge
+ * Réglages › Compte: account error texts, the account, the merge
  * question before a login, « Se déconnecter » (sync first, warn), the state line, the
  * reconnect form and the interval. Both devices behave the same; only the texts that name
  * the device differ (`deviceTexts`).

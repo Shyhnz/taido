@@ -690,7 +690,7 @@ pub async fn get_view(state: State<'_, AppState>, input: GetViewInput) -> AppRes
     views::get_view(&conn, &input, today())
 }
 
-/// « Portefeuille »: every project over the last `days` days (Taido V2.6).
+/// « Portefeuille »: every project over the last `days` days.
 #[tauri::command]
 #[specta::specta]
 pub async fn get_portfolio(state: State<'_, AppState>, days: u32) -> AppResult<Portfolio> {
@@ -698,7 +698,7 @@ pub async fn get_portfolio(state: State<'_, AppState>, days: u32) -> AppResult<P
     views::portfolio::portfolio(&conn, days, chrono::Local::now())
 }
 
-/// Dashboard of a project, or of « Sans projet », over the last `days` days (Taido V2.5).
+/// Dashboard of a project, or of « Sans projet », over the last `days` days.
 #[tauri::command]
 #[specta::specta]
 pub async fn get_dashboard(
@@ -710,7 +710,7 @@ pub async fn get_dashboard(
     views::dashboard::dashboard(&conn, subject_id.as_deref(), days, chrono::Local::now())
 }
 
-/// Kanban of a project, or of « Sans projet » without `subject_id` (Taido V2.2).
+/// Kanban of a project, or of « Sans projet » without `subject_id`.
 #[tauri::command]
 #[specta::specta]
 pub async fn get_board(state: State<'_, AppState>, subject_id: Option<String>) -> AppResult<Board> {
@@ -718,7 +718,7 @@ pub async fn get_board(state: State<'_, AppState>, subject_id: Option<String>) -
     views::board::board(&conn, subject_id.as_deref(), today())
 }
 
-/// Moves a card to a column (Taido V2.2): the done column completes the task, leaving it
+/// Moves a card to a column: the done column completes the task, leaving it
 /// reopens it.
 #[tauri::command]
 #[specta::specta]
@@ -733,7 +733,7 @@ pub async fn move_task_to_column(
     Ok(())
 }
 
-/// Copies files into the task's attachments folder (Taido V2.3).
+/// Copies files into the task's attachments folder.
 #[tauri::command]
 #[specta::specta]
 pub async fn add_attachments(
@@ -752,7 +752,7 @@ pub async fn add_attachments(
     .await
 }
 
-/// A pasted file (a screenshot) becomes an attachment (Taido V2.3).
+/// A pasted file (a screenshot) becomes an attachment.
 #[tauri::command]
 #[specta::specta]
 pub async fn add_attachment_data(
@@ -772,7 +772,7 @@ pub async fn add_attachment_data(
     .await
 }
 
-/// Removes an attachment and its copy (Taido V2.3).
+/// Removes an attachment and its copy.
 #[tauri::command]
 #[specta::specta]
 pub async fn delete_attachment(
@@ -811,7 +811,7 @@ pub async fn relation_candidates(
     crate::views::candidates::relation_candidates(&conn, &task_id)
 }
 
-/// « Bloque », « Bloquée par », « Liée à » (Taido V2.3).
+/// « Bloque », « Bloquée par », « Liée à ».
 #[tauri::command]
 #[specta::specta]
 pub async fn add_relation(
@@ -846,7 +846,7 @@ pub async fn delete_relation(
     Ok(())
 }
 
-/// « Ajouter les projets à un groupe » (Taido V2.2 bis). Returns the group's id.
+/// « Ajouter les projets à un groupe ». Returns the group's id.
 #[tauri::command]
 #[specta::specta]
 pub async fn group_projects(
@@ -860,7 +860,7 @@ pub async fn group_projects(
     Ok(id)
 }
 
-/// « Retirer du groupe » (Taido V2.2 bis).
+/// « Retirer du groupe ».
 #[tauri::command]
 #[specta::specta]
 pub async fn ungroup_projects(
@@ -874,7 +874,7 @@ pub async fn ungroup_projects(
     Ok(())
 }
 
-/// « Dégrouper » (Taido V2.2 bis): the group goes, its projects stay.
+/// « Dégrouper »: the group goes, its projects stay.
 #[tauri::command]
 #[specta::specta]
 pub async fn dissolve_group(
@@ -888,7 +888,7 @@ pub async fn dissolve_group(
     Ok(())
 }
 
-/// Board columns (Taido V2.2): create, rename, move, delete.
+/// Board columns: create, rename, move, delete.
 #[tauri::command]
 #[specta::specta]
 pub async fn create_board_column(
@@ -1325,7 +1325,7 @@ pub async fn set_task_priority(
     .await
 }
 
-/// « + Ajouter du temps à la main » (Taido V2.1): `minutes` ending now.
+/// « + Ajouter du temps à la main »: `minutes` ending now.
 #[tauri::command]
 #[specta::specta]
 pub async fn add_manual_time(
@@ -1356,7 +1356,7 @@ pub async fn stop_time_segment(
     .await
 }
 
-/// Removes a stopped segment of the chrono (Taido V2.1).
+/// Removes a stopped segment of the chrono.
 #[tauri::command]
 #[specta::specta]
 pub async fn delete_time_segment(

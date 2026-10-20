@@ -1,5 +1,5 @@
 //! HTTP layer (docs/SYNC.md § 2.2 and § 4.4): API routes, body limits, static PWA files and
-//! response headers, attachment files (V2.7 bis, [`crate::files`]). No CORS: the PWA is
+//! response headers, attachment files ([`crate::files`]). No CORS: the PWA is
 //! same-origin and the Mac is not a browser.
 
 use std::path::Path;
@@ -42,7 +42,7 @@ use crate::{MailLang, Signups};
 
 /// Content Security Policy of every static response (§ 4.4). `'unsafe-inline'` styles: the
 /// toast library injects a `<style>` element. `img-src blob:`: the web app shows an attached
-/// raster image through `<img src="blob:…">` (V2.7 bis); `blob:` is allowed nowhere else.
+/// raster image through `<img src="blob:…">`; `blob:` is allowed nowhere else.
 pub const CSP: &str = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; \
 img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; \
 base-uri 'none'; frame-ancestors 'none'";
@@ -55,7 +55,7 @@ pub const MAX_DEVICE_NAME_CHARS: usize = 64;
 pub const FILE_CSP: &str = "sandbox";
 
 /// Shared state of the handlers. Built with [`AppState::new`]; services that tests replace
-/// (the mail sender of V2.7 task 4) are added as fields set by `with_*` builders, so that
+/// (the mail sender) are added as fields set by `with_*` builders, so that
 /// `TestServer` can hold the same state and inspect them.
 #[derive(Clone)]
 pub struct AppState {

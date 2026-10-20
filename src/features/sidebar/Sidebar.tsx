@@ -449,7 +449,7 @@ function SubjectRow({
     );
   }
 
-  // Taido V2.2 bis: a group is a colored label, like Brave's tab groups. Clicking it folds
+  // A group is a colored label, like Brave's tab groups. Clicking it folds
   // its projects; its menu renames it, changes its color or dissolves it.
   if (subject.isGroup) {
     const groupMenu = (x: number, y: number) =>
@@ -989,7 +989,7 @@ function ProjectList({
 
 export function Sidebar() {
   const counts = useCounts().data;
-  // Taido V2.8: the portfolio's wide table needs a large screen (the Mac, or 1024 px on the web).
+  // The portfolio's wide table needs a large screen (the Mac, or 1024 px on the web).
   const largeScreen = useLargeScreen();
   const noProjectCount = counts?.inbox ?? 0;
   // D2: the line shows while « Sans projet » holds a task, open or completed, and never
@@ -1076,7 +1076,7 @@ export function Sidebar() {
             count={0}
             shortcut="⌘3"
           />
-          {/* Taido V2.6: every project on one line (not on a phone: no wide table). */}
+          {/* every project on one line (not on a phone: no wide table). */}
           {largeScreen && (
             <NavButton
               item={{ kind: "portfolio", subjectId: null }}

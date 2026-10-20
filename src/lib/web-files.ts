@@ -1,5 +1,5 @@
 /**
- * Attachment files in the web app (site and phone, Taido V2.7 bis): what the UI asks of the
+ * Attachment files in the web app (site and phone): what the UI asks of the
  * phone's backend (`WebAttachmentFiles`, implemented by src/mobile/files.ts), and the security
  * rule of a web app that shares its origin, hence its token, with the API
  *: a file is **saved**, never shown, navigated to, opened in a tab

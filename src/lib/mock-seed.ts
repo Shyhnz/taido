@@ -31,9 +31,9 @@ interface SeedSubject {
   rootPath: string | null;
   sections: [string, string | null][];
   tasks: SeedTask[];
-  /** Taido V2.2 bis: name of its group (listed before it). */
+  /** Name of its group (listed before it). */
   parent?: string;
-  /** Taido V2.2 bis: a group (no tasks, no sections, no folder). */
+  /** A group (no tasks, no sections, no folder). */
   group?: boolean;
 }
 
@@ -95,7 +95,7 @@ const SUBJECTS: SeedSubject[] = [
     ],
   },
   {
-    // Taido V2.2 bis: a group gathers projects in the sidebar.
+    // A group gathers projects in the sidebar.
     name: "Clients",
     color: "blue",
     rootPath: null,

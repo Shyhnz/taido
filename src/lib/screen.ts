@@ -1,5 +1,5 @@
 /**
- * Screen width of the web app (site and phone, Taido V2.8). « Grand écran » is a viewport of
+ * Screen width of the web app (site and phone). « Grand écran » is a viewport of
  * at least 1024 px, re-evaluated on resize: the portfolio and the CSV export show from there,
  * and the kanban puts its columns side by side; below, it shows one column per screen. On
  * the Mac (not `IS_MOBILE`) the screen is always large.

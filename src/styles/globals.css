@@ -160,7 +160,7 @@
 }
 
 /* Files dragged over a terminal: where they will be dropped. */
-/* Taido V2.3: a task files are dropped on (row, kanban card, attachments zone). */
+/* a task files are dropped on (row, kanban card, attachments zone). */
 [data-file-over] {
   outline: 2px dashed var(--accent);
   outline-offset: -2px;

@@ -1,5 +1,5 @@
 /**
- * Groups of projects (Taido V2.2 bis): like Brave's tab groups, only visual. Select
+ * Groups of projects: like Brave's tab groups, only visual. Select
  * projects (⌘-clic, ⇧-clic), right-click › « Ajouter à un groupe » › « Nouveau groupe » or an
  * existing one. A group's label folds its projects; its menu renames it, changes its color or
  * dissolves it (« Dégrouper »: the projects stay). A group holds no task.

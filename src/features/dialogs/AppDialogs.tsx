@@ -65,7 +65,7 @@ function MoveTaskDialog({
         </button>
         {subjects.map((s) =>
           s.isGroup ? (
-            // Taido V2.2 bis: a group holds no task, only its name shows.
+            // A group holds no task, only its name shows.
             <p
               key={s.id}
               className="px-2 pt-2 pb-0.5 text-[12px] font-semibold text-text-3"

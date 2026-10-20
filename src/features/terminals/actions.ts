@@ -260,7 +260,7 @@ export async function launchAgent(
   // Settings unreadable: no check, and the core launches its own default (never a guess).
   const chosen = agent ?? (await run(commands.getSettings()))?.defaultAgent;
   if (chosen && !(await ensureAgentReady(chosen))) return undefined;
-  // Taido V2.3: a blocked task warns first, without forbidding.
+  // A blocked task warns first, without forbidding.
   const task = await run(commands.getTask(taskId));
   const blockers = task?.relations.blockedBy.filter((t) => !t.completed) ?? [];
   if (blockers.length > 0) {

@@ -1,4 +1,4 @@
--- Taido V2.7 bis: attachment files travel between
+-- Attachment files travel between
 -- devices through the sync server.
 -- - `sha256`: lowercase hex SHA-256 of the file, synced (`AttachmentData.sha256`): the update
 --   trigger now follows it too. Computed when a file is added; for the attachments made

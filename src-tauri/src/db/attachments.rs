@@ -1,9 +1,9 @@
-//! Attachments (Taido V2.3). A file attached to a task is **copied** into
+//! Attachments. A file attached to a task is **copied** into
 //! `<app folder>/Attachments/<project>/<task>/` (by design: never into a code folder), so that
 //! Claude can read it (`--add-dir`, and its path in the context file). The copy belongs to the
 //! app: removing the attachment removes the copy, never the original.
 //!
-//! V2.7 bis: each attachment keeps the SHA-256 of its file (`sha256`, synced) and where its
+//! Each attachment keeps the SHA-256 of its file (`sha256`, synced) and where its
 //! file stands with the account's server (`remote`, local-only, [`FileState`]); the sync's
 //! file job (`sync::files`) sends and fetches the files.
 
@@ -195,7 +195,7 @@ fn transfer_of(id: &str) -> Option<Transfer> {
         .map(|(_, kind)| *kind)
 }
 
-/// The tile's indicator. Without an account, nothing: attachments look as before V2.7 bis (a
+/// The tile's indicator. Without an account, nothing: attachments look as before file sync (a
 /// missing file shows « fichier introuvable »).
 fn remote_view(id: &str, state: FileState, exists: bool, linked: bool) -> AttachmentRemote {
     if !linked {
@@ -291,7 +291,7 @@ pub fn owner_folder(conn: &Connection, owner: AttachmentOwner<'_>) -> AppResult<
     ))
 }
 
-/// Where a pulled attachment (V2.7 sync: metadata only, no file on this Mac) points: the
+/// Where a pulled attachment (sync: metadata only, no file on this Mac) points: the
 /// owner's attachment folder when it can be resolved ([`owner_folder`]: the task's, or the
 /// page's `<project>/Notes`), else an absolute placeholder
 /// `<app folder>/Attachments/<task or page id>/<file name>` (the owner or its project is
@@ -1143,7 +1143,7 @@ mod tests {
         let set = |conn: &Connection, state: FileState| {
             set_state(conn, &id, state).expect("state");
         };
-        // Without an account: nothing to say, whatever the state (as before V2.7 bis).
+        // Without an account: nothing to say, whatever the state (as before file sync).
         for state in [
             FileState::Local,
             FileState::Missing,
@@ -1594,7 +1594,7 @@ mod tests {
         };
         let same = file("same", b"original");
         let edited = file("edited", b"original, then edited here");
-        let unhashed = file("unhashed", b"before V2.7 bis");
+        let unhashed = file("unhashed", b"made before file sync");
         let freed = |id: &str, path: &Path, sha256: Option<String>| FreedFile {
             id: id.into(),
             path: path.to_string_lossy().into_owned(),
@@ -1618,7 +1618,7 @@ mod tests {
         );
         assert_eq!(
             fs::read(&unhashed).expect("unhashed copy"),
-            b"before V2.7 bis"
+            b"made before file sync"
         );
         for (id, path) in [
             ("same", &same),

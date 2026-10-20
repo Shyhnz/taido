@@ -167,7 +167,7 @@ pub fn relation(conn: &Connection, id: &str) -> AppResult<Option<RelationData>> 
         .optional()?)
 }
 
-/// An attachment's metadata, with the hash of its file when known (V2.7 bis; a malformed
+/// An attachment's metadata, with the hash of its file when known (a malformed
 /// local hash is not sent). Only a task's: a page image is a `note_attachment`.
 pub fn attachment(conn: &Connection, id: &str) -> AppResult<Option<AttachmentData>> {
     Ok(
@@ -517,7 +517,7 @@ pub fn twin_relation(conn: &Connection, id: &str, d: &RelationData) -> AppResult
 /// task, always absolute and never at another attachment's path (`attachments::pulled_path`;
 /// no file is made: the file job downloads it there); a known row keeps its own.
 ///
-/// V2.7 bis: the pulled `sha256` is stored (a version without one keeps the local hash: the
+/// The pulled `sha256` is stored (a version without one keeps the local hash: the
 /// whole-row "last writer wins" must not erase it). `remote` (local-only) is the file job's
 /// hint: a new row is `missing` (its file is elsewhere); a live version whose hash differs
 /// from the local one is `missing` too (a file's content never changes once sent: the copy

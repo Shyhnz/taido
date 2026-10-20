@@ -153,7 +153,7 @@ export const setting = (key: string, stamp: string, value: unknown): Change =>
     data: { value },
   }) as Change;
 
-/** A Kanban column (protocol 3, held by the phone since V2.8). */
+/** A Kanban column (protocol 3, held by the phone). */
 export const boardColumn = (
   id: string,
   subjectId: string | null,
@@ -174,7 +174,7 @@ export const boardColumn = (
   },
 });
 
-/** A time segment of the chrono (protocol 3, held by the phone since V2.8); running by default. */
+/** A time segment of the chrono (protocol 3, held by the phone); running by default. */
 export const timeSegment = (
   id: string,
   taskId: string,
@@ -198,7 +198,7 @@ export const timeSegment = (
   },
 });
 
-/** A task relation (protocol 3, held by the phone since V2.8); `blocks` by default. */
+/** A task relation (protocol 3, held by the phone); `blocks` by default. */
 export const relation = (
   id: string,
   from: string,
@@ -220,7 +220,7 @@ export const relation = (
   },
 });
 
-/** An attachment row (protocol 3; its file travels apart, V2.7 bis). */
+/** An attachment row (protocol 3; its file travels apart). */
 export const attachment = (
   id: string,
   taskId: string,

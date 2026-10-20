@@ -1,9 +1,9 @@
 /**
- * Kanban columns of the mock backend (Taido V2.2), following the core's `db::board_columns`:
+ * Kanban columns of the mock backend, following the core's `db::board_columns`:
  * per project (and « Sans projet », `null`), created on first use with the defaults, the done
  * column last. A task without column, or with another board's column, is in the first one.
  *
- * Taido V2.8: a task's column is its `TaskRec.boardColumnId` (synced); the default columns have
+ * A task's column is its `TaskRec.boardColumnId` (synced); the default columns have
  * the core's fixed ids (`defaultColumnId`, docs/SYNC.md § 0.7). The web app tells when the
  * defaults may be made (`canCreateDefaults`: not while a linked device has never pulled, the
  * Mac's may be on their way) and queues those it makes (`onDefaultsCreated`).
@@ -15,7 +15,7 @@ export interface ColumnRec {
   name: string;
   position: number;
   isDone: boolean;
-  /** Synced (`BoardColumnData.created_at`). Optional: absent in a set saved before V2.8. */
+  /** Synced (`BoardColumnData.created_at`). Optional: absent in a set saved by an older build. */
   createdAt?: string;
 }
 

@@ -39,7 +39,7 @@ tauri-plugin-window-state = "2.5"
 tauri-plugin-log = "2.10"
 tauri-plugin-dialog = "2.8"
 log = "0.4"
-# Taido V2.3: pasted screenshots arrive base64-encoded; image previews go back as data URLs.
+# Pasted screenshots arrive base64-encoded; image previews go back as data URLs.
 base64 = "0.22"
 axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
 tokio = { version = "1", features = ["macros", "net", "rt", "rt-multi-thread", "sync", "time"] }
@@ -47,7 +47,7 @@ tokio = { version = "1", features = ["macros", "net", "rt", "rt-multi-thread", "
 # OpenSSL; no system proxy.
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "json"] }
 sync-proto = { path = "../crates/sync-proto" }
-# Taido V2.7 bis: SHA-256 of attachment files (same version as sync-server).
+# SHA-256 of attachment files (same version as sync-server).
 sha2 = "0.11"
 
 # Notifications that say which one was clicked (tauri-plugin-notification cannot on desktop):

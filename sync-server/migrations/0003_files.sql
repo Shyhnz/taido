@@ -1,4 +1,4 @@
--- Attachment files (V2.7 bis). One row per attachment that
+-- Attachment files. One row per attachment that
 -- has a file on the server, complete or being uploaded. The bytes live on disk under
 -- `<data_dir>/files/<account_id>/<hex sha256(account_id || 0x00 || attachment_id)>` (`.part`
 -- while uploading); the bytes received so far are the length of the `.part` file.

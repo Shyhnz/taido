@@ -336,7 +336,7 @@ fn resume_arguments_pass_the_settings_again() {
     );
 }
 
-/// Taido V2.3: the attachments folder is readable by Claude (`--add-dir`, variadic, so an
+/// The attachments folder is readable by Claude (`--add-dir`, variadic, so an
 /// option always follows it) and each file is named in the context.
 #[test]
 fn attachments_reach_claude() {

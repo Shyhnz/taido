@@ -506,7 +506,7 @@ describe("shared settings (inbox position)", () => {
     ).toEqual({ [SETTING_INBOX_POSITION]: 0 });
   });
 
-  it("loads a set saved before V2.7: no account, no group nor column, nothing to send", async () => {
+  it("loads a set saved by an older build: no account, no group nor column, nothing to send", async () => {
     const store = new MemoryStore();
     const old = emptyPersisted();
     const at = "2026-10-01T00:00:00.000Z";
@@ -616,7 +616,7 @@ describe("shared settings (inbox position)", () => {
   });
 });
 
-describe("attachments (V2.7 bis)", () => {
+describe("attachments", () => {
   const AT = "2026-10-01T00:00:00.000Z";
 
   it("round-trips the attachments and their file state through the store", async () => {
@@ -653,7 +653,7 @@ describe("attachments (V2.7 bis)", () => {
     expect(b.outbox).toEqual(a.outbox);
   });
 
-  it("a linked set saved before V2.7 bis pulls everything again once, for the attachments it skipped", async () => {
+  it("a linked set saved by an older build pulls everything again once, for the attachments it skipped", async () => {
     const linked = (attachments: boolean) => {
       const old = emptyPersisted();
       old.sync = {
@@ -817,7 +817,7 @@ describe("attachments (V2.7 bis)", () => {
   });
 });
 
-describe("a set written by a build before V2.7 bis over newer data", () => {
+describe("a set written by an older build over newer data", () => {
   /**
    * A linked phone whose file is kept here only (the account was full), then what an older
    * web app leaves when it saves: no `state.attachments`, and the deletion of every
@@ -911,7 +911,7 @@ describe("a set written by a build before V2.7 bis over newer data", () => {
   });
 });
 
-describe("Kanban columns, time segments and relations (V2.8)", () => {
+describe("Kanban columns, time segments and relations", () => {
   const T0 = "2026-10-01T00:00:00.000Z";
   const AT = "2026-10-01T00:30:00.000Z";
 
@@ -946,7 +946,7 @@ describe("Kanban columns, time segments and relations (V2.8)", () => {
     expect(Object.keys(b.outbox)).toEqual([`time_segment:${manual?.id}`]);
   });
 
-  it("a linked set saved before V2.8 pulls everything again once, and drops what it kept under the new keys", async () => {
+  it("a linked set saved by an older build pulls everything again once, and drops what it kept under the new keys", async () => {
     const old = emptyPersisted();
     old.sync = {
       ...old.sync,
@@ -966,7 +966,7 @@ describe("Kanban columns, time segments and relations (V2.8)", () => {
     old.outbox["board_column:c"] = { changed_at: AT, purged: true };
     old.outbox["task:x"] = { changed_at: AT, purged: false };
     const store = new MemoryStore();
-    // Saved by V2.7 bis: `sync` under its key.
+    // Saved by `sync` under its key.
     store.data = {
       state: old.state,
       snapshot: old.snapshot,

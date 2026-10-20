@@ -508,7 +508,7 @@ describe("sub-projects in the quick add", () => {
   });
 });
 
-describe("« @ » before a date (Taido V2.4)", () => {
+describe("« @ » before a date", () => {
   // Friday 9 October 2026, 15:00.
   const now = new Date(2026, 9, 9, 15, 0);
   const due = (text: string) => {

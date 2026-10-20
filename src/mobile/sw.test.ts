@@ -68,7 +68,7 @@ describe("service worker navigations", () => {
   });
 });
 
-describe("service worker messages (V2.7 bis)", () => {
+describe("service worker messages", () => {
   type MessageEvent = {
     data: unknown;
     ports?: { postMessage: (m: unknown) => void }[];

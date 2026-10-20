@@ -41,7 +41,7 @@ function Shell() {
   const focusMode = useUi((s) => s.focusMode) && openTaskId !== null;
   const setListFocused = useUi((s) => s.setListFocused);
   const sidebarOpen = useUi((s) => s.sidebarOpen);
-  // Taido V2.2: the kanban takes the whole width of the window, so do the calendar of
+  // The kanban takes the whole width of the window, so do the calendar of
   // « Prochainement » (2026-10-12) and a project's notebook.
   const boardShown = useUi(
     (s) =>

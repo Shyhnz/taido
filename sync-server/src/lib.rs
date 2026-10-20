@@ -1,6 +1,6 @@
-//! Taido sync server (docs/SYNC.md § 4, V2.7 accounts): accounts signed up by e-mail, a durable
-//! log of the latest version of every synced row of each account, the attachment files (V2.7
-//! bis, [`files`]), and the static PWA. The binary (`src/main.rs`) is a thin CLI over this
+//! Taido sync server (docs/SYNC.md § 4, accounts): accounts signed up by e-mail, a durable
+//! log of the latest version of every synced row of each account, the attachment files
+//! ([`files`]), and the static PWA. The binary (`src/main.rs`) is a thin CLI over this
 //! library; tests of the Mac core and of the phone start it with [`start_for_tests`], create
 //! accounts with [`TestServer::create_account`] and lower the file limits with
 //! [`TestServer::set_file_limits`].

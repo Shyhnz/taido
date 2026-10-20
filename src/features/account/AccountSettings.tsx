@@ -1,5 +1,5 @@
 /**
- * Réglages › Compte on the Mac (Taido V2.7).
+ * Réglages › Compte on the Mac.
  *
  * - Not logged in: what an account gives, then the welcome's two buttons, which open the
  *   account forms here.

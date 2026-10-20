@@ -1,4 +1,4 @@
-//! Kanban of a project (Taido V2.2). Product decision (2026-10-09): the columns are
+//! Kanban of a project. Product decision (2026-10-09): the columns are
 //! the progress of the tasks, set by hand (`db::board_columns`), not Claude's states; Claude's
 //! state shows on each card (its dot and its chrono).
 

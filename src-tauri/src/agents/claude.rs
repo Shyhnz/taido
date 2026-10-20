@@ -65,7 +65,7 @@ pub struct TaskContext<'a> {
     pub description: &'a str,
     /// (done, text)
     pub subtasks: Vec<(bool, &'a str)>,
-    /// Taido V2.3: absolute paths of the task's attachments.
+    /// Absolute paths of the task's attachments.
     pub attachments: &'a [String],
 }
 
@@ -115,7 +115,7 @@ pub struct NewSession<'a> {
     pub permission_mode: Option<PermissionMode>,
     pub context_file: Option<&'a Path>,
     pub prompt: Option<&'a str>,
-    /// Taido V2.3: the task's attachments folder, readable by Claude (`--add-dir`).
+    /// The task's attachments folder, readable by Claude (`--add-dir`).
     pub add_dir: Option<&'a Path>,
 }
 
@@ -165,7 +165,7 @@ pub struct Resume<'a> {
     pub mcp_config_file: &'a Path,
     pub permission_mode: Option<PermissionMode>,
     pub context_file: Option<&'a Path>,
-    /// Taido V2.3: the task's attachments folder (`--add-dir`).
+    /// The task's attachments folder (`--add-dir`).
     pub add_dir: Option<&'a Path>,
 }
 

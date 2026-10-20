@@ -346,7 +346,7 @@ describe("TaskRow", () => {
         now={NOW}
       />,
     );
-    // Taido V2.4: « En retard · Hier », like the kanban card.
+    // « En retard · Hier », like the kanban card.
     const due = screen.getByText("En retard · Hier").closest("[data-overdue]");
     expect(due?.className).toContain("text-due-overdue");
     expect(due?.className).not.toContain("waiting");

@@ -1,4 +1,4 @@
-/** The page's half of the same-build activation (src/mobile/swUpdate.ts, V2.7 bis). */
+/** The page's half of the same-build activation (src/mobile/swUpdate.ts). */
 
 import { describe, expect, it, vi } from "vitest";
 import { activateIfSameBuild, applyUpdateWith } from "./swUpdate";

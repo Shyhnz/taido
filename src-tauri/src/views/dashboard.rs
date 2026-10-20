@@ -1,4 +1,4 @@
-//! Dashboard of a project, or of « Sans projet » (Taido V2.5): to-do level
+//! Dashboard of a project, or of « Sans projet »: to-do level
 //! figures over the last `days` days (today included), computed here so that the UI only
 //! shows them. Lists count top-level tasks; time counts every segment of the project's tasks
 //! (subtasks included), cut to the period, the running one up to now.

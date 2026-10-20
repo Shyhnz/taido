@@ -1,12 +1,12 @@
 /**
- * Kanban of a project (Taido V2.2). Product decision (2026-10-09): the columns are the
+ * Kanban of a project. Product decision (2026-10-09): the columns are the
  * progress of the tasks, per project and renamable (« À faire · En cours · À valider ·
  * Terminé » by default), not Claude's states. Claude shows on each card: its state dot, its
  * line (« Claude attend ta réponse »…) and its chrono. Launching Claude on a task of the first
  * column puts it in the second, once (the core does it). Dropping a card on the done column
  * checks the task (asking first if Claude runs), leaving it reopens the task.
  *
- * Web app (Taido V2.8): on a large screen (≥ 1024 px) the same board. On a phone, like Trello
+ * Web app: on a large screen (≥ 1024 px) the same board. On a phone, like Trello
  * and Todoist, one column per screen (horizontal scroll snapping), the column names with their
  * counts above (a tap scrolls to it), and a card moves with « Déplacer vers… » or a long press
  * then a drag (towards the edge scrolls to the next column). A linked device before its first

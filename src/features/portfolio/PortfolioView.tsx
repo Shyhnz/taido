@@ -1,9 +1,9 @@
 /**
- * « Portefeuille » (Taido V2.6): every project on one
+ * « Portefeuille »: every project on one
  * line, over 7 or 30 days, sortable on every column (by default the next due task first),
  * four global figures, and « Exporter les temps (CSV) ». A project opens its dashboard.
  *
- * Web app (Taido V2.8, large screen only): no « Sessions » column (no Claude on the web) and
+ * Web app (large screen only): no « Sessions » column (no Claude on the web) and
  * the export downloads the file (`saveBlob`) instead of writing it in Documents.
  */
 

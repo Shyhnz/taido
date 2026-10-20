@@ -1,4 +1,4 @@
-//! The chrono (Taido V2.1): segments of time spent on a task.
+//! The chrono: segments of time spent on a task.
 //!
 //! Automatic segments follow the existing Claude session states, never a play button: after
 //! every session change (`agent_sessions::save`), every completion and deletion, the task is
@@ -8,7 +8,7 @@
 //! the next launch close, at the last beat, the segments a crash left running.
 //!
 //! Only this Mac's running segments are touched here: those with a session
-//! (`agent_session_id IS NOT NULL`). A running segment pulled from another device (V2.7 sync,
+//! (`agent_session_id IS NOT NULL`). A running segment pulled from another device (sync,
 //! session always `NULL` here) is the other Mac at work: never closed by this one, and
 //! counted up to now like a local one. Only « Arrêter » ([`stop`], a click) stops any running
 //! segment, this Mac's or another device's.
@@ -220,7 +220,7 @@ pub fn delete(conn: &Connection, id: &str, now: &str) -> AppResult<String> {
     Ok(task_id)
 }
 
-/// « Arrêter » (Taido V2 follow-up, docs/SYNC.md § 0.8): stops a running segment by hand, at
+/// « Arrêter » (docs/SYNC.md § 0.8): stops a running segment by hand, at
 /// `now` (never before its start), with no stop reason; a stopped one is left as is. Any
 /// running segment: this Mac's own or one pulled from another device (a lost Mac's chrono).
 /// Returns its task. The change syncs

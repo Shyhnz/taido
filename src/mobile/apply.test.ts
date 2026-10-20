@@ -43,7 +43,7 @@ describe("apply (docs/SYNC.md § 2.5)", () => {
     expect(Object.keys(backend.snapshot)).toEqual(["subject:p"]);
   });
 
-  it("applies Kanban columns, time segments and relations (V2.8), never queued back", async () => {
+  it("applies Kanban columns, time segments and relations, never queued back", async () => {
     const { backend } = makePhone();
     const r = backend.applyPulled([
       relation("rel-1", "a", "b", S1),
@@ -238,7 +238,7 @@ describe("apply (docs/SYNC.md § 2.5)", () => {
     ).toEqual(["rel-1", "rel-3"]);
   });
 
-  it("applies attachment rows (V2.7 bis): shown on the task, never queued back", async () => {
+  it("applies attachment rows: shown on the task, never queued back", async () => {
     const { backend } = makePhone();
     const sha256 = "a".repeat(64);
     const r = backend.applyPulled([

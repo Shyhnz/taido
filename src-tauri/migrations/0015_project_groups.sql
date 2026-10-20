@@ -1,4 +1,4 @@
--- Taido V2.2 bis (2026-10-09): no more sub-projects. Projects are flat, like Todoist;
+-- No more sub-projects. Projects are flat, like Todoist;
 -- a group (`is_group`, top level) only gathers projects in the sidebar, like Brave's tab
 -- groups: a name, a color, folded or not. A group holds no task, no section, no folder of its
 -- own. Its projects keep `parent_id` = the group (the sub-project machinery: order, fold,

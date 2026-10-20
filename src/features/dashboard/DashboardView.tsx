@@ -1,13 +1,12 @@
 /**
- * Dashboard of a project, or of « Sans projet » (Taido V2.5
- * F6): six figures, time per day, the next due dates, late and blocked tasks, lingering ones,
+ * Dashboard of a project, or of « Sans projet » : six figures, time per day, the next due dates, late and blocked tasks, lingering ones,
  * time per task. The core computes everything (`get_dashboard`); a task opens its panel.
  *
  * The chart follows the dataviz method: one stacked bar per day (Claude, by hand), a legend
  * (two series), a 2 px gap between segments, 4 px rounded tops, a hover tooltip per day, and
  * colors validated by the dataviz validator (`--chart-auto`, `--chart-manual`).
  *
- * Web app (Taido V2.8): nothing tied to the local Claude sessions (« attend ta réponse »); on
+ * Web app: nothing tied to the local Claude sessions (« attend ta réponse »); on
  * a phone the figures go two by two, the blocks one under the other.
  */
 

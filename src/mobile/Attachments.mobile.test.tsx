@@ -1,4 +1,4 @@
-// The phone build (IS_MOBILE forced on): « Pièces jointes » on the web (Taido V2.7 bis). Files
+// The phone build (IS_MOBILE forced on): « Pièces jointes » on the web. Files
 // come from the browser (picker, paste, drop), the Mac-only items are hidden, and « Télécharger »
 // (2026-10-10) saves every file, images included: nothing is ever shown (review point 2).
 import {

@@ -814,7 +814,7 @@ fn static_app(state: &AppState, dir: &Path) -> Router {
 
 #[test]
 fn the_app_may_show_blob_images_and_nothing_else_from_blob_urls() {
-    // V2.7 bis: the web app shows a raster attachment through `<img src="blob:…">` (no script
+    // The web app shows a raster attachment through `<img src="blob:…">` (no script
     // runs in an image); `blob:` stays out of every other directive (scripts, frames, fetches).
     let directives: Vec<&str> = CSP.split(';').map(str::trim).collect();
     assert!(directives.contains(&"img-src 'self' data: blob:"), "{CSP}");
@@ -993,7 +993,7 @@ async fn protocol_3_entities_are_stored_and_pulled() {
 }
 
 // ---------------------------------------------------------------------------
-// Forgotten password (V2.7 task 4)
+// Forgotten password
 // ---------------------------------------------------------------------------
 
 const MAIL_WAIT: Duration = Duration::from_secs(5);

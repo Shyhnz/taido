@@ -91,7 +91,7 @@ export const commands: Commands = mockBackend
 export const events: Events = mockBackend ? mockBackend.events : tauriEvents;
 
 /**
- * The web app's attachment files (Taido V2.7 bis: added from the browser, sent to the account,
+ * The web app's attachment files (Taido added from the browser, sent to the account,
  * opened on demand), or `null` on the Mac and in the plain mock.
  */
 export function webFiles(): WebAttachmentFiles | null {
@@ -99,7 +99,7 @@ export function webFiles(): WebAttachmentFiles | null {
 }
 
 /**
- * The CSV of « Exporter les temps » built in the browser (Taido V2.8: the web app downloads
+ * The CSV of « Exporter les temps » built in the browser (Taido the web app downloads
  * it), or `null` inside Tauri, where `exportTimeCsv` writes the file.
  */
 export function webTimeCsv(days: number): string | null {

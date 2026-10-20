@@ -1,5 +1,5 @@
 //! `POST /api/sync` algorithm (docs/SYNC.md § 2.4), in one SQLite transaction. Applying the
-//! deletion of an attachment also forgets its file in that transaction (V2.7 bis); the caller
+//! deletion of an attachment also forgets its file in that transaction; the caller
 //! deletes the bytes once the transaction is committed ([`SyncOutcome::removed_files`]).
 
 use std::collections::HashSet;

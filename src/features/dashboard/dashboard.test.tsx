@@ -1,5 +1,5 @@
 /**
- * Dashboard (Taido V2.5) on the mock backend: the figures follow the definitions, the tab
+ * Dashboard on the mock backend: the figures follow the definitions, the tab
  * shows them, the list's strip opens it.
  */
 

@@ -62,7 +62,7 @@ describe("MockBackend", () => {
     const subjects = await seeded.commands.listSubjects();
     expect(subjects.map((s) => s.name)).toEqual([
       "Acme Studio",
-      // Taido V2.2 bis: a group, followed by its projects.
+      // A group, followed by its projects.
       "Clients",
       "Northwind",
       "Bloom Weddings",

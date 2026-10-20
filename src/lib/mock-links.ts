@@ -1,9 +1,9 @@
 /**
- * Attachments and relations of the mock backend (Taido V2.3), following the core's
+ * Attachments and relations of the mock backend, following the core's
  * `db::attachments` and `db::relations`. No file is copied in a browser: an attachment keeps
  * its name, a fake path in the task's folder and, for a pasted image, its data URL.
  *
- * V2.7 bis: `remote` (the tile's indicator, computed by the core) starts `local_only`; a
+ * `remote` (the tile's indicator, computed by the core) starts `local_only`; a
  * successful `sync_now` while linked turns it to `none` (« sent »). Without an account every
  * tile shows `none` (as in the core). Tests set any other state with `setRemote`.
  *

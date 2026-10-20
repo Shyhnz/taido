@@ -1,6 +1,5 @@
 /**
- * What a task row or a kanban card shows of its attachments and relations (Taido V2.3,
- * minimal icons 2026-10-13): a lock « bloquée par » (brick orange, like an overdue date: it
+ * What a task row or a kanban card shows of its attachments and relations (minimal icons, 2026-10-13): a lock « bloquée par » (brick orange, like an overdue date: it
  * waits on something), a stop sign « bloque » (red, like Linear), a link « liée à » (yellow),
  * each with its count, then « 📎 3 ». The words stay in the tooltip and for screen readers.
  * In a task row (`inRow`) the relation icons come first (`order-first`) and, marked

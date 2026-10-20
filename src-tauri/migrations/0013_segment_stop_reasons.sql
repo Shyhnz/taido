@@ -1,4 +1,4 @@
--- Taido V2.1 (chrono): the reasons a running segment stops follow the existing session
+-- Chrono: the reasons a running segment stops follow the existing session
 -- states. `turn_ended` is added (Claude finished, was interrupted or failed, the session
 -- stays open); `manual` is dropped (a manual segment is never running, so never stopped).
 -- Nothing wrote to `time_segments` before this migration: the table is rebuilt empty.

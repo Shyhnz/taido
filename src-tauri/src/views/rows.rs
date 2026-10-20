@@ -41,11 +41,11 @@ pub struct TaskFacts {
     pub sessions: Vec<SessionFacts>,
     /// Live child tasks: open ones by position, then completed ones, most recent first.
     pub children: Vec<TaskFacts>,
-    /// The task's own chrono (Taido V2.1).
+    /// The task's own chrono.
     pub chrono: Option<TaskChrono>,
-    /// Its kanban column (Taido V2.2), `None` = the first one.
+    /// Its kanban column, `None` = the first one.
     pub board_column_id: Option<String>,
-    /// Taido V2.3.
+    /// Number of attachments.
     pub attachment_count: u32,
     pub blocks_count: u32,
     pub blocked_by: Option<String>,

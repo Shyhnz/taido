@@ -1,5 +1,5 @@
 /**
- * The account forms of the Mac (Taido V2.7), shown by the welcome screen and Réglages › Compte:
+ * The account forms of the Mac, shown by the welcome screen and Réglages › Compte:
  * create an account, log in, forgotten password (e-mail → code sent → code and new password →
  * logged in).
  *

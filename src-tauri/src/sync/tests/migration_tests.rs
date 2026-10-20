@@ -253,7 +253,7 @@ fn synced_settings_writes_are_queued_unless_equal_or_applied() {
     assert!(entry(&conn, "setting", "theme_x").is_some_and(|e| e.2));
 }
 
-/// Migration 0016 (V2.7): the four V2 tables are tracked on their synced columns only.
+/// Migration 0016: the four V2 tables are tracked on their synced columns only.
 #[test]
 fn v2_tables_are_tracked_on_their_synced_columns() {
     let conn = open_in_memory().expect("db");
@@ -421,7 +421,7 @@ fn migration_0016_keeps_the_outbox() {
     }
 }
 
-/// Migration 0017 (V2.7 bis): `sha256` is tracked like the other synced columns of an
+/// Migration 0017: `sha256` is tracked like the other synced columns of an
 /// attachment; `remote` (where its file stands with the server) is local-only.
 #[test]
 fn an_attachments_hash_is_tracked_and_its_file_state_is_not() {

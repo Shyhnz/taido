@@ -181,7 +181,7 @@ describe("applyCompletion", () => {
   });
 });
 
-describe("« @ » offers dates (Taido V2.4)", () => {
+describe("« @ » offers dates", () => {
   // Friday 9 October 2026, 15:00.
   const now = new Date(2026, 9, 9, 15, 0);
   it("lists the date words with their date, and writes the plain word", () => {

@@ -111,7 +111,7 @@ async function rawKeys(
   });
 }
 
-/** Writes raw values, as a build before V2.7 bis did (`sync` under its old key). */
+/** Writes raw values, as an older build did (`sync` under its old key). */
 async function writeRaw(
   factory: IDBFactory,
   values: Record<string, unknown>,
@@ -134,7 +134,7 @@ async function writeRaw(
 }
 
 /**
- * The loader of the builds before V2.7 bis (src/mobile/store.ts at 807d6b5): five keys read
+ * The loader of older builds (src/mobile/store.ts at 807d6b5): five keys read
  * under their own names, a partial set refused.
  */
 const OLD_KEYS = ["state", "snapshot", "outbox", "parked", "sync"] as const;
@@ -147,8 +147,8 @@ function oldAssemble(parts: Record<string, unknown>): unknown {
   return parts;
 }
 
-describe("saved data and older builds (V2.7 bis)", () => {
-  it("moves a set saved before V2.7 bis to the new sync key while loading it", async () => {
+describe("saved data and older builds", () => {
+  it("moves a set saved by an older build to the new sync key while loading it", async () => {
     const factory = new IDBFactory();
     const old = withTask("A");
     delete old.state.attachments;
@@ -208,7 +208,7 @@ describe("saved data and older builds (V2.7 bis)", () => {
     expect(() => oldAssemble(store.data)).toThrow(/inconsistent/);
   });
 
-  it("V2.8: moves a set saved by V2.7 bis (`sync.2`) to `sync.3`; the V2.7 bis loader then refuses it", async () => {
+  it("moves a set saved by the first file-sync build (`sync.2`) to `sync.3`; the older loader then refuses it", async () => {
     const factory = new IDBFactory();
     const old = withTask("A");
     delete old.state.boardColumns;
@@ -233,7 +233,7 @@ describe("saved data and older builds (V2.7 bis)", () => {
     );
   });
 
-  it("notebook: moves a set saved by V2.8 (`sync.3`) to `sync.4`; the V2.8 loader then refuses it, so it never sends a deletion of the notebook rows it does not know", async () => {
+  it("notebook: moves a set saved by the previous build (`sync.3`) to `sync.4`; the older loader then refuses it, so it never sends a deletion of the notebook rows it does not know", async () => {
     expect(SYNC_KEY).toBe("sync.4");
     expect(V28_SYNC_KEY).toBe("sync.3");
     const factory = new IDBFactory();

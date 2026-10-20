@@ -1,5 +1,5 @@
 /**
- * The dashboard of the mock backend (Taido V2.5), following the core's `views::dashboard`:
+ * The dashboard of the mock backend, following the core's `views::dashboard`:
  * the same figures and blocks, computed from the mock's tasks, chrono and relations.
  */
 

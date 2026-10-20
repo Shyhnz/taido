@@ -25,7 +25,7 @@ pub fn subject(conn: &Connection, name: &str) -> String {
 /// Creates a sub-project of `parent_id` with an optional folder and
 /// returns its id.
 pub fn sub_project(conn: &Connection, parent_id: &str, name: &str, root: Option<&str>) -> String {
-    // Taido V2.2 bis: only a group holds projects.
+    // Only a group holds projects.
     conn.execute(
         "UPDATE subjects SET is_group = 1 WHERE id = ?1",
         [parent_id],

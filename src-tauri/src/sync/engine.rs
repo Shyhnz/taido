@@ -218,7 +218,7 @@ pub async fn login(
 /// Signs up or logs in, then links this device: forgets what a previous link learnt from its
 /// server (cursor, epoch, known versions, parked rows: a V1 server, another account), stores
 /// the link (cursor 0), re-enqueues every row without an outbox entry (§ 2.6) and has the
-/// file job check every attachment file with the new server (V2.7 bis); finally reads the
+/// file job check every attachment file with the new server; finally reads the
 /// account (best effort). Errors: `invalid` (address, or [`ALREADY_LINKED`]: see
 /// [`check_can_join`]), then [`account_error`].
 async fn join(
@@ -643,7 +643,7 @@ async fn run_chunks(
 /// Applies one response and updates the outbox, the known versions and the cursor, in one
 /// transaction. Nothing is written when the device was unlinked or linked again meanwhile
 /// (the response belongs to the old link: its cursor and outbox state are not the new one's).
-/// Returns what to remove of the files of the attachments the response deleted (V2.7 bis),
+/// Returns what to remove of the files of the attachments the response deleted,
 /// for the caller to remove once the lock is released.
 fn commit_response(
     db: &Arc<Mutex<Connection>>,

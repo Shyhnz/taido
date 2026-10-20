@@ -4,7 +4,7 @@
  * one `readwrite` transaction (all or nothing); `load` refuses a partial set so the app never
  * diffs a torn state against its snapshot.
  *
- * V2.7 bis, then V2.8: `sync` lives under `SYNC_KEY` (persisted.ts). A set saved before is
+ * `sync` lives under `SYNC_KEY` (persisted.ts). A set saved before is
  * moved by the first `load`, in the same transaction that reads it; every `save` removes the
  * old keys. An older build then finds four parts of five and refuses the set (`assemble`
  * throws, the app starts empty and never saves nor syncs): it can no longer send a deletion of
@@ -113,7 +113,7 @@ export class IndexedDbStore implements MobileStore {
   }
 
   /**
-   * Reads the set and, when it was saved before V2.7 bis, moves `sync` to `SYNC_KEY` in the
+   * Reads the set and, when it was saved by an older build, moves `sync` to `SYNC_KEY` in the
    * same transaction. When that write cannot be made (a full device), the set is read without
    * it: the next save moves it.
    */

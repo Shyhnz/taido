@@ -32,7 +32,7 @@ pub async fn pick_folder(app: AppHandle, title: Option<String>) -> AppResult<Opt
         .map(|p| p.to_string_lossy().into_owned()))
 }
 
-/// Native file picker, several files (Taido V2.3: « parcourir » of the attachments).
+/// Native file picker, several files (Taido « parcourir » of the attachments).
 #[tauri::command]
 #[specta::specta]
 pub async fn pick_files(app: AppHandle, title: Option<String>) -> AppResult<Vec<String>> {
@@ -49,7 +49,7 @@ pub async fn pick_files(app: AppHandle, title: Option<String>) -> AppResult<Vec<
         .collect())
 }
 
-/// « Exporter les temps (CSV) » (Taido V2.6): asks where to save, writes the segments of the
+/// « Exporter les temps (CSV) »: asks where to save, writes the segments of the
 /// last `days` days. Returns the file written, `None` when cancelled.
 #[tauri::command]
 #[specta::specta]
@@ -110,7 +110,7 @@ pub async fn reveal_path(app: AppHandle, path: String) -> AppResult<()> {
     Ok(())
 }
 
-/// Shows an attachment selected in the Finder (or the Explorer) (Taido V2.3).
+/// Shows an attachment selected in the Finder (or the Explorer).
 #[tauri::command]
 #[specta::specta]
 pub async fn reveal_attachment(

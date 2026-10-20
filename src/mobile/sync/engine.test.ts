@@ -222,7 +222,7 @@ describe("one run", () => {
       rootPath: null,
       parentId: null,
     });
-    // Taido V2.2 bis: only a group holds projects (synced since protocol 3, V2.7).
+    // Only a group holds projects (synced since protocol 3).
     const group = a.backend.state.subjects.find((x) => x.id === s.id);
     if (group) group.isGroup = true;
     const sub = await a.backend.commands.createSubject({
@@ -616,7 +616,7 @@ describe("shared settings", () => {
   });
 });
 
-describe("protocol 3 (Taido V2.7)", () => {
+describe("protocol 3", () => {
   const MAC = "2026-10-01T00:00:00.000Z";
   const LATER = "2026-10-01T00:00:05.000Z";
 
@@ -730,7 +730,7 @@ describe("protocol 3 (Taido V2.7)", () => {
     expect(again.backend.pendingCount()).toBe(0);
   });
 
-  it("V2.8: holds the Mac's columns, segments, relations and attachments, parks the orphans, sends nothing back", async () => {
+  it("holds the Mac's columns, segments, relations and attachments, parks the orphans, sends nothing back", async () => {
     const server = macServer();
     server.put(timeSegment("seg-1", "t", MAC, { ended_at: LATER }));
     server.put(timeSegment("seg-2", "t", LATER));
@@ -1066,7 +1066,7 @@ describe("the notebook's entities", () => {
   });
 });
 
-describe("account (Taido V2.7)", () => {
+describe("account", () => {
   it("logs in with the e-mail, reads the account, keeps it across reloads and forgets it at unlink", async () => {
     const server = new FakeServer();
     const phone = makePhone(server);

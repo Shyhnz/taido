@@ -145,7 +145,7 @@ impl Device {
     }
 
     pub(super) fn project(&self, name: &str, parent: Option<&str>) -> String {
-        // Taido V2.2 bis: only a group holds projects.
+        // Only a group holds projects.
         if let Some(p) = parent {
             self.conn()
                 .execute("UPDATE subjects SET is_group = 1 WHERE id = ?1", [p])
@@ -328,7 +328,7 @@ async fn projects_sections_tasks_and_folders_reach_the_other_mac() {
 
     let p = a.project("Globex", None);
     let sp = a.project("Site", Some(&p));
-    // Taido V2.2 bis: Globex is a group; its project holds the section and the task.
+    // Globex is a group; its project holds the section and the task.
     let s = a.section(&sp, "Admin");
     let t = a.task("Facturer", Some(&sp), Some(&s));
     let child = tasks::create_child(&a.conn(), &t, "Relancer").expect("child");
@@ -1025,7 +1025,7 @@ async fn the_inbox_position_converges_between_two_macs() {
     );
 }
 
-/// Review point 2 (V2.7): two Macs create the default columns of the same project before
+/// Two Macs create the default columns of the same project before
 /// their first sync: one set of four columns in the end.
 #[tokio::test]
 async fn default_columns_made_on_two_macs_are_one_set() {
@@ -1448,7 +1448,7 @@ async fn late_default_columns_never_undo_a_rename() {
 }
 
 // ---------------------------------------------------------------------------
-// Accounts (V2.7 task 7)
+// Accounts
 // ---------------------------------------------------------------------------
 
 const NEW_EMAIL: &str = "nouveau@example.com";
@@ -1575,7 +1575,7 @@ async fn a_signed_up_address_is_confirmed_from_the_mailed_link() {
     assert_eq!(running.mailer().mails_to(NEW_EMAIL).len(), 3);
 }
 
-/// Review point 5: the V2 database was copied from V1 and may still hold what V1's server
+/// The new database was copied from V1 and may still hold what V1's server
 /// taught it (cursor, epoch, known versions, parked rows). Logging in to a new account sends
 /// exactly the Mac's rows, none lost, none doubled, and a second sync sends nothing.
 #[tokio::test]

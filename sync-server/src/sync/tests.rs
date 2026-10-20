@@ -739,7 +739,7 @@ fn a_setting_and_a_task_with_the_same_id_are_separate_rows() {
     assert_eq!(entities, vec![Entity::Task, Entity::Setting]);
 }
 
-// ---- Accounts: rows are scoped by account (V2.7 task 3) ----
+// ---- Accounts: rows are scoped by account ----
 
 const OTHER: &str = "account-bob";
 const OTHER_DEVICE: &str = "device-bob";
@@ -1011,7 +1011,7 @@ fn refused_keys_use_the_accounts_own_row_with_shared_revisions() {
 }
 
 // ---------------------------------------------------------------------------
-// Attachment hashes and files (V2.7 bis)
+// Attachment hashes and files
 // ---------------------------------------------------------------------------
 
 const HASH: &str = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";

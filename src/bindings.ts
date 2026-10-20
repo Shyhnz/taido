@@ -228,34 +228,34 @@ export const commands = {
 	resumeSession: (input: ResumeSessionInput) => __TAURI_INVOKE<TerminalInfo>("resume_session", { input }),
 	/**  Renames a session of the history; `""` restores the automatic recap. */
 	renameSession: (input: RenameSessionInput) => __TAURI_INVOKE<null>("rename_session", { input }),
-	/**  « + Ajouter du temps à la main » (Taido V2.1): `minutes` ending now. */
+	/**  « + Ajouter du temps à la main »: `minutes` ending now. */
 	addManualTime: (input: AddManualTimeInput) => __TAURI_INVOKE<TaskDetail>("add_manual_time", { input }),
-	/**  Kanban of a project, or of « Sans projet » without `subject_id` (Taido V2.2). */
+	/**  Kanban of a project, or of « Sans projet » without `subject_id`. */
 	getBoard: (subjectId: string | null) => __TAURI_INVOKE<Board>("get_board", { subjectId }),
-	/**  Dashboard of a project, or of « Sans projet », over the last `days` days (Taido V2.5). */
+	/**  Dashboard of a project, or of « Sans projet », over the last `days` days. */
 	getDashboard: (subjectId: string | null, days: number) => __TAURI_INVOKE<Dashboard>("get_dashboard", { subjectId, days }),
-	/**  « Portefeuille »: every project over the last `days` days (Taido V2.6). */
+	/**  « Portefeuille »: every project over the last `days` days. */
 	getPortfolio: (days: number) => __TAURI_INVOKE<Portfolio>("get_portfolio", { days }),
 	/**
-	 *  « Exporter les temps (CSV) » (Taido V2.6): asks where to save, writes the segments of the
+	 *  « Exporter les temps (CSV) »: asks where to save, writes the segments of the
 	 *  last `days` days. Returns the file written, `None` when cancelled.
 	 */
 	exportTimeCsv: (days: number, fileName: string) => __TAURI_INVOKE<string | null>("export_time_csv", { days, fileName }),
-	/**  Copies files into the task's attachments folder (Taido V2.3). */
+	/**  Copies files into the task's attachments folder. */
 	addAttachments: (input: AddAttachmentsInput) => __TAURI_INVOKE<TaskDetail>("add_attachments", { input }),
-	/**  A pasted file (a screenshot) becomes an attachment (Taido V2.3). */
+	/**  A pasted file (a screenshot) becomes an attachment. */
 	addAttachmentData: (input: AddAttachmentDataInput) => __TAURI_INVOKE<TaskDetail>("add_attachment_data", { input }),
-	/**  Removes an attachment and its copy (Taido V2.3). */
+	/**  Removes an attachment and its copy. */
 	deleteAttachment: (id: string) => __TAURI_INVOKE<TaskDetail>("delete_attachment", { id }),
 	/**
 	 *  Preview of an image attachment of a task or of a notebook page, as a `data:` URL (`None`
 	 *  for other files, or an image too large).
 	 */
 	attachmentPreview: (id: string) => __TAURI_INVOKE<string | null>("attachment_preview", { id }),
-	/**  « Bloque », « Bloquée par », « Liée à » (Taido V2.3). */
+	/**  « Bloque », « Bloquée par », « Liée à ». */
 	addRelation: (input: AddRelationInput) => __TAURI_INVOKE<TaskDetail>("add_relation", { input }),
 	deleteRelation: (id: string) => __TAURI_INVOKE<null>("delete_relation", { id }),
-	/**  Native file picker, several files (Taido V2.3: « parcourir » of the attachments). */
+	/**  Native file picker, several files (Taido « parcourir » of the attachments). */
 	pickFiles: (title: string | null) => __TAURI_INVOKE<string[]>("pick_files", { title }),
 	/**
 	 *  « Télécharger » (2026-10-10): copies an attachment's file into the Downloads folder under a
@@ -270,25 +270,25 @@ export const commands = {
 	 *  it is not there any more, `invalid` for a relative path.
 	 */
 	revealPath: (path: string) => __TAURI_INVOKE<null>("reveal_path", { path }),
-	/**  Shows an attachment selected in the Finder (or the Explorer) (Taido V2.3). */
+	/**  Shows an attachment selected in the Finder (or the Explorer). */
 	revealAttachment: (id: string) => __TAURI_INVOKE<null>("reveal_attachment", { id }),
-	/**  « Ajouter les projets à un groupe » (Taido V2.2 bis). Returns the group's id. */
+	/**  « Ajouter les projets à un groupe ». Returns the group's id. */
 	groupProjects: (input: GroupProjectsInput) => __TAURI_INVOKE<string>("group_projects", { input }),
-	/**  « Retirer du groupe » (Taido V2.2 bis). */
+	/**  « Retirer du groupe ». */
 	ungroupProjects: (projectIds: string[]) => __TAURI_INVOKE<null>("ungroup_projects", { projectIds }),
-	/**  « Dégrouper » (Taido V2.2 bis): the group goes, its projects stay. */
+	/**  « Dégrouper »: the group goes, its projects stay. */
 	dissolveGroup: (id: string) => __TAURI_INVOKE<null>("dissolve_group", { id }),
 	/**
-	 *  Moves a card to a column (Taido V2.2): the done column completes the task, leaving it
+	 *  Moves a card to a column: the done column completes the task, leaving it
 	 *  reopens it.
 	 */
 	moveTaskToColumn: (input: MoveToColumnInput) => __TAURI_INVOKE<null>("move_task_to_column", { input }),
-	/**  Board columns (Taido V2.2): create, rename, move, delete. */
+	/**  Board columns: create, rename, move, delete. */
 	createBoardColumn: (input: CreateBoardColumnInput) => __TAURI_INVOKE<string>("create_board_column", { input }),
 	renameBoardColumn: (input: RenameBoardColumnInput) => __TAURI_INVOKE<null>("rename_board_column", { input }),
 	moveBoardColumn: (input: MoveBoardColumnInput) => __TAURI_INVOKE<null>("move_board_column", { input }),
 	deleteBoardColumn: (id: string) => __TAURI_INVOKE<null>("delete_board_column", { id }),
-	/**  Removes a stopped segment of the chrono (Taido V2.1). */
+	/**  Removes a stopped segment of the chrono. */
 	deleteTimeSegment: (id: string) => __TAURI_INVOKE<TaskDetail>("delete_time_segment", { id }),
 	/**
 	 *  « Arrêter » a running segment of the chrono, this Mac's or another device's (docs/SYNC.md
@@ -599,7 +599,7 @@ export type Attachment = {
 	addedAt: string,
 	/**  The copy is still on disk. */
 	exists: boolean,
-	/**  Where the file stands with the account's server (V2.7 bis): the tile's indicator. */
+	/**  Where the file stands with the account's server: the tile's indicator. */
 	remote: AttachmentRemote,
 };
 
@@ -618,7 +618,7 @@ export type AttachmentInfo = {
 };
 
 /**
- *  Indicator of an attachment's file with the account's server (V2.7 bis, computed by the
+ *  Indicator of an attachment's file with the account's server (computed by the
  *  core). `none`: nothing to show (on the server and here; always without an account, where
  *  a missing file shows « fichier introuvable » as before); `local_only`: « Sur ce Mac
  *  seulement » (not sent yet); `uploading`: « Envoi… »; `to_download`: « À télécharger »
@@ -928,7 +928,7 @@ export type GroupOrder = {
 };
 
 /**
- *  « Ajouter les projets à un groupe » (Taido V2.2 bis): to `group_id`, or to a new group
+ *  « Ajouter les projets à un groupe »: to `group_id`, or to a new group
  *  named `name` (« Nouveau groupe » when empty), placed where the first project was.
  */
 export type GroupProjectsInput = {
@@ -1464,7 +1464,7 @@ export type Settings = {
 	/**  Where the first-launch guide stands. */
 	tutorial: Tutorial,
 	/**
-	 *  The chrono also runs while Claude waits for the user's answer (Taido V2.1; by design:
+	 *  The chrono also runs while Claude waits for the user's answer (by design:
 	 *  off by default).
 	 */
 	chronoCountsWaiting: boolean,
@@ -1545,7 +1545,7 @@ export type Subject = {
 	 */
 	parentId: string | null,
 	/**
-	 *  Taido V2.2 bis, product decision: a group only gathers projects in the sidebar, like Brave's
+	 *  Product decision: a group only gathers projects in the sidebar, like Brave's
 	 *  tab groups. It holds no task, no section and no folder; its projects name it as
 	 *  `parent_id`. Only groups have projects inside.
 	 */
@@ -1659,9 +1659,9 @@ export type TaskDetail = {
 	priority: number,
 	/**  Set when this task is a subtask: its parent, for the panel's way back. */
 	parent: TaskRef | null,
-	/**  The task's own chrono (Taido V2.1). */
+	/**  The task's own chrono. */
 	time: TaskTime,
-	/**  Taido V2.3. */
+	/**  The task's attachments. */
 	attachments: Attachment[],
 	relations: TaskRelations,
 };
@@ -1756,13 +1756,13 @@ export type TaskRow = {
 	 *  state of its subtasks.
 	 */
 	children: TaskRow[],
-	/**  Time spent on the task (Taido V2.1); `None` until it has a segment. */
+	/**  Time spent on the task; `None` until it has a segment. */
 	chrono: TaskChrono | null,
-	/**  Taido V2.3: number of attachments. */
+	/**  Number of attachments. */
 	attachmentCount: number,
-	/**  Taido V2.3: open tasks this one blocks (« bloque N »). */
+	/**  Open tasks this one blocks (« bloque N »). */
 	blocksCount: number,
-	/**  Taido V2.3: title of the first open task blocking this one (« bloquée par : … »). */
+	/**  Title of the first open task blocking this one (« bloquée par : … »). */
 	blockedBy: string | null,
 	/**  Number of open tasks blocking this one (the row's lock and its count). */
 	blockedByCount: number,
@@ -1933,7 +1933,7 @@ export type ViewKind =
 /**  "Projet" in the UI (D1). */
 "subject" | 
 /**
- *  « Portefeuille » (Taido V2.6): every project on one line; `get_view` gives an empty
+ *  « Portefeuille »: every project on one line; `get_view` gives an empty
  *  model, the screen reads `get_portfolio`.
  */
 "portfolio";

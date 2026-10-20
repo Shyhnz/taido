@@ -34,9 +34,9 @@ export const queryKeys = {
   /** « Prochainement » from a given first day; under `views` too. */
   upcoming: (from: string, days: number) =>
     ["view", "upcoming", from, days] as const,
-  /** Kanban of a project (Taido V2.2); under `views`, so task changes refetch it. */
+  /** Kanban of a project; under `views`, so task changes refetch it. */
   board: (subjectId: string | null) => ["view", "board", subjectId] as const,
-  /** Dashboard of a project (Taido V2.5); under `views` too. */
+  /** Dashboard of a project; under `views` too. */
   dashboard: (subjectId: string | null, days: number) =>
     ["view", "dashboard", subjectId, days] as const,
   counts: ["counts"] as const,

@@ -134,7 +134,7 @@ pub fn save(conn: &Connection, id: &str, s: &Session, now: &str) -> AppResult<()
             s.question
         ],
     )?;
-    // Taido V2.1: the task's chrono follows its sessions.
+    // The task's chrono follows its sessions.
     let task_id: Option<String> = conn
         .query_row(
             "SELECT task_id FROM agent_sessions WHERE id = ?1",

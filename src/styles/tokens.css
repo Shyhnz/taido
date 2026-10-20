@@ -34,7 +34,7 @@
   --text-3: #6a6a67; /* spec #737370: 4.44:1 on --bg-sidebar (A6) */
   --text-nav-active: #1e43a8;
   --accent: #2f5bd3; /* ajout, actions principales bleues */
-  /* Taido V2.5: time per day (Claude, by hand), validated with the dataviz validator. */
+  /* time per day (Claude, by hand), validated with the dataviz validator. */
   --chart-auto: #2f5bd3;
   --chart-manual: #008f8c;
 

@@ -321,7 +321,7 @@ fn list_projects(conn: &Connection, current: &str) -> AppResult<Outcome> {
             .and_then(|g| all.iter().find(|s| &s.id == g))
             .map(|g| g.name.clone())
     };
-    // Groups hold no tasks (Taido V2.2 bis): only their name is given, on each project.
+    // Groups hold no tasks: only their name is given, on each project.
     let projects: Vec<Value> = all
         .iter()
         .filter(|s| !s.is_group)

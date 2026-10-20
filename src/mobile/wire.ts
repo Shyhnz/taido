@@ -3,11 +3,11 @@
  * synced columns travel; local-only ones (`rootPath`, `subpath`, `workdirOverride`) are never
  * read nor written here, and a new record gets them `null` (docs/SYNC.md § 2.5).
  *
- * Protocol 3 (Taido V2.7): a project's `is_group` and a task's `board_column_id` are kept in
- * the state and sent back as they came. The four new entities are held too: attachments since
- * V2.7 bis (`MockLinks.attachments`); Kanban columns (`MockBoard.columns`), time segments
+ * Protocol 3: a project's `is_group` and a task's `board_column_id` are kept in
+ * the state and sent back as they came. The four new entities are held too: attachments
+ * (`MockLinks.attachments`); Kanban columns (`MockBoard.columns`), time segments
  * (`MockChrono.segments`, `agent_session_id` stays local) and relations (`MockLinks.relations`)
- * since V2.8. The project notebook adds `note_group` and
+ *. The project notebook adds `note_group` and
  * `note_page` (`MockNotes.groups`, `.pages`) and `note_attachment`, a page's image, which lives
  * in `MockLinks.attachments` with its page as owner (`notePageId`). A row of an entity this
  * build does not know is ignored (`isShownChange`).
@@ -53,7 +53,7 @@ import {
   type TimeSegmentData,
 } from "../lib/sync-proto";
 
-/** Entities the phone holds and syncs (all of protocol 3 since V2.8). */
+/** Entities the phone holds and syncs (all of protocol 3). */
 export type ShownEntity =
   | "subject"
   | "section"

@@ -85,7 +85,7 @@ export function visibleRows(
   ]);
 }
 
-/** « Liste | Kanban | Tableau de bord | Notes » under a project's title (Taido V2.2). */
+/** « Liste | Kanban | Tableau de bord | Notes » under a project's title. */
 function ProjectTabs({ notes }: { notes: boolean }) {
   const tab = useUi((s) => s.projectTab);
   const setTab = useUi((s) => s.setProjectTab);
@@ -537,7 +537,7 @@ export function ViewScreen() {
       : null,
   );
   const gone = error !== null && active.kind === "subject" && isNotFound(error);
-  // Taido V2.8: the portfolio needs a large screen; a web window narrowed under 1024 px
+  // The portfolio needs a large screen; a web window narrowed under 1024 px
   // leaves it for « À faire », the first view of the sidebar.
   const largeScreen = useLargeScreen();
   const portfolioOff = active.kind === "portfolio" && !largeScreen;
@@ -568,7 +568,7 @@ export function ViewScreen() {
   if (portfolioOff) {
     body = <Skeleton />;
   } else if (active.kind === "portfolio") {
-    // Taido V2.6: the portfolio reads its own model.
+    // The portfolio reads its own model.
     body = <PortfolioView />;
   } else if (view) {
     // First launch is handled by the shell (features/first-launch).

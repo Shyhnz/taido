@@ -1,6 +1,6 @@
--- Taido V2 foundations: time tracking (F4), relations between tasks
+-- Foundations: time tracking (F4), relations between tasks
 -- (F5) and attachments (F3). Created empty; their repositories come later, with the features that
--- use them (V2.1, V2.3). Every row has a UUID, `updated_at` and a soft delete (`deleted_at`)
+-- use them. Every row has a UUID, `updated_at` and a soft delete (`deleted_at`)
 -- like the synced tables; the account (`user_id`) only lives on the server.
 
 CREATE TABLE time_segments (                -- one stretch of time spent on a task

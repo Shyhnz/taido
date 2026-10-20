@@ -1,5 +1,5 @@
 /**
- * Groups of projects in the mock backend (Taido V2.2 bis), like the core's
+ * Groups of projects in the mock backend, like the core's
  * `subjects::group_projects`: visual only, no task inside, emptied groups disappear.
  */
 

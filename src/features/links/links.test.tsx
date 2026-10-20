@@ -1,5 +1,5 @@
 /**
- * Attachments and relations (Taido V2.3) on the mock backend: the panel's sections, the row's
+ * Attachments and relations on the mock backend: the panel's sections, the row's
  * « 📎 », « bloque N », « bloquée par : … », and the warning before Claude on a blocked task.
  */
 
@@ -466,7 +466,7 @@ describe("attachments and relations", () => {
         "/Users/user/plan.pdf",
       ],
     });
-    // Without an account, tiles look as before V2.7 bis.
+    // Without an account, tiles look as before file sync.
     let detail = await commands.getTask(task.id);
     expect(detail.attachments.map((a) => a.remote)).toEqual(
       Array(6).fill("none"),

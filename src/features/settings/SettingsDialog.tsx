@@ -85,7 +85,7 @@ export function settingsTabs(): { tab: SettingsTab; icon: LucideIcon }[] {
   ];
 }
 
-/** The « sync » tab is « Compte » on the Mac (Taido V2.7), « Synchro » on the phone. */
+/** The « sync » tab is « Compte » on the Mac, « Synchro » on the phone. */
 export function tabLabel(tab: SettingsTab): string {
   return tab === "sync" && !IS_MOBILE
     ? strings.settings.tabs.account

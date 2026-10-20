@@ -273,7 +273,7 @@ describe("reorder at the top level (core top_level::reorder)", () => {
   it("puts a project moved or restored to the top level after a placed inbox", async () => {
     abc();
     await c().reorderInbox(3);
-    // Taido V2.2 bis: only a group holds projects.
+    // Only a group holds projects.
     const a = backend.state.subjects.find((s) => s.id === "a");
     if (a) a.isGroup = true;
     const sub = await c().createSubject({
@@ -305,7 +305,7 @@ describe("« À faire » (core all_view)", () => {
     } satisfies CreateTaskInput);
 
   const project = async (name: string, parentId: string | null = null) => {
-    // Taido V2.2 bis: only a group holds projects.
+    // Only a group holds projects.
     const parent = backend.state.subjects.find((s) => s.id === parentId);
     if (parent) parent.isGroup = true;
     return (
@@ -329,7 +329,7 @@ describe("« À faire » (core all_view)", () => {
     ]);
 
   it("places « Sans projet » at its index and orders every group", async () => {
-    // Taido V2.2 bis: Globex and Perso are groups (no tasks of their own).
+    // Globex and Perso are groups (no tasks of their own).
     const globex = await project("Globex");
     await project("Empty");
     const perso = await project("Perso");

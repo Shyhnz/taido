@@ -6,7 +6,7 @@
  * - Phone, not linked: what is synced, the e-mail, the password and the server address,
  *   « Se connecter » (`sync_login`). The address is prefilled with the last one used, else
  *   `defaultServerUrl` (the phone passes its own origin: the server serves the app), else
- *   only a placeholder. No signup nor password reset on the phone in V2.7: two lines send to
+ *   only a placeholder. No signup nor password reset on the phone for now: two lines send to
  *   the Mac for those. Like the Mac, when the phone holds projects or tasks, « Fusionner » /
  *   « Annuler » is asked before the login.
  * - Phone, linked: the account's e-mail, the server, the state and the last sync,

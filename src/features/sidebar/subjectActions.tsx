@@ -296,7 +296,7 @@ export function subjectMenuItems(
       // Opens the view's in-place « Nouvelle section » field.
       onSelect: () => requestAddSection(subject.id),
     },
-    // Taido V2.2 bis: groups (visual only) replace the sub-projects.
+    // Groups (visual only) replace the sub-projects.
     ...projectGroupItems([subject.id], subjects, position),
     // The on-disk folder only matters once terminals exist, and never on
     // the phone.

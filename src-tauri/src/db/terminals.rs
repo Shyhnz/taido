@@ -84,7 +84,7 @@ pub fn insert(
                 s.agent.as_str()
             ],
         )?;
-        // Taido V2.2: Claude on a task « À faire » puts it « En cours », once.
+        // Claude on a task « À faire » puts it « En cours », once.
         crate::db::board_columns::advance_on_claude(&tx, s.task_id)?;
     }
     tx.commit()?;
@@ -149,7 +149,7 @@ pub fn mark_exited(
 pub fn pause_all_open(conn: &Connection) -> AppResult<usize> {
     let now = now_utc();
     let tx = conn.unchecked_transaction()?;
-    // Taido V2.1: quitting stops the chronos (before the sessions pause).
+    // Quitting stops the chronos (before the sessions pause).
     crate::db::time_segments::close_all(&tx, &now, crate::model::ChronoStop::AppClosed)?;
     let lang = crate::i18n::current_language(&tx);
     for row in agent_sessions::with_open_terminal(&tx)? {

@@ -1111,7 +1111,7 @@ fn add_target_carries_an_optional_date() {
 /// (sub-projects after their parent), « Sans projet » last; subtasks nested.
 #[test]
 fn all_view_groups_every_open_task_by_project() {
-    // Taido V2.2 bis: Globex and Perso are groups (no tasks of their own).
+    // Globex and Perso are groups (no tasks of their own).
     let conn = open_in_memory().expect("db");
     let globex = subject(&conn, "Globex");
     let empty = subject(&conn, "Empty");
@@ -1202,7 +1202,7 @@ fn all_view_groups_every_open_task_by_project() {
 #[test]
 fn all_view_places_no_project_at_its_index_and_orders_every_group() {
     use crate::db::top_level::{self, TopItem};
-    // Taido V2.2 bis: Globex and Perso are groups.
+    // Globex and Perso are groups.
     let conn = open_in_memory().expect("db");
     let globex = subject(&conn, "Globex");
     let _empty = subject(&conn, "Empty");
@@ -1305,7 +1305,7 @@ fn all_view_places_no_project_at_its_index_and_orders_every_group() {
 /// own; Today orders projects like the sidebar (a sub-project right after its parent).
 #[test]
 fn sub_projects_in_dots_counts_and_today_order() {
-    // Taido V2.2 bis: P is a group (no tasks of its own).
+    // P is a group (no tasks of its own).
     let conn = open_in_memory().expect("db");
     let p = subject(&conn, "P");
     let q = subject(&conn, "Q");

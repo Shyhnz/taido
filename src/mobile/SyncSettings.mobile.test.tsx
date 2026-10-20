@@ -1,5 +1,5 @@
 // The phone build (IS_MOBILE forced on): Réglages › Synchro is the phone's own login screen
-// (Taido V2.7: e-mail and password; accounts are created and reset from the Mac).
+// (Taido e-mail and password; accounts are created and reset from the Mac).
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
@@ -93,7 +93,7 @@ describe("Réglages › Synchro on the phone", () => {
     );
     expect(within(dialog).getByText(fr.sync.signupOnMac)).toBeInTheDocument();
     expect(within(dialog).getByText(fr.sync.forgotOnMac)).toBeInTheDocument();
-    // No signup nor reset flow on the phone (V2.7).
+    // No signup nor reset flow on the phone.
     expect(
       within(dialog).queryByRole("button", { name: fr.account.start.signup }),
     ).toBeNull();

@@ -404,7 +404,7 @@ fn closing_a_crashed_tab_settles_its_session() {
 /// it); the folder chosen from one of its tasks becomes the sub-project's own.
 #[test]
 fn a_project_of_a_group_never_works_in_the_groups_folder() {
-    // Taido V2.2 bis: a group is only visual; its old folder (a former parent's) is ignored.
+    // A group is only visual; its old folder (a former parent's) is ignored.
     let conn = open_in_memory().expect("db");
     let dir = tempfile::tempdir().expect("tempdir");
     let group = subjects::create(

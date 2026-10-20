@@ -3,7 +3,7 @@
 //! change when something is pending; `run_now` waits for a running sync, then runs one. After
 //! the first successful run of the session, the 24 h purge runs and the service pokes itself
 //! so the resulting tombstones go out. After each successful run, the file job
-//! (`sync::files`, V2.7 bis) sends and fetches attachment files in the background, outside the
+//! (`sync::files`) sends and fetches attachment files in the background, outside the
 //! run lock, one job at a time. Events go through [`SyncEvents`] (the Tauri layer emits
 //! `sync-changed`, `data-changed` and `counts-changed`).
 

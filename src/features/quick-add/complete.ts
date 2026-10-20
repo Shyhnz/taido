@@ -1,7 +1,6 @@
 /**
  * Autocompletion of `#projet` and `/section` in the quick add: fuzzy, without
- * case or accents. Pure: the dialog gives the text, the caret and the projects. Taido V2.4
- * (by design): `@` offers dates the same way, in the interface's language; choosing one writes
+ * case or accents. Pure: the dialog gives the text, the caret and the projects. `@` offers dates the same way, in the interface's language; choosing one writes
  * the plain date word (« vendredi », "friday"), which the parser reads with or without the `@`.
  */
 
@@ -20,7 +19,7 @@ export interface CompletionOption {
    */
   insert: string;
   color: SubjectColor;
-  /** Taido V2.4: a date option (a calendar icon instead of the project dot). */
+  /** A date option (a calendar icon instead of the project dot). */
   date?: boolean;
   /** Muted text after the label: the date a date word gives (« ven. 16 oct. »). */
   hint?: string;
@@ -301,7 +300,7 @@ export function findCompletion(
       }
     } else {
       const projects = projectOptions(
-        // Taido V2.2 bis: a group holds no task.
+        // A group holds no task.
         subjects.filter((s) => !s.isGroup),
         subjects,
         (s) => `#${projectRef(s, subjects)}`,

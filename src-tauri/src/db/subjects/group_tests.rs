@@ -1,4 +1,4 @@
-//! Taido V2.2 bis (2026-10-09): groups gather projects in the sidebar, like Brave's tab
+//! Groups gather projects in the sidebar, like Brave's tab
 //! groups. They hold no task, no section and no folder.
 
 use super::*;

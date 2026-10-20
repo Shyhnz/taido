@@ -34,7 +34,7 @@ export const MOCK_SYNC_RESET_CODE = "123456";
  */
 export const ALREADY_LINKED = "already linked to an account: log out first";
 /**
- * Detail of the `invalid` refusal of the account commands the phone does not offer in V2.7
+ * Detail of the `invalid` refusal of the account commands the phone does not offer for now
  * (signup, forgotten password, reset): they are done from the Mac. The UI matches it to show
  * `t.sync.accountError.notOnPhone`.
  */

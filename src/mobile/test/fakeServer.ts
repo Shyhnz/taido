@@ -3,7 +3,7 @@
  * conflict rule `incomingWins`. Exposes a `fetch` the client uses; no network. One account
  * (`email`, `password`, `plan`): login, logout, `GET /api/account` and sync.
  *
- * V2.7 bis: the attachment files (`/api/files/{id}` and `/status`), following the real server's
+ * The attachment files (`/api/files/{id}` and `/status`), following the real server's
  * contract (sync-server/src/files.rs): a file only for a live attachment row, chunks appended at
  * `offset`, an upload refused when its hash is not the row's, limits checked when an upload
  * opens, SHA-256 checked on the last byte, the file forgotten when its attachment is deleted or

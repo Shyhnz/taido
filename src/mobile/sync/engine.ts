@@ -559,7 +559,7 @@ export class MobileSyncEngine {
       }
       // The account may have changed (docs/SYNC.md § 3.5); never fails the run.
       await this.refreshAccount();
-      // The files whose rows the server now has (V2.7 bis), in the background.
+      // The files whose rows the server now has, in the background.
       void this.backend.files.run();
     } catch (error) {
       this.recordFailure(error);

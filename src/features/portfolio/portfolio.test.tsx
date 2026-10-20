@@ -1,5 +1,5 @@
 /**
- * « Portefeuille » (Taido V2.6) on the mock backend: one line per project (groups aside),
+ * « Portefeuille » on the mock backend: one line per project (groups aside),
  * sortable, a project opens its dashboard, the CSV export.
  */
 

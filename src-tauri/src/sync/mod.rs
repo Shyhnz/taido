@@ -1,6 +1,6 @@
 //! Sync with the server. Change tracking lives in SQLite
 //! triggers (migrations 0010, 0011, 0016 and 0017); this module pushes the outbox, pulls and
-//! applies the server's rows, moves the attachment files (`files`, V2.7 bis) and runs the
+//! applies the server's rows, moves the attachment files (`files`) and runs the
 //! worker. Only `client` talks to the network, and nothing does until the user signs up, logs
 //! in or asks for a password reset code.
 

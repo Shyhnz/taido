@@ -8,10 +8,10 @@
  * vanished row a tombstone. Pulled rows update the snapshot as they are applied, so they are
  * never queued back; normalisation corrections are not, so the diff queues them.
  *
- * V2.7 bis: attachments are synced rows too (`links.attachments`); their files are kept,
+ * Attachments are synced rows too (`links.attachments`); their files are kept,
  * sent and opened by `files` (src/mobile/files.ts), which the UI reaches as `webFiles`.
  *
- * V2.8: so are Kanban columns (`board.columns`), time segments (`chrono.segments`) and task
+ * So are Kanban columns (`board.columns`), time segments (`chrono.segments`) and task
  * relations (`links.relations`). A linked phone makes the default columns only after its first
  * whole pull (`pulledOnce`), with the Mac's fixed ids, queued at their known stamp else
  * `EPOCH_STAMP` (docs/SYNC.md § 0.7).
@@ -87,7 +87,7 @@ import {
 } from "./wire";
 
 /**
- * Refusal of the account commands the phone does not offer in V2.7 (signup, forgotten
+ * Refusal of the account commands the phone does not offer for now (signup, forgotten
  * password, reset: done from the Mac); the UI says so (`t.sync.accountError.notOnPhone`).
  */
 const notOnThePhone = (): ErrorPayload => ({
@@ -165,7 +165,7 @@ const fieldOf = (json: string, field: string): string | null => {
   }
 };
 
-/** Entities of V2.8: a set saved before has none of their rows. */
+/** Entities of a set saved before has none of their rows. */
 const V28_PREFIXES = ["board_column:", "time_segment:", "relation:"];
 
 const splitKey = (key: string): { entity: string; id: string } => {
@@ -233,7 +233,7 @@ export class MobileBackend extends MockBackend {
     this.parked = p.parked;
     this.syncData = p.sync;
     if (p.state.attachments === undefined) {
-      // Written by a build before V2.7 bis, which skipped the attachment rows: anything it
+      // Written by an older build, which skipped the attachment rows: anything it
       // left under an attachment key is not this state's (a deletion of every attachment
       // queued by its diff, a snapshot entry the next diff would delete).
       const notAttachment = (k: string) => !k.startsWith("attachment:");
@@ -257,7 +257,7 @@ export class MobileBackend extends MockBackend {
       p.state.timeSegments === undefined ||
       p.state.relations === undefined
     ) {
-      // Written by a build before V2.8, which ignored these rows: nothing it kept under their
+      // Written by an older build, which ignored these rows: nothing it kept under their
       // keys is this state's. Linked, the next run pulls everything again (cursor 0) and only
       // then makes default columns (the Mac's may be among the rows it skipped).
       const notV28 = (k: string) => !V28_PREFIXES.some((x) => k.startsWith(x));
@@ -294,7 +294,7 @@ export class MobileBackend extends MockBackend {
     const deleteNoteAttachment = this.commands.deleteNoteAttachment;
     const pruneNoteImages = this.commands.pruneNoteImages;
     Object.assign(this.commands, {
-      // Attachments (V2.7 bis): files come from the browser (`webFiles`), not from paths.
+      // Attachments: files come from the browser (`webFiles`), not from paths.
       addAttachments: (): Promise<TaskDetail> =>
         Promise.reject(notOnThePhone()),
       pickFiles: (): Promise<string[]> => Promise.reject(notOnThePhone()),
@@ -373,7 +373,7 @@ export class MobileBackend extends MockBackend {
       syncNow: (): Promise<SyncStatus> => this.engine.syncNow(),
       syncLogin: (input: AccountInput): Promise<SyncStatus> =>
         this.engine.link(input),
-      // Accounts are created and reset from the Mac in V2.7: the phone only logs in.
+      // Accounts are created and reset from the Mac for now: the phone only logs in.
       syncSignup: (): Promise<SyncStatus> => Promise.reject(notOnThePhone()),
       syncForgotPassword: (): Promise<null> => Promise.reject(notOnThePhone()),
       syncResetPassword: (): Promise<null> => Promise.reject(notOnThePhone()),
@@ -470,7 +470,7 @@ export class MobileBackend extends MockBackend {
       (k) => !rows.has(k) && !this.heldDeletions.has(k),
     );
     if (vanished.length > 0) {
-      // Three classes, each with its own ratio, so that one never dilutes another (V2.8):
+      // Three classes, each with its own ratio, so that one never dilutes another:
       // projects and tasks (sections follow their project, settings never vanish), with the
       // Kanban columns and relations; attachments; time segments (recorded time). A column,
       // relation, attachment or segment is counted only while what it hangs on is still here
@@ -685,7 +685,7 @@ export class MobileBackend extends MockBackend {
   }
 
   /**
-   * After the first successful sync of a set written by a build before V2.7 bis
+   * After the first successful sync of a set written by an older build
    * (`filesRecovery`): the attachments are back from the server, and those whose copy is still
    * kept here (never sent) are to send again; only then may kept files be dropped.
    */

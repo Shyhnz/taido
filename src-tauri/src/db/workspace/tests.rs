@@ -22,7 +22,7 @@ fn the_app_folder_holds_every_project_and_the_tasks_without_project() {
     let docs = tempfile::tempdir().expect("documents");
     // Projects created before the first launch (no app folder yet) get theirs at startup.
     let globex = project(&conn, "Globex", None);
-    // Taido V2.2 bis: a group has no folder; its projects get theirs in the app's folder.
+    // A group has no folder; its projects get theirs in the app's folder.
     let group = project(&conn, "Clients", None);
     conn.execute(
         "UPDATE subjects SET is_group = 1 WHERE id = ?1",

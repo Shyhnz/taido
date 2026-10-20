@@ -587,7 +587,7 @@ fn validate_place(
     section_id: Option<&str>,
 ) -> AppResult<()> {
     if let Some(s) = subject_id {
-        // A group holds no tasks (Taido V2.2 bis).
+        // A group holds no tasks.
         subjects::ensure_project(conn, s)?;
     }
     if let Some(sec) = section_id {

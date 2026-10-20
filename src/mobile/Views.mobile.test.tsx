@@ -1,4 +1,4 @@
-// Taido V2.8 on the web build (IS_MOBILE forced on): Kanban, Dashboard and Portfolio.
+// The web build (IS_MOBILE forced on): Kanban, Dashboard and Portfolio.
 import {
   act,
   fireEvent,

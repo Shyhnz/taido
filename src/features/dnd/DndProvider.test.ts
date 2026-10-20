@@ -35,7 +35,7 @@ function backend() {
 const c = () => backend().commands;
 
 const project = (name: string, parentId: string | null = null) => {
-  // Taido V2.2 bis: only a group holds projects.
+  // Only a group holds projects.
   const parent = backend().state.subjects.find((s) => s.id === parentId);
   if (parent) parent.isGroup = true;
   return c().createSubject({ name, color: null, rootPath: null, parentId });
@@ -216,7 +216,7 @@ describe("handleDragEnd", () => {
     expect(titles(v.groups[0])).toEqual(["B", "A"]);
   });
 
-  it("reorders projects within their level only (groups, Taido V2.2 bis)", async () => {
+  it("reorders projects within their level only (groups)", async () => {
     const globex = await project("Globex");
     const a = await project("A", globex.id);
     const b = await project("B", globex.id);
@@ -279,7 +279,7 @@ describe("handleDragEnd", () => {
   });
 
   it("reorders « À faire » groups by their header, within their level", async () => {
-    // Taido V2.2 bis: Globex is a group (no tasks, so no header of its own).
+    // Globex is a group (no tasks, so no header of its own).
     const globex = await project("Globex");
     const client = await project("Client", globex.id);
     const agence = await project("Agence", globex.id);

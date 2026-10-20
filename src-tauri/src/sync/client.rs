@@ -1,6 +1,6 @@
 //! HTTP client of the sync server (docs/SYNC.md § 2.2, § 3.6): reqwest 0.13 with rustls, one
 //! `Client` with a 10 s connect timeout and a 60 s total timeout (longer for the attachment
-//! files, V2.7 bis). Only this module talks to the network. Tokens, passwords, codes and
+//! files). Only this module talks to the network. Tokens, passwords, codes and
 //! e-mail addresses are never logged.
 
 use std::time::Duration;

@@ -3,7 +3,7 @@
  * (docs/SYNC.md § 6.5): a new worker that finished installing while a controller exists
  * waits; « Recharger » asks it to skip waiting and reloads once it controls the page.
  *
- * V2.7 bis: a waiting worker of this very build (the page came from the network while the
+ * A waiting worker of this very build (the page came from the network while the
  * previous worker still controlled it) is activated at once, without the banner: until then
  * an offline opening would get the previous build's cached app.
  */

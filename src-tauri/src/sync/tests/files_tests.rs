@@ -1,4 +1,4 @@
-//! The file job (V2.7 bis, `sync::files`) against the fake server's file store: a chunk
+//! The file job (`sync::files`) against the fake server's file store: a chunk
 //! refused for its offset (another device uploading the same file) resumes from the status;
 //! a file changed before it was ever sent is hashed again, its new hash goes out, then the
 //! file.

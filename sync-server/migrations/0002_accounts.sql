@@ -1,4 +1,4 @@
--- V2.7 accounts: several accounts, records scoped by account.
+-- Accounts: several accounts, records scoped by account.
 -- A legacy database holding an account or records is refused before this migration runs
 -- (store::refuse_legacy): only an empty one reaches here, so `devices` and `records` are
 -- recreated rather than converted.

@@ -1,5 +1,5 @@
 //! Rules of the Taido V2 tables (migration 0012), checked in SQL
-//! until their repositories arrive (V2.1, V2.3).
+//! until their repositories arrive.
 
 use rusqlite::{params, Connection};
 

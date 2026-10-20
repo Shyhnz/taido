@@ -1,5 +1,5 @@
 /**
- * The chrono on a task row or a kanban card (Taido V2.1): `1:15:32 ▶` while it runs,
+ * The chrono on a task row or a kanban card: `1:15:32 ▶` while it runs,
  * `1:15:32 ‖` when paused. Absent until the task has time.
  */
 

@@ -1,4 +1,4 @@
-//! Attachment files (V2.7 bis): the bytes of each
+//! Attachment files: the bytes of each
 //! attachment, uploaded in chunks of at most [`sync_proto::MAX_CHUNK_BYTES`] and resumed from
 //! the status route, checked against their SHA-256 before being kept, then downloaded (with
 //! `Range`) by the other devices of the account.

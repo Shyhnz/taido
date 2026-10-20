@@ -36,7 +36,7 @@ describe("what an account keeps (docs/SYNC.md, protocol 3)", () => {
     expect(fr.account.privacy).toBe(fr.sync.privacy);
   });
 
-  it("says the content of attachments is kept too (V2.7 bis)", () => {
+  it("says the content of attachments is kept too", () => {
     expect(fr.account.privacy).toContain("noms et fichiers");
     expect(fr.account.privacy).not.toContain("pas leur contenu");
   });

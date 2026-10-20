@@ -1,4 +1,4 @@
--- Taido V2.7: the V2 tables join the sync (protocol 3).
+-- The V2 tables join the sync (protocol 3).
 -- `sync_outbox.entity` accepts 'board_column', 'time_segment', 'relation' and 'attachment'
 -- (its CHECK cannot be altered: the table is rebuilt with its rows, as in 0011). Every
 -- change-tracking trigger is dropped first (a RENAME while triggers name a missing

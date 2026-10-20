@@ -1,8 +1,8 @@
--- Taido V2.2 (2026-10-09): the kanban's columns are the progress of the tasks, not
+-- The kanban's columns are the progress of the tasks, not
 -- Claude's states. Each project (and « Sans projet », `subject_id` NULL) has its own ordered
 -- columns, created on first use with « À faire · En cours · À valider · Terminé ». The done
 -- column (`is_done`) is always last and holds the completed tasks. A task without column, or
--- whose column belongs to another project, is in the first column. Not synced yet (V2.7).
+-- whose column belongs to another project, is in the first column.
 
 CREATE TABLE board_columns (
   id         TEXT PRIMARY KEY,

@@ -131,7 +131,7 @@ export function destinationItems(
     },
   ];
   for (const s of subjects) {
-    // Taido V2.2 bis: a group holds no task.
+    // A group holds no task.
     if (s.isGroup) continue;
     items.push({
       label: projectPath(s, subjects),

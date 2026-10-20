@@ -1,5 +1,5 @@
 /**
- * Attachment files on the phone and the website (Taido V2.7 bis, src/mobile/files.ts): kept in
+ * Attachment files on the phone and the website (src/mobile/files.ts): kept in
  * IndexedDB until sent, sent in chunks after the sync that pushes their row, opened on demand
  * (downloaded, checked, shown when a raster image, saved otherwise), refused or full accounts
  * shown on the tile, the Mac's rules for hashes and deletions.

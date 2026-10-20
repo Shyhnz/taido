@@ -1,4 +1,4 @@
-//! « Portefeuille » (Taido V2.6): every project on one line, and the CSV
+//! « Portefeuille »: every project on one line, and the CSV
 //! export of the time segments. Groups (visual only) and « Sans projet » are not projects.
 
 use chrono::{DateTime, Duration, Local};

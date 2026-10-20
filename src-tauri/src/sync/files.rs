@@ -1,4 +1,4 @@
-//! Attachment files through the sync server (V2.7 bis). The
+//! Attachment files through the sync server. The
 //! file job runs after each successful sync, outside the sync's run lock, one file at a time:
 //!
 //! 1. attachments of this Mac without a hash get one (queued for the sync: the server must
@@ -297,7 +297,7 @@ pub async fn run(
 // Local pass
 // ---------------------------------------------------------------------------
 
-/// Attachments made before V2.7 bis get the hash and size of their file: a synced change,
+/// Attachments made before their files were synced get the hash and size of their file: a synced change,
 /// pushed by the next sync before the file is sent. Only once: a hash is never recomputed.
 async fn hash_unhashed(db: &Mutex<Connection>, report: &mut FilesReport) {
     let rows: Vec<(String, String)> = with_db(db, "list the files to hash", |conn| {

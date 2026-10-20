@@ -5,7 +5,7 @@
  * `AbortController` timeout (10 s for the account, 5 s for the logout). Failures become a
  * `SyncHttpError` whose `kind` drives the status (same mapping as the Mac core, § 3.4–3.5).
  *
- * V2.7 bis, attachment files (same timeouts as the Mac): `GET /api/files/{id}/status` (15 s),
+ * Attachment files (same timeouts as the Mac): `GET /api/files/{id}/status` (15 s),
  * `PUT /api/files/{id}?offset&size&sha256` with one chunk (5 min), `GET /api/files/{id}`
  * (30 min, body included). The server's refusals of a file are a `FileRefused`.
  */

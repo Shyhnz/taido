@@ -89,7 +89,7 @@ pub fn ensure(conn: &Connection, home: &Path) -> AppResult<usize> {
 /// already taken gets « (2) », « (3) »… Returns the folder set, `None` when nothing to do.
 pub fn ensure_project_folder(conn: &Connection, id: &str) -> AppResult<Option<String>> {
     let subject = subjects::get(conn, id)?;
-    // A group has no folder (Taido V2.2 bis).
+    // A group has no folder.
     if subject.root_path.is_some() || subject.is_group {
         return Ok(None);
     }

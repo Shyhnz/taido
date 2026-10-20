@@ -1,5 +1,5 @@
 /**
- * « Chrono » in the task panel (Taido V2.1): the big counter, why it is
+ * « Chrono » in the task panel: the big counter, why it is
  * paused, its journal (most recent first) and « + Ajouter du temps à la main » for the tasks
  * done without Claude (a call, an invoice). No play button: the sessions drive it; a running
  * segment only has « Arrêter », for a timer stuck on a lost Mac (docs/SYNC.md § 0.8).

@@ -202,7 +202,7 @@ pub fn effective_root(conn: &Connection, subject: &Subject) -> AppResult<Option<
     let Some(parent) = &subject.parent_id else {
         return Ok(None);
     };
-    // A group is only visual (Taido V2.2 bis): its folder is never its projects'.
+    // A group is only visual: its folder is never its projects'.
     let root: Option<Option<String>> = conn
         .query_row(
             "SELECT root_path FROM subjects WHERE id = ?1 AND is_group = 0",
@@ -466,7 +466,7 @@ fn ensure_group(conn: &Connection, id: &str) -> AppResult<()> {
     Ok(())
 }
 
-/// A live project that can hold tasks and sections: not a group (Taido V2.2 bis).
+/// A live project that can hold tasks and sections: not a group.
 pub fn ensure_project(conn: &Connection, id: &str) -> AppResult<()> {
     if get(conn, id)?.is_group {
         return Err(AppError::Invalid(format!(
@@ -498,7 +498,7 @@ fn slots_after(conn: &Connection, group: &Subject, n: usize) -> AppResult<Vec<f6
     Ok((1..=n).map(|i| group.position + step * i as f64).collect())
 }
 
-/// « Ajouter les projets à un groupe » (Taido V2.2 bis). A new group takes the place of the
+/// « Ajouter les projets à un groupe ». A new group takes the place of the
 /// first project. Groups left empty disappear, like Brave's. Returns the group's id.
 pub fn group_projects(
     conn: &Connection,
@@ -883,6 +883,6 @@ mod tests {
     }
 }
 
-/// Taido V2.2 bis: groups (they replace the old sub-projects).
+/// Groups (they replace the old sub-projects).
 #[cfg(test)]
 mod group_tests;

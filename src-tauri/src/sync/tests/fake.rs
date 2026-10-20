@@ -1,6 +1,6 @@
 //! A fake sync server for the engine tests: axum on `127.0.0.1:0`, the algorithm of
 //! docs/SYNC.md § 2.4 in memory (conflict rule of `sync_proto`), plus knobs to script
-//! failures. Never the network beyond localhost. V2.7 bis: a minimal file store (status and
+//! failures. Never the network beyond localhost. a minimal file store (status and
 //! chunks, in memory) for the file job's tests.
 
 use std::collections::{BTreeMap, HashSet, VecDeque};
@@ -64,7 +64,7 @@ pub struct FakeState {
     /// Called while a sync request is being answered (to edit the client in flight).
     pub during_sync: Option<Hook>,
     pub logouts: usize,
-    /// Attachment files by attachment id (V2.7 bis).
+    /// Attachment files by attachment id.
     pub files: BTreeMap<String, FakeFile>,
     /// Another device's upload of a file: `(id, size, sha256, bytes)` appended right after
     /// this file's next status is answered (once).

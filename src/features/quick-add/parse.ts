@@ -18,8 +18,7 @@
  * - `!1`, `!2`, `!3`: the priority as shown, P1 the most urgent. It gives the stored value (`!1` → 4, red). `!4` (the default), `!5`, `!` alone
  *   or `!22` stay text.
  * - French dates and times; a time alone is for today, even when already past (like the date
- *   picker); `demain matin|midi|après-midi|soir` adds 09:00, 12:00, 14:00, 18:00. Taido V2.4:
- *   an optional `@` before them (`@vendredi`, `@13/10`, `@demain 10h`).
+ *   picker); `demain matin|midi|après-midi|soir` adds 09:00, 12:00, 14:00, 18:00. An optional `@` before them (`@vendredi`, `@13/10`, `@demain 10h`).
  * - The FIRST token of each kind wins (project, section, date, time, agent, priority); the later ones
  *   stay in the title as plain text (« Appeler Paul demain pour la réunion de lundi »). An
  *   explicit time wins over the time implied by « ce soir » or « demain matin ».
@@ -673,7 +672,7 @@ function matchProject(ctx: Ctx, i: number): QuickToken | null {
         found = sectionAfter(folded, end, child);
       }
     }
-    // Taido V2.2 bis: a group holds no task; « #Groupe » alone stays text.
+    // A group holds no task; « #Groupe » alone stays text.
     if (subject.isGroup) return null;
     const section = found?.section ?? null;
     if (found) end = found.end;
@@ -757,7 +756,7 @@ function matchAt(ctx: Ctx, i: number): QuickToken | null {
       value: m[1] as LaunchKind,
     };
   }
-  // Taido V2.4: `@vendredi`, `@13/10`, `@demain 10h`, `@10h` — the `@`
+  // `@vendredi`, `@13/10`, `@demain 10h`, `@10h` — the `@`
   // only marks a date or a time, which reads as without it.
   const at = ch === "@" ? i + 1 : i;
   const date = matchDate(ctx.words, folded, at, ctx.today, at !== i);

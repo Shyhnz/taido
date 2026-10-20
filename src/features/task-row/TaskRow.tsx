@@ -291,7 +291,7 @@ export function TaskRow({
               data-overdue={overdue || undefined}
             >
               {row.due.time && <Clock size={12} aria-hidden />}
-              {/* Taido V2.4 (wireframe V2·1): « En retard · 7 oct. », like the kanban card. */}
+              {/* « En retard · 7 oct. », like the kanban card. */}
               {overdue
                 ? `${t.row.overdue} · ${formatDueMeta(row.due, clock)}`
                 : dateShown

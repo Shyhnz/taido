@@ -197,7 +197,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
         .typ::<model::TerminalSize>()
 }
 
-/// Taido V2.1: records every 30 s that the app is alive, so that the next launch stops the
+/// Records every 30 s that the app is alive, so that the next launch stops the
 /// chronos a crash left running at the last beat. Ends with the database.
 fn start_heartbeat(db: std::sync::Weak<Mutex<rusqlite::Connection>>) {
     let spawned = std::thread::Builder::new()
@@ -316,7 +316,7 @@ pub fn run() {
             // Taido V2 replaces V1 in place: a V1 database is saved, unlinked, migrated.
             let conn = db::v1_upgrade::open(&db_path)?;
             sync::check_triggers(&conn);
-            // Taido V2.1: chronos a crash left running stop at the last heartbeat.
+            // Chronos a crash left running stop at the last heartbeat.
             match db::time_segments::recover_after_crash(&conn, &db::now_utc()) {
                 Ok(0) => {}
                 Ok(n) => log::warn!("stopped {n} chrono segments left running by a crash"),

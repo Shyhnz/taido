@@ -4,7 +4,7 @@
  * real server binary on 127.0.0.1. Skipped unless `TAIDO_SYNC_SERVER_BIN` points to a built
  * `taido-sync-server` (`pnpm test:e2e` builds it and sets it).
  *
- * V2.7 bis: attachment files between the phone (or the site) and a raw « Mac » client, both
+ * Attachment files between the phone (or the site) and a raw « Mac » client, both
  * ways, an upload cut then resumed after a reload, and an account full.
  */
 
@@ -407,7 +407,7 @@ describe.skipIf(!BIN)("phone ↔ real sync server", () => {
       rootPath: null,
       parentId: null,
     });
-    // Taido V2.2 bis: only a group holds projects (synced since protocol 3, V2.7).
+    // Only a group holds projects (synced since protocol 3).
     const group = await c.createSubject({
       name: "Clients",
       color: null,
@@ -630,7 +630,7 @@ describe.skipIf(!BIN)("phone ↔ real sync server", () => {
     );
     expect(byId(p, "e2e-task")?.boardColumnId).toBe("col-e2e-proj-2");
     expect(p.parked).toEqual({});
-    // V2.8: the Mac's board and time are on the phone, the running segment shown running.
+    // The Mac's board and time are on the phone, the running segment shown running.
     const board = await p.commands.getBoard("e2e-proj");
     expect(board.columns.map((c) => [c.id, c.total])).toEqual([
       ["col-e2e-proj-0", 1],
@@ -985,7 +985,7 @@ describe.skipIf(!BIN)("phone ↔ real sync server", () => {
     expect(p.pendingCount()).toBe(0);
   });
 
-  it("V2.7 bis: a file added on the phone reaches the server, the Mac downloads the same bytes", async () => {
+  it("a file added on the phone reaches the server, the Mac downloads the same bytes", async () => {
     const p = phone({ chunkBytes: 64 * 1024 });
     await link(p, served.url);
     const t = await newTask(p, "Rapport du téléphone");
@@ -1016,7 +1016,7 @@ describe.skipIf(!BIN)("phone ↔ real sync server", () => {
     expect(sha256(got)).toBe(sha256(bytes));
   });
 
-  it("V2.7 bis: a file the Mac sent is downloaded by the phone; HTML and PNG both saved", async () => {
+  it("a file the Mac sent is downloaded by the phone; HTML and PNG both saved", async () => {
     const S = "2026-10-02T08:00:00.000Z";
     const html = new TextEncoder().encode(
       "<!doctype html><script>fetch('/api/sync')</script>",
@@ -1067,7 +1067,7 @@ describe.skipIf(!BIN)("phone ↔ real sync server", () => {
     );
   });
 
-  it("V2.7 bis: an upload cut midway goes on after a reload from the bytes the server holds", async () => {
+  it("an upload cut midway goes on after a reload from the bytes the server holds", async () => {
     const chunk = 64 * 1024;
     let puts = 0;
     let cut = true;
@@ -1121,7 +1121,7 @@ describe.skipIf(!BIN)("phone ↔ real sync server", () => {
     expect(sha256(got)).toBe(sha256(bytes));
   });
 
-  it("V2.7 bis: an account full says so on the tile, and the tasks keep syncing", async () => {
+  it("an account full says so on the tile, and the tasks keep syncing", async () => {
     const dir = mkdtempSync(join(tmpdir(), "todo-sync-e2e-quota-"));
     const small = await serve(bin, dir, "127.0.0.1:0", {
       TAIDO_ACCOUNT_QUOTA_BYTES: "1000",

@@ -278,7 +278,7 @@ describe("Sidebar projects", () => {
       "Renommer",
       "Couleur›",
       "Ajouter une section",
-      // Taido V2.2 bis: groups replace sub-projects (« Retirer du groupe » only in a group).
+      // Groups replace sub-projects (« Retirer du groupe » only in a group).
       "Ajouter à un groupe›",
       "Relier à un dossier…",
       "Supprimer",

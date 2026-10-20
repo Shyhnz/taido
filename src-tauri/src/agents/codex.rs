@@ -47,7 +47,7 @@ pub struct Launch<'a> {
     pub context: Option<&'a str>,
     /// First message; ignored by a resume.
     pub prompt: Option<&'a str>,
-    /// Taido V2.3: the task's attachments folder.
+    /// The task's attachments folder.
     pub add_dir: Option<&'a Path>,
 }
 

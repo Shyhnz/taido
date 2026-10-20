@@ -176,7 +176,7 @@ export interface SubjectRec {
   /** Soft delete (restorable). */
   deletedAt: string | null;
   /**
-   * Taido V2.2 bis: a group only gathers projects in the sidebar (no task, no section, no
+   * A group only gathers projects in the sidebar (no task, no section, no
    * folder). Optional: data saved before it (the phone) reads as a project.
    */
   isGroup?: boolean;
@@ -212,7 +212,7 @@ export interface TaskRec {
   /** Soft delete; a deleted project stamps its tasks with the same instant. */
   deletedAt: string | null;
   /**
-   * Taido V2.7: the Kanban column as synced (`TaskData.board_column_id`); since V2.8 the
+   * The Kanban column as synced (`TaskData.board_column_id`); the
    * mock's board reads and moves it too (`MockBoard`). Optional: absent reads as none.
    */
   boardColumnId?: string | null;
@@ -480,16 +480,16 @@ export class MockBackend {
     summarizeSessions: () => this.state.settings.summarizeSessions,
   });
 
-  /** Simulated chrono (Taido V2.1, src/lib/mock-chrono.ts). */
+  /** Simulated chrono (src/lib/mock-chrono.ts). */
   readonly chrono = new MockChrono(() => this.newId("seg"));
 
   /**
-   * The web app's attachment files (src/mobile/files.ts, Taido V2.7 bis): set by the phone's
+   * The web app's attachment files (src/mobile/files.ts): set by the phone's
    * backend, `null` here (the Mac's mock has paths, not files).
    */
   webFiles: WebAttachmentFiles | null = null;
 
-  /** Simulated attachments and relations (Taido V2.3, src/lib/mock-links.ts). */
+  /** Simulated attachments and relations (src/lib/mock-links.ts). */
   readonly links = new MockLinks(
     (prefix) => this.newId(prefix),
     () => this.sync.get().state !== "unlinked",
@@ -509,7 +509,7 @@ export class MockBackend {
     projectLive: (id) => this.noteSubjectTag(id) !== null,
   });
 
-  /** Simulated kanban columns (Taido V2.2, src/lib/mock-board.ts). */
+  /** Simulated kanban columns (src/lib/mock-board.ts). */
   readonly board = new MockBoard({
     newId: () => this.newId("col"),
     now: () => this.nowIso(),
@@ -680,7 +680,7 @@ export class MockBackend {
   }
 
   /**
-   * The CSV of « Exporter les temps » (Taido V2.8): the web app saves it as a download, where
+   * The CSV of « Exporter les temps »: the web app saves it as a download, where
    * the desktop core writes a file (`exportTimeCsv`).
    */
   timeCsv(days: number): string {
@@ -905,11 +905,11 @@ export class MockBackend {
   private effectiveRoot(s: SubjectRec): string | null {
     if (s.rootPath !== null || s.parentId === null) return s.rootPath;
     const parent = this.state.subjects.find((p) => p.id === s.parentId);
-    // A group is only visual (Taido V2.2 bis): its folder is never its projects'.
+    // A group is only visual: its folder is never its projects'.
     return parent && !parent.isGroup ? parent.rootPath : null;
   }
 
-  /** A project that can hold tasks and sections: not a group (Taido V2.2 bis). */
+  /** A project that can hold tasks and sections: not a group. */
   private projectRec(id: string): SubjectRec {
     const s = this.subjectRec(id);
     if (s.isGroup) throw invalid("Un groupe ne contient pas de tâches");
@@ -1478,7 +1478,7 @@ export class MockBackend {
         id: this.newId("subject"),
         name,
         color: input.color ?? this.nextColor(),
-        // A project of a group gets no folder from the group (Taido V2.2 bis).
+        // A project of a group gets no folder from the group.
         rootPath,
         parentId,
         // Last of its level: after everything at the top level (« Sans projet » included
@@ -1687,7 +1687,7 @@ export class MockBackend {
     getView: async (input: GetViewInput): Promise<ViewModel> =>
       clone(this.view(input)),
 
-    // --- Taido V2.3: attachments and relations -----------------------------------
+    // --- attachments and relations -----------------------------------
 
     addAttachments: async (input: AddAttachmentsInput): Promise<TaskDetail> => {
       const t = this.taskRec(input.taskId);
@@ -1777,7 +1777,7 @@ export class MockBackend {
       return null;
     },
 
-    /** « Ajouter les projets à un groupe » (Taido V2.2 bis), like the core. */
+    /** « Ajouter les projets à un groupe », like the core. */
     groupProjects: async (input: GroupProjectsInput): Promise<string> => {
       const projects = input.projectIds.map((id) => this.subjectRec(id));
       const first = projects[0];
@@ -1861,7 +1861,7 @@ export class MockBackend {
       return this.commands.ungroupProjects(children);
     },
 
-    /** « Portefeuille » (Taido V2.6), like `views::portfolio`. */
+    /** « Portefeuille », like `views::portfolio`. */
     getPortfolio: async (days: number): Promise<Portfolio> => {
       const subjects = this.orderedSubjects().filter((s) => !s.isGroup);
       const rows: PortfolioRow[] = [];
@@ -1930,7 +1930,7 @@ export class MockBackend {
       fileName: string,
     ): Promise<string | null> => `/Users/user/Documents/${fileName}`,
 
-    /** Dashboard of a project (Taido V2.5), like `views::dashboard`. */
+    /** Dashboard of a project, like `views::dashboard`. */
     getDashboard: async (
       subjectId: string | null,
       days: number,
@@ -1974,7 +1974,7 @@ export class MockBackend {
       );
     },
 
-    /** Kanban of a project (Taido V2.2), like `views::board`. */
+    /** Kanban of a project, like `views::board`. */
     getBoard: async (subjectId: string | null): Promise<Board> => {
       if (subjectId !== null) this.subjectRec(subjectId);
       const view = this.view({
@@ -2512,7 +2512,7 @@ export class MockBackend {
       // Claude: the `agent_sessions` row starts in Starting.
       if (input.kind === "agent") {
         this.agents.start(opened);
-        // Taido V2.2: Claude on a task « À faire » puts it « En cours », once.
+        // Claude on a task « À faire » puts it « En cours », once.
         this.board.advanceOnClaude(t);
       }
       this.changed(["terminals", "tasks"], [t.id]);
@@ -2734,7 +2734,7 @@ export class MockBackend {
     syncStatus: async (): Promise<SyncStatus> => this.sync.get(),
     syncNow: async (): Promise<SyncStatus> => {
       const status = await this.sync.now();
-      // V2.7 bis: the core's file job sends the attachments' files after a sync.
+      // The core's file job sends the attachments' files after a sync.
       if (status.state === "idle" && this.links.markSent()) {
         this.changed(["tasks"]);
       }
@@ -3276,7 +3276,7 @@ export class MockBackend {
    * Checks a parent for `subject` (`null` while creating), one level only:
    * a live top-level project other than itself, and `subject` must have no sub-projects.
    */
-  /** Taido V2.2 bis: projects only go into a group, and a group into nothing. */
+  /** Projects only go into a group, and a group into nothing. */
   private parentFor(parentId: string, subject: SubjectRec | null): string {
     const parent = this.subjectRec(parentId);
     if (!parent.isGroup) throw invalid("Un projet ne va que dans un groupe");
@@ -3310,7 +3310,7 @@ export class MockBackend {
     const today = this.today();
     const base = { kind: input.kind, subject: null, today };
     switch (input.kind) {
-      // Taido V2.6: the screen reads `getPortfolio`.
+      // The screen reads `getPortfolio`.
       case "portfolio":
         return { ...base, groups: [], openCount: 0, completed: [] };
       case "upcoming":

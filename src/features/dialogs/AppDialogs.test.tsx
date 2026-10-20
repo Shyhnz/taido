@@ -113,7 +113,7 @@ describe("Déplacer vers… dialog", () => {
     const backend = mockBackend;
     const c = backend.commands;
     const project = (name: string, parentId: string | null) => {
-      // Taido V2.2 bis: only a group holds projects.
+      // Only a group holds projects.
       const parent = backend.state.subjects.find((s) => s.id === parentId);
       if (parent) parent.isGroup = true;
       return c.createSubject({ name, color: null, rootPath: null, parentId });

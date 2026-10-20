@@ -1,5 +1,5 @@
 /**
- * « Relations » in the task panel (Taido V2.3): three
+ * « Relations » in the task panel: three
  * lines, « Bloque », « Bloquée par », « Liée à », each linked task clickable with its state.
  * One « + Lier une tâche » opens the menu of every task (LinkMenu.tsx, 2026-10-11).
  */
