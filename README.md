@@ -8,8 +8,7 @@
   A to-do app where every task is a workspace for Claude Code and Codex.
 </p>
 
-<!-- VIDEO: add the demo video here -->
-<p align="center"><em>Demo video coming soon.</em></p>
+https://github.com/user-attachments/assets/a501dc60-132a-4089-8cfc-81d7e00cefab
 
 Taido is for people who work with Claude Code or Codex on several tasks at once. Each task owns its terminals, its notes and its time. A status ring on every task tells you which agent is working, which one is waiting for you and which one is done, so you stop switching windows to find out.
 
