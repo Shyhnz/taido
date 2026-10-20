@@ -133,6 +133,24 @@ describe("reconcileLanguage", () => {
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
+  it("does not reload when the choice cannot be stored", async () => {
+    const reload = vi.fn();
+    vi.stubGlobal("location", { ...window.location, reload });
+    window.localStorage.setItem(LANGUAGE_KEY, "fr");
+    const setItem = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("blocked");
+      });
+    const settings = {
+      ...(await commands.getSettings()),
+      language: "en" as const,
+    };
+    await reconcileLanguage(settings);
+    setItem.mockRestore();
+    expect(reload).not.toHaveBeenCalled();
+  });
+
   it("does nothing when both agree", async () => {
     const reload = vi.fn();
     vi.stubGlobal("location", { ...window.location, reload });

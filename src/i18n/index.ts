@@ -47,11 +47,14 @@ function stored(): Language | null {
   }
 }
 
-function remember(lang: Language): void {
+/** Whether the choice was stored. */
+function remember(lang: Language): boolean {
   try {
     window.localStorage.setItem(LANGUAGE_KEY, lang);
+    return true;
   } catch {
     // No storage (private window): the choice then only lives in the core.
+    return false;
   }
 }
 
@@ -113,8 +116,8 @@ export async function reconcileLanguage(settings: Settings): Promise<void> {
   const local = currentLanguage();
   if (settings.language === local) return;
   if (settings.language) {
-    remember(settings.language);
-    globalThis.location.reload();
+    // Without storage a reload would find the old language again, and reload forever.
+    if (remember(settings.language)) globalThis.location.reload();
     return;
   }
   const { commands } = await import("../lib/ipc");

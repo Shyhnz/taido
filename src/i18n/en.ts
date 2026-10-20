@@ -1213,7 +1213,7 @@ const en: Strings = {
     newCode: "Send a new code",
     forgotLink: "Forgot password?",
     unconfirmed: "Email not confirmed yet",
-    unconfirmedHelp: "Open the link in the “Confirm your email” message.",
+    unconfirmedHelp: "Open the link in the “Confirm your address” message.",
     resend: "Resend the email",
     resentToast: (email: string) => `Email sent to ${email}.`,
     toLogin: "I already have an account",

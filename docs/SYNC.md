@@ -117,7 +117,7 @@ Code, not link: nothing to open in a browser, nothing to host.
   the tries (`password_resets` has one row per account). Stored as hex SHA-256 of
   `"<account id>:<code>"` (not argon2: the space is 10^6, a stolen database could be searched
   anyway, the code lives 30 minutes, and online guessing is bounded by the limits), compared in
-  constant time. The e-mail (French, subject « Ton code Taido ») carries the code in clear.
+  constant time. The e-mail (English by default, subject « Your Taido code »; French with `TAIDO_MAIL_LANG=fr`, subject « Ton code Taido ») carries the code in clear.
 - **Reset.** In this order: protocol; password under 10 characters → 400 `weak_password`
   **without** using a try; a per-client slot (§ 0.11); the argon2 gate; then the code. An unknown or
   malformed address, a wrong, expired, used or burnt code all give the same 400 `invalid_code`;

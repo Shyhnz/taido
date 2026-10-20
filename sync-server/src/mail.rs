@@ -123,7 +123,7 @@ pub fn code_mail(code: &str, public_url: Option<&str>, lang: MailLang) -> Mail {
             lang.pick("Valid for 30 minutes", "Valable 30 minutes"),
         ),
         tpl::quiet(lang.pick(
-            "Did not ask for this? Ignore this message, your password stays the same.",
+            "Didn't ask for this? Ignore this message; your password won't change.",
             "Tu n'as rien demandé ? Ignore ce message, ton mot de passe ne change pas.",
         )),
     ]
@@ -170,8 +170,8 @@ pub fn verify_mail(email: &str, link: &str, public_url: Option<&str>, lang: Mail
         MailLang::En => (
             format!("To finish signing up, confirm that {email} is your address."),
             "Confirm my address",
-            "The button does not work? Copy this link into your browser:",
-            "This link is valid for 24 hours. Did not create a Taido account? Ignore this message.",
+            "Button not working? Copy this link into your browser:",
+            "This link is valid for 24 hours. Didn't create a Taido account? Ignore this message.",
         ),
         MailLang::Fr => (
             format!("Pour finir ton inscription, confirme que {email} est bien ton adresse."),
