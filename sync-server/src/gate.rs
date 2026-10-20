@@ -1,4 +1,4 @@
-//! Bodies waiting in memory (security review 2026-10-12): a sync push or a file chunk takes a
+//! Bodies waiting in memory: a sync push or a file chunk takes a
 //! slot of its account ([`PER_ACCOUNT`]) and one of the server ([`GLOBAL`]) **before** its body
 //! is read, and waits at most [`WAIT`] for them (then 429 `rate_limited`). Downloads (GET) are
 //! never gated.

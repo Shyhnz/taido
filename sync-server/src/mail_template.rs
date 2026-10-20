@@ -136,10 +136,11 @@ fn host_of(public_url: &str) -> &str {
     rest.split(['/', '?', '#']).next().unwrap_or("")
 }
 
-/// The whole HTML document. `preheader`, `title` and `footer` are escaped; `body` is HTML
+/// The whole HTML document in the language `lang` (`en` or `fr`). `preheader`, `title` and `footer` are escaped; `body` is HTML
 /// built with the helpers above. The last footer line names the server by the host of
 /// `public_url` (`TAIDO_PUBLIC_URL`); without one it only says "Taido".
 pub fn layout(
+    lang: &str,
     preheader: &str,
     title: &str,
     body: &str,
@@ -155,7 +156,7 @@ pub fn layout(
     let footer = escape(footer);
     format!(
         r##"<!DOCTYPE html>
-<html lang="fr">
+<html lang="{lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -190,14 +191,14 @@ pub fn layout(
     )
 }
 
-/// A web page of the server (address confirmation) in the same style: the logo is a `data:`
+/// A web page of the server (address confirmation) in the same style (`lang`: its language code): the logo is a `data:`
 /// image (allowed by the page's CSP), no script. `title` is escaped; `body` is HTML built with
 /// the helpers above.
-pub fn page(title: &str, body: &str) -> String {
+pub fn page(lang: &str, title: &str, body: &str) -> String {
     use base64::engine::general_purpose::STANDARD;
     use base64::Engine;
     let logo = format!("data:image/png;base64,{}", STANDARD.encode(LOGO_PNG));
-    let html = layout("", title, body, "", None);
+    let html = layout(lang, "", title, body, "", None);
     html.replace(&format!("cid:{LOGO_CID}"), &logo)
         .replace("<br>Taido</td>", "Taido</td>")
 }
@@ -231,7 +232,7 @@ mod tests {
             escape("<a href=\"x\">&'"),
             "&lt;a href=&quot;x&quot;&gt;&amp;&#39;"
         );
-        let html = layout("<p>", "<t>", "", "<f>", None);
+        let html = layout("en", "<p>", "<t>", "", "<f>", None);
         assert!(!html.contains("<p>") && !html.contains("<t>") && !html.contains("<f>"));
     }
 
@@ -246,7 +247,7 @@ mod tests {
 
     #[test]
     fn mail_footer_without_public_url_has_no_domain() {
-        let html = layout("p", "t", "b", "f", None);
+        let html = layout("en", "p", "t", "b", "f", None);
         assert!(html.contains("f<br>Taido</td>"));
         assert!(!html.contains("Taido ·"));
         assert!(!html.contains("example.com"));
@@ -254,16 +255,16 @@ mod tests {
 
     #[test]
     fn mail_footer_uses_public_url_host() {
-        let html = layout("p", "t", "b", "f", Some("https://sync.example.com/"));
+        let html = layout("en", "p", "t", "b", "f", Some("https://sync.example.com/"));
         assert!(html.contains("<br>Taido · sync.example.com</td>"));
         assert!(!html.contains("https://sync.example.com"));
-        let plain = layout("p", "t", "b", "f", Some("http://127.0.0.1:3020"));
+        let plain = layout("en", "p", "t", "b", "f", Some("http://127.0.0.1:3020"));
         assert!(plain.contains("<br>Taido · 127.0.0.1:3020</td>"));
     }
 
     #[test]
     fn layout_points_to_the_inline_logo() {
-        assert!(layout("p", "t", "b", "f", None).contains("src=\"cid:taido-logo\""));
+        assert!(layout("en", "p", "t", "b", "f", None).contains("src=\"cid:taido-logo\""));
         assert_eq!(&LOGO_PNG[1..4], b"PNG");
     }
 }

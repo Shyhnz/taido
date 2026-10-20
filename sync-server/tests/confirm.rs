@@ -7,8 +7,10 @@ use std::time::Duration;
 
 use common::{get, post_json, request};
 use serde_json::json;
-use taido_sync_server::mail::{self, VERIFY_SUBJECT};
-use taido_sync_server::{start_for_tests, store, TestServer, TEST_PUBLIC_URL};
+use taido_sync_server::mail::{self, verify_subject, welcome_subject, MailLang};
+use taido_sync_server::{
+    start_for_tests, start_for_tests_with_lang, store, TestServer, TEST_PUBLIC_URL,
+};
 
 const EMAIL: &str = "camille@example.com";
 const PASSWORD: &str = "un mot de passe solide";
@@ -36,9 +38,13 @@ async fn verified(server: &TestServer, token: &str) -> bool {
 
 /// The confirmation token of the `nth` mail (from 1) sent to [`EMAIL`].
 async fn link_token(server: &TestServer, nth: usize) -> String {
+    link_token_in(server, nth, MailLang::En).await
+}
+
+async fn link_token_in(server: &TestServer, nth: usize, lang: MailLang) -> String {
     let mails = server.mailer().wait_for_mails_to(EMAIL, nth, WAIT).await;
     let (subject, text) = mails.get(nth - 1).expect("mail").clone();
-    assert_eq!(subject, VERIFY_SUBJECT);
+    assert_eq!(subject, verify_subject(lang));
     assert!(
         text.contains(&format!("{TEST_PUBLIC_URL}/confirmer?t=")),
         "{text}"
@@ -52,11 +58,42 @@ fn html(reply: &common::Reply) -> String {
 
 #[tokio::test]
 async fn signup_sends_a_link_that_confirms_after_a_click() {
+    confirm_flow(
+        MailLang::En,
+        [
+            "Confirm my address",
+            "Address confirmed",
+            "open ",
+            "This link no longer works",
+        ],
+    )
+    .await;
+}
+
+#[tokio::test]
+async fn confirmation_pages_and_mails_follow_mail_lang_fr() {
+    confirm_flow(
+        MailLang::Fr,
+        [
+            "Confirmer mon adresse",
+            "Adresse confirmée",
+            "ouvre ",
+            "Ce lien ne marche plus",
+        ],
+    )
+    .await;
+}
+
+/// `texts`: the button of the page, the page once confirmed, the verb of the welcome mail's
+/// first step, the page of a used link.
+async fn confirm_flow(lang: MailLang, texts: [&str; 4]) {
     let dir = tempfile::tempdir().expect("tmp");
-    let server = start_for_tests(dir.path()).await.expect("server");
+    let server = start_for_tests_with_lang(dir.path(), lang)
+        .await
+        .expect("server");
     let token = signup(&server).await;
     assert!(!verified(&server, &token).await);
-    let link = link_token(&server, 1).await;
+    let link = link_token_in(&server, 1, lang).await;
 
     // Opening the link only shows a page (mail scanners open links on their own).
     let page = get(&server.base_url, &format!("/confirmer?t={link}")).await;
@@ -64,7 +101,7 @@ async fn signup_sends_a_link_that_confirms_after_a_click() {
     assert!(page.headers["content-type"].starts_with("text/html"));
     assert!(page.headers.contains_key("content-security-policy"));
     let body = html(&page);
-    assert!(body.contains("Confirmer mon adresse") && body.contains(&link));
+    assert!(body.contains(texts[0]) && body.contains(&link));
     assert!(!verified(&server, &token).await);
 
     let done = request(
@@ -76,14 +113,15 @@ async fn signup_sends_a_link_that_confirms_after_a_click() {
     )
     .await;
     assert_eq!(done.status, 200);
-    assert!(html(&done).contains("Adresse confirmée"));
+    assert!(html(&done).contains(texts[1]));
     assert!(verified(&server, &token).await);
 
     // Then the welcome mail, once.
     let mails = server.mailer().wait_for_mails_to(EMAIL, 2, WAIT).await;
-    assert_eq!(mails[1].0, mail::WELCOME_SUBJECT);
+    assert_eq!(mails[1].0, welcome_subject(lang));
     assert!(mails[1].1.contains(&format!(
-        "ouvre {}",
+        "{}{}",
+        texts[2],
         TEST_PUBLIC_URL.trim_start_matches("http://")
     )));
 
@@ -97,7 +135,7 @@ async fn signup_sends_a_link_that_confirms_after_a_click() {
     )
     .await;
     assert_eq!(again.status, 400);
-    assert!(html(&again).contains("Ce lien ne marche plus"));
+    assert!(html(&again).contains(texts[3]));
     tokio::time::sleep(Duration::from_millis(100)).await;
     assert_eq!(server.mailer().mails_to(EMAIL).len(), 2, "one welcome mail");
 }

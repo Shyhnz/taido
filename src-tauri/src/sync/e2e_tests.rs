@@ -1563,7 +1563,10 @@ async fn a_signed_up_address_is_confirmed_from_the_mailed_link() {
     );
     // Then the welcome mail.
     let mails = running.mailer().wait_for_mails_to(NEW_EMAIL, 3, wait).await;
-    assert_eq!(mails[2].0, taido_sync_server::mail::WELCOME_SUBJECT);
+    assert_eq!(
+        mails[2].0,
+        taido_sync_server::mail::welcome_subject(taido_sync_server::MailLang::En)
+    );
     // Confirmed: no more links are sent.
     engine::resend_confirmation(&a.db, &a.client)
         .await

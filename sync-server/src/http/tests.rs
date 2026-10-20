@@ -1049,8 +1049,26 @@ fn wrong_code(code: &str) -> String {
 }
 
 #[tokio::test]
-async fn forgot_sends_a_six_digit_code_in_french() {
+async fn forgot_sends_the_code_in_english_by_default() {
     let (state, mailer) = state_with_mailer();
+    let app = app(&state);
+    let (status, _, _) = send(
+        &app,
+        post_json("/api/password/forgot", None, forgot_body(EMAIL)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let mails = mailer.wait_for_mails_to(EMAIL, 1, MAIL_WAIT).await;
+    assert_eq!(mails[0].0, "Your Taido code");
+    assert!(mails[0]
+        .1
+        .starts_with("Your code to change your password: "));
+}
+
+#[tokio::test]
+async fn forgot_sends_a_six_digit_code_in_french() {
+    let (mut state, mailer) = state_with_mailer();
+    state.mail_lang = crate::MailLang::Fr;
     let app = app(&state);
     // The address as typed: trimmed and lowercased like at login.
     let (status, _, _) = send(

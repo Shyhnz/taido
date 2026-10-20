@@ -27,6 +27,7 @@ fn command(data_dir: &Path, bind: &str) -> Command {
         .env_remove("TAIDO_SMTP_HOST")
         .env_remove("TAIDO_PUBLIC_URL")
         .env_remove("TAIDO_SIGNUPS")
+        .env_remove("TAIDO_MAIL_LANG")
         .env("RUST_LOG", "warn");
     cmd
 }
@@ -330,6 +331,20 @@ fn an_invalid_signups_value_stops_the_server() {
     assert!(!out.status.success());
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(stderr.contains("TAIDO_SIGNUPS"), "{stderr}");
+    assert!(!String::from_utf8_lossy(&out.stdout).contains("LISTENING"));
+}
+
+#[test]
+fn an_invalid_mail_lang_stops_the_server() {
+    let dir = tempfile::tempdir().expect("tmp");
+    let out = command(dir.path(), "127.0.0.1:0")
+        .env("TAIDO_MAIL_LANG", "klingon")
+        .arg("serve")
+        .output()
+        .expect("serve");
+    assert!(!out.status.success());
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("TAIDO_MAIL_LANG"), "{stderr}");
     assert!(!String::from_utf8_lossy(&out.stdout).contains("LISTENING"));
 }
 

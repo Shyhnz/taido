@@ -28,40 +28,130 @@ pub struct Mail {
     pub html: String,
 }
 
+/// Environment variable that picks the language of the mails and pages.
+pub const ENV_MAIL_LANG: &str = "TAIDO_MAIL_LANG";
+
+/// Language of the e-mails and of the confirmation pages (`TAIDO_MAIL_LANG`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum MailLang {
+    /// English (the default).
+    #[default]
+    En,
+    /// French.
+    Fr,
+}
+
+impl MailLang {
+    /// Reads [`ENV_MAIL_LANG`].
+    pub fn from_env() -> Result<MailLang, ServerError> {
+        Self::from_os_value(std::env::var_os(ENV_MAIL_LANG))
+    }
+
+    /// Like [`MailLang::from_env_value`], for a raw environment value: one that is not valid
+    /// UTF-8 is refused (never read as English).
+    pub fn from_os_value(value: Option<std::ffi::OsString>) -> Result<MailLang, ServerError> {
+        match value {
+            None => Self::from_env_value(None),
+            Some(value) => match value.to_str() {
+                Some(text) => Self::from_env_value(Some(text)),
+                None => Err(Self::invalid()),
+            },
+        }
+    }
+
+    /// Unset or blank = English; else `en` or `fr`, in any case. Anything else is refused.
+    pub fn from_env_value(value: Option<&str>) -> Result<MailLang, ServerError> {
+        let value = value.map(str::trim).unwrap_or_default();
+        if value.is_empty() || value.eq_ignore_ascii_case("en") {
+            Ok(MailLang::En)
+        } else if value.eq_ignore_ascii_case("fr") {
+            Ok(MailLang::Fr)
+        } else {
+            Err(Self::invalid())
+        }
+    }
+
+    fn invalid() -> ServerError {
+        ServerError::Invalid(format!("{ENV_MAIL_LANG} must be \"en\" or \"fr\""))
+    }
+
+    /// The `lang` attribute of the HTML pages.
+    pub fn code(self) -> &'static str {
+        match self {
+            MailLang::En => "en",
+            MailLang::Fr => "fr",
+        }
+    }
+
+    /// `en` or `fr` text, by language.
+    pub fn pick(self, en: &'static str, fr: &'static str) -> &'static str {
+        match self {
+            MailLang::En => en,
+            MailLang::Fr => fr,
+        }
+    }
+}
+
 /// Subject of the code e-mail.
-pub const CODE_SUBJECT: &str = "Ton code Taido";
+pub fn code_subject(lang: MailLang) -> &'static str {
+    lang.pick("Your Taido code", "Ton code Taido")
+}
 
 /// Plain-text body of the code e-mail.
-pub fn code_text(code: &str) -> String {
-    format!(
-        "Ton code pour changer de mot de passe : {code}. Il est valable 30 minutes. \
-         Si tu n'as rien demandé, ignore ce message."
-    )
+pub fn code_text(code: &str, lang: MailLang) -> String {
+    match lang {
+        MailLang::En => format!(
+            "Your code to change your password: {code}. It is valid for 30 minutes. \
+             If you did not ask for it, ignore this message."
+        ),
+        MailLang::Fr => format!(
+            "Ton code pour changer de mot de passe : {code}. Il est valable 30 minutes. \
+             Si tu n'as rien demandé, ignore ce message."
+        ),
+    }
 }
 
 /// The forgotten-password mail carrying `code` (six digits).
-pub fn code_mail(code: &str, public_url: Option<&str>) -> Mail {
+pub fn code_mail(code: &str, public_url: Option<&str>, lang: MailLang) -> Mail {
     let body = [
-        tpl::paragraph("Tape ce code dans Taido, là où tu as demandé à changer de mot de passe."),
-        tpl::code_boxes(code, "Valable 30 minutes"),
-        tpl::quiet("Tu n'as rien demandé ? Ignore ce message, ton mot de passe ne change pas."),
+        tpl::paragraph(lang.pick(
+            "Enter this code in Taido, where you asked to change your password.",
+            "Tape ce code dans Taido, là où tu as demandé à changer de mot de passe.",
+        )),
+        tpl::code_boxes(
+            code,
+            lang.pick("Valid for 30 minutes", "Valable 30 minutes"),
+        ),
+        tpl::quiet(lang.pick(
+            "Did not ask for this? Ignore this message, your password stays the same.",
+            "Tu n'as rien demandé ? Ignore ce message, ton mot de passe ne change pas.",
+        )),
     ]
     .concat();
     Mail {
-        subject: CODE_SUBJECT.to_string(),
-        text: code_text(code),
+        subject: code_subject(lang).to_string(),
+        text: code_text(code, lang),
         html: tpl::layout(
-            "Valable 30 minutes.",
-            "Ton code pour changer de mot de passe",
+            lang.code(),
+            lang.pick("Valid for 30 minutes.", "Valable 30 minutes."),
+            lang.pick(
+                "Your code to change your password",
+                "Ton code pour changer de mot de passe",
+            ),
             &body,
-            "Tu reçois ce mail parce qu'un nouveau mot de passe a été demandé pour ton compte.",
+            lang.pick(
+                "You are receiving this email because a new password was requested for your account.",
+                "Tu reçois ce mail parce qu'un nouveau mot de passe a été demandé pour ton compte.",
+            ),
             public_url,
         ),
     }
 }
 
 /// Subject of the address-confirmation e-mail.
-pub const VERIFY_SUBJECT: &str = "Confirme ton adresse";
+pub fn verify_subject(lang: MailLang) -> &'static str {
+    lang.pick("Confirm your address", "Confirme ton adresse")
+}
 
 /// How long a confirmation link stays valid.
 pub const VERIFY_LIFETIME: Duration = Duration::from_secs(24 * 60 * 60);
@@ -75,101 +165,107 @@ pub fn confirm_link(public_url: &str, token: &str) -> String {
 }
 
 /// The address-confirmation mail sent at signup (and again on demand).
-pub fn verify_mail(email: &str, link: &str, public_url: Option<&str>) -> Mail {
-    let body = [
-        tpl::paragraph(&format!(
-            "Pour finir ton inscription, confirme que {email} est bien ton adresse."
-        )),
-        tpl::button(link, "Confirmer mon adresse"),
-        tpl::link_fallback(
-            "Le bouton ne marche pas ? Copie ce lien dans ton navigateur :",
-            link,
+pub fn verify_mail(email: &str, link: &str, public_url: Option<&str>, lang: MailLang) -> Mail {
+    let (lead, button, fallback, quiet) = match lang {
+        MailLang::En => (
+            format!("To finish signing up, confirm that {email} is your address."),
+            "Confirm my address",
+            "The button does not work? Copy this link into your browser:",
+            "This link is valid for 24 hours. Did not create a Taido account? Ignore this message.",
         ),
-        tpl::quiet(
+        MailLang::Fr => (
+            format!("Pour finir ton inscription, confirme que {email} est bien ton adresse."),
+            "Confirmer mon adresse",
+            "Le bouton ne marche pas ? Copie ce lien dans ton navigateur :",
             "Ce lien est valable 24 heures. Tu n'as pas créé de compte Taido ? Ignore ce message.",
         ),
+    };
+    let body = [
+        tpl::paragraph(&lead),
+        tpl::button(link, button),
+        tpl::link_fallback(fallback, link),
+        tpl::quiet(quiet),
     ]
     .concat();
     Mail {
-        subject: VERIFY_SUBJECT.to_string(),
-        text: format!(
-            "Pour finir ton inscription, confirme que {email} est bien ton adresse : {link}\n\n\
-             Ce lien est valable 24 heures. Tu n'as pas créé de compte Taido ? Ignore ce message."
-        ),
+        subject: verify_subject(lang).to_string(),
+        text: format!("{lead} {link}\n\n{quiet}"),
         html: tpl::layout(
-            "Dernière étape de ton inscription.",
-            "Confirme ton adresse",
+            lang.code(),
+            lang.pick("Last step of your signup.", "Dernière étape de ton inscription."),
+            verify_subject(lang),
             &body,
-            "Tu reçois ce mail parce qu'un compte Taido a été créé avec cette adresse.",
+            lang.pick(
+                "You are receiving this email because a Taido account was created with this address.",
+                "Tu reçois ce mail parce qu'un compte Taido a été créé avec cette adresse.",
+            ),
             public_url,
         ),
     }
 }
 
 /// Subject of the welcome e-mail.
-pub const WELCOME_SUBJECT: &str = "Bienvenue dans Taido";
+pub fn welcome_subject(lang: MailLang) -> &'static str {
+    lang.pick("Welcome to Taido", "Bienvenue dans Taido")
+}
 
 /// The welcome mail, sent once the address is confirmed: how to add the phone.
-pub fn welcome_mail(email: &str, public_url: &str) -> Mail {
+pub fn welcome_mail(email: &str, public_url: &str, lang: MailLang) -> Mail {
     let host = public_url
         .trim_start_matches("https://")
         .trim_start_matches("http://");
-    let steps = [
-        format!("Sur ton téléphone, ouvre {host}."),
-        format!("Connecte-toi avec {email}."),
-        "Ajoute l'appli à l'écran d'accueil.".to_string(),
-    ];
-    let lead = "Tes projets et tes tâches sont maintenant gardés sur ton compte. \
-                Ajoute ton téléphone pour les retrouver partout.";
-    let quiet = "Taido marche aussi dans le navigateur de n'importe quel ordinateur, \
-                 à la même adresse.";
+    let (steps, lead, quiet, button, title) = match lang {
+        MailLang::En => (
+            [
+                format!("On your phone, open {host}."),
+                format!("Log in with {email}."),
+                "Add the app to your home screen.".to_string(),
+            ],
+            "Your projects and tasks are now kept on your account. \
+             Add your phone to find them everywhere.",
+            "Taido also works in the browser of any computer, at the same address.",
+            "Open Taido on your phone",
+            "Your account is ready",
+        ),
+        MailLang::Fr => (
+            [
+                format!("Sur ton téléphone, ouvre {host}."),
+                format!("Connecte-toi avec {email}."),
+                "Ajoute l'appli à l'écran d'accueil.".to_string(),
+            ],
+            "Tes projets et tes tâches sont maintenant gardés sur ton compte. \
+             Ajoute ton téléphone pour les retrouver partout.",
+            "Taido marche aussi dans le navigateur de n'importe quel ordinateur, \
+             à la même adresse.",
+            "Ouvrir Taido sur le téléphone",
+            "Ton compte est prêt",
+        ),
+    };
     let body = [
         tpl::paragraph(lead),
         tpl::steps(&steps),
-        tpl::button(public_url, "Ouvrir Taido sur le téléphone"),
+        tpl::button(public_url, button),
         tpl::quiet(quiet),
     ]
     .concat();
     Mail {
-        subject: WELCOME_SUBJECT.to_string(),
+        subject: welcome_subject(lang).to_string(),
         text: format!(
-            "Ton compte est prêt. {lead}\n\n1. {}\n2. {}\n3. {}\n\n{quiet}",
+            "{title}. {lead}\n\n1. {}\n2. {}\n3. {}\n\n{quiet}",
             steps[0], steps[1], steps[2]
         ),
         html: tpl::layout(
-            "Ton compte est prêt.",
-            "Ton compte est prêt",
+            lang.code(),
+            &format!("{title}."),
+            title,
             &body,
-            "Tu reçois ce mail parce qu'un compte Taido a été créé avec cette adresse.",
+            lang.pick(
+                "You are receiving this email because a Taido account was created with this address.",
+                "Tu reçois ce mail parce qu'un compte Taido a été créé avec cette adresse.",
+            ),
             Some(public_url),
         ),
     }
-}
-
-/// A date in French, e.g. "12 octobre 2026".
-pub fn french_date(date: chrono::NaiveDate) -> String {
-    use chrono::Datelike;
-    const MONTHS: [&str; 12] = [
-        "janvier",
-        "février",
-        "mars",
-        "avril",
-        "mai",
-        "juin",
-        "juillet",
-        "août",
-        "septembre",
-        "octobre",
-        "novembre",
-        "décembre",
-    ];
-    let month = MONTHS.get(date.month0() as usize).copied().unwrap_or("");
-    let day = if date.day() == 1 {
-        "1er".to_string()
-    } else {
-        date.day().to_string()
-    };
-    format!("{day} {month} {}", date.year())
 }
 
 /// The token of the confirmation link in `text` (the text of a [`verify_mail`]).
@@ -593,64 +689,160 @@ mod tests {
         assert_eq!(none.public_url, None);
     }
 
+    const EN: MailLang = MailLang::En;
+    const FR: MailLang = MailLang::Fr;
+
     #[test]
     fn verify_mail_carries_the_link() {
-        let link = confirm_link("https://taido.test", "abc_DEF-123");
-        let mail = verify_mail("camille@exemple.fr", &link, None);
-        assert_eq!(mail.subject, VERIFY_SUBJECT);
-        assert_eq!(confirm_token_in(&mail.text).as_deref(), Some("abc_DEF-123"));
-        assert!(mail
-            .html
-            .contains("href=\"https://taido.test/confirmer?t=abc_DEF-123\""));
-        assert!(mail.html.contains("camille@exemple.fr"));
+        for lang in [EN, FR] {
+            let link = confirm_link("https://taido.test", "abc_DEF-123");
+            let mail = verify_mail("camille@example.com", &link, None, lang);
+            assert_eq!(mail.subject, verify_subject(lang));
+            assert_eq!(confirm_token_in(&mail.text).as_deref(), Some("abc_DEF-123"));
+            assert!(mail
+                .html
+                .contains("href=\"https://taido.test/confirmer?t=abc_DEF-123\""));
+            assert!(mail.html.contains("camille@example.com"));
+        }
     }
 
     #[test]
     fn welcome_mail_explains_the_phone() {
-        let mail = welcome_mail("camille@exemple.fr", "https://taido.test");
-        assert_eq!(mail.subject, WELCOME_SUBJECT);
-        assert!(mail.text.contains("ouvre taido.test") && mail.text.contains("camille@exemple.fr"));
+        let mail = welcome_mail("camille@example.com", "https://taido.test", FR);
+        assert_eq!(mail.subject, welcome_subject(FR));
+        assert!(
+            mail.text.contains("ouvre taido.test") && mail.text.contains("camille@example.com")
+        );
         assert!(mail.html.contains("href=\"https://taido.test\""));
         assert!(mail.html.contains("Ton compte est prêt") && mail.html.contains(">3</td>"));
+        let mail = welcome_mail("camille@example.com", "https://taido.test", EN);
+        assert!(mail.text.contains("open taido.test") && mail.text.contains("camille@example.com"));
+        assert!(mail.html.contains("Your account is ready") && mail.html.contains(">3</td>"));
     }
 
     #[test]
-    fn dates_are_written_in_french() {
-        let date = |y, m, d| chrono::NaiveDate::from_ymd_opt(y, m, d).expect("date");
-        assert_eq!(french_date(date(2026, 10, 12)), "12 octobre 2026");
-        assert_eq!(french_date(date(2027, 2, 1)), "1er février 2027");
-        assert_eq!(french_date(date(2026, 12, 31)), "31 décembre 2026");
+    fn mails_are_english_by_default() {
+        assert_eq!(MailLang::default(), EN);
+        let code = code_mail("042917", None, EN);
+        assert_eq!(code.subject, "Your Taido code");
+        assert_eq!(
+            code.text,
+            "Your code to change your password: 042917. It is valid for 30 minutes. \
+             If you did not ask for it, ignore this message."
+        );
+        assert!(code.html.contains("Your code to change your password"));
+        assert!(code.html.contains("<html lang=\"en\">"));
+        let verify = verify_mail("c@example.com", "https://t.test/confirmer?t=a", None, EN);
+        assert_eq!(verify.subject, "Confirm your address");
+        assert!(verify
+            .text
+            .contains("confirm that c@example.com is your address"));
+        assert!(verify.html.contains("Confirm my address"));
+        let welcome = welcome_mail("c@example.com", "https://t.test", EN);
+        assert_eq!(welcome.subject, "Welcome to Taido");
+        assert!(welcome.html.contains("Open Taido on your phone"));
+        for mail in [&code, &verify, &welcome] {
+            for word in ["Ton ", "Tu ", "é", "à", "Taido marche"] {
+                assert!(
+                    !mail.text.contains(word) && !mail.subject.contains(word),
+                    "{word}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn mail_lang_fr_gives_french_mails() {
+        let code = code_mail("042917", None, FR);
+        assert_eq!(code.subject, "Ton code Taido");
+        assert!(code
+            .text
+            .starts_with("Ton code pour changer de mot de passe : 042917."));
+        assert!(code.html.contains("<html lang=\"fr\">"));
+        let verify = verify_mail("c@example.com", "https://t.test/confirmer?t=a", None, FR);
+        assert_eq!(verify.subject, "Confirme ton adresse");
+        assert!(verify.html.contains("Confirmer mon adresse"));
+        let welcome = welcome_mail("c@example.com", "https://t.test", FR);
+        assert_eq!(welcome.subject, "Bienvenue dans Taido");
+    }
+
+    #[test]
+    fn mail_lang_is_case_insensitive() {
+        assert_eq!(MailLang::from_env_value(None).expect("unset"), EN);
+        for (value, expected) in [
+            ("", EN),
+            ("  ", EN),
+            ("en", EN),
+            ("EN", EN),
+            ("fr", FR),
+            ("Fr", FR),
+            (" FR ", FR),
+        ] {
+            assert_eq!(
+                MailLang::from_env_value(Some(value)).expect(value),
+                expected,
+                "{value:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn invalid_mail_lang_is_refused() {
+        for value in ["de", "english", "fr-FR", "1"] {
+            let err = MailLang::from_env_value(Some(value)).expect_err(value);
+            assert!(err.to_string().contains("TAIDO_MAIL_LANG"), "{err}");
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::ffi::OsStringExt;
+            let value = std::ffi::OsString::from_vec(vec![0x66, 0xff]);
+            let err = MailLang::from_os_value(Some(value)).expect_err("not unicode");
+            assert!(err.to_string().contains("TAIDO_MAIL_LANG"), "{err}");
+        }
+        assert_eq!(MailLang::from_os_value(None).expect("unset"), EN);
     }
 
     #[test]
     fn mails_show_the_host_of_the_public_url_in_the_footer() {
         let url = Some("https://sync.example.com");
-        for mail in [
-            code_mail("042917", url),
-            verify_mail(
-                "c@exemple.fr",
-                "https://sync.example.com/confirmer?t=a",
-                url,
-            ),
-            welcome_mail("c@exemple.fr", "https://sync.example.com"),
-        ] {
-            assert!(mail.html.contains("<br>Taido · sync.example.com</td>"));
+        for lang in [EN, FR] {
+            for mail in [
+                code_mail("042917", url, lang),
+                verify_mail(
+                    "c@example.com",
+                    "https://sync.example.com/confirmer?t=a",
+                    url,
+                    lang,
+                ),
+                welcome_mail("c@example.com", "https://sync.example.com", lang),
+            ] {
+                assert!(mail.html.contains("<br>Taido · sync.example.com</td>"));
+            }
+            assert!(!code_mail("042917", None, lang).html.contains("Taido ·"));
         }
-        assert!(!code_mail("042917", None).html.contains("Taido ·"));
     }
 
     #[test]
     fn code_mail_has_both_parts() {
-        let mail = code_mail("042917", None);
-        assert_eq!(mail.subject, CODE_SUBJECT);
+        let mail = code_mail("042917", None, FR);
+        assert_eq!(mail.subject, code_subject(FR));
         assert_eq!(code_in(&mail.text).as_deref(), Some("042917"));
         assert!(mail.html.contains(">0</td>") && mail.html.contains(">7</td>"));
         assert!(mail.html.contains("Ton code pour changer de mot de passe"));
+        assert_eq!(
+            code_in(&code_mail("042917", None, EN).text).as_deref(),
+            Some("042917")
+        );
     }
 
     #[test]
     fn code_is_found_in_the_mail() {
-        assert_eq!(code_in(&code_text("042917")).as_deref(), Some("042917"));
+        for lang in [EN, FR] {
+            assert_eq!(
+                code_in(&code_text("042917", lang)).as_deref(),
+                Some("042917")
+            );
+        }
         assert_eq!(code_in("valable 30 minutes"), None);
         assert_eq!(code_in("1234567 then 123456").as_deref(), Some("123456"));
     }

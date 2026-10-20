@@ -1,6 +1,6 @@
 /**
- * Attachment files of the web app, site and phone (Taido V2.7 bis
- * task 4). The same rules as the Mac (src-tauri/src/sync/files.rs), with a browser's means:
+ * Attachment files of the web app, site and phone. The same rules as the desktop app
+ * (src-tauri/src/sync/files.rs), with a browser's means:
  *
  * - **Adding** (`add`): a file over 100 MB is refused before it is read; the others are hashed
  *   (Web Crypto SHA-256), kept in IndexedDB (`todo-files`, one entry per attachment: blob,

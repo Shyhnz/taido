@@ -86,7 +86,8 @@ a reverse proxy (nginx, Caddy, Traefik…) that provides HTTPS, sets `X-Real-IP`
 client address, accepts request bodies of at least 16 MiB, and (optionally, the server has its own limiters)
 rate-limits `/api/login`, `/api/signup` and `/api/password/`. Check it with `curl -s http://127.0.0.1:3020/api/health`
 (`{"ok":true,"protocol":3}`) or `taido-sync-server healthcheck`. Account creation can be closed
-with `TAIDO_SIGNUPS=closed` (`docs/SYNC.md` § 0.2).
+with `TAIDO_SIGNUPS=closed` (`docs/SYNC.md` § 0.2). E-mails and the confirmation page are in
+English, or in French with `TAIDO_MAIL_LANG=fr`.
 
 ## Daily backup
 

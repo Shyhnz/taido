@@ -97,6 +97,7 @@ mail password) out of any repository:
 | `TAIDO_SMTP_USER` | SMTP login (give it together with the password). |
 | `TAIDO_SMTP_PASSWORD` | SMTP password. |
 | `TAIDO_MAIL_FROM` | The sender, for example `Taido <noreply@example.com>`. Required with `TAIDO_SMTP_HOST`. |
+| `TAIDO_MAIL_LANG` | Language of the e-mails and of the confirmation page: `en` (default) or `fr`. |
 
 `TAIDO_PUBLIC_URL` is set for you from your domain: it is the address put in the
 confirmation e-mail. The server refuses to start if the e-mail settings are incomplete, and the

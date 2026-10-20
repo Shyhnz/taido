@@ -36,7 +36,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 thiserror = "2"
-# statvfs: the free space of the disk of the attachment files (V2.7 bis floor).
+# statvfs: the free space of the disk of the attachment files (free-space floor).
 libc = "0.2"
 # SMTP over implicit TLS (rustls + ring + webpki-roots, no OpenSSL), async on Tokio: the direct
 # `rustls` and `webpki-roots` entries pick the crypto provider and the certificate roots for lettre.

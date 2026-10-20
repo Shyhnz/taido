@@ -19,6 +19,7 @@ services:
     environment:
       TAIDO_PUBLIC_URL: ${TAIDO_PUBLIC_URL:-https://${TAIDO_DOMAIN:?set TAIDO_DOMAIN in deploy/.env}}
       TAIDO_SIGNUPS: ${TAIDO_SIGNUPS:-open}
+      TAIDO_MAIL_LANG: ${TAIDO_MAIL_LANG:-}
       TAIDO_SMTP_HOST: ${TAIDO_SMTP_HOST:-}
       TAIDO_SMTP_PORT: ${TAIDO_SMTP_PORT:-}
       TAIDO_SMTP_USER: ${TAIDO_SMTP_USER:-}

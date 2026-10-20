@@ -38,7 +38,7 @@ use crate::gate::{self, BodyGates};
 use crate::mail::{self, Mailer};
 use crate::store::{self, Authed, Store};
 use crate::sync::{self, RawSyncRequest};
-use crate::Signups;
+use crate::{MailLang, Signups};
 
 /// Content Security Policy of every static response (§ 4.4). `'unsafe-inline'` styles: the
 /// toast library injects a `<style>` element. `img-src blob:`: the web app shows an attached
@@ -80,6 +80,8 @@ pub struct AppState {
     pub reset_limiter: Arc<LoginLimits>,
     /// Whether `/api/signup` creates accounts (`TAIDO_SIGNUPS`).
     pub signups: Signups,
+    /// Language of the mails and of the confirmation pages (`TAIDO_MAIL_LANG`).
+    pub mail_lang: MailLang,
     /// Address of this server in the links of the mails (`TAIDO_PUBLIC_URL`, no trailing
     /// slash). With a mailer: confirmation mails at signup; else accounts are confirmed at once.
     pub public_url: Option<String>,
@@ -123,6 +125,7 @@ impl AppState {
                 auth::RESET_WINDOW,
             )),
             signups: Signups::Open,
+            mail_lang: MailLang::default(),
             public_url: None,
             resend_limiter: Arc::new(LoginLimits::new(
                 auth::MAX_RESENDS_PER_ACCOUNT,
@@ -149,6 +152,12 @@ impl AppState {
     /// The state with account creation open or closed.
     pub fn with_signups(mut self, signups: Signups) -> Self {
         self.signups = signups;
+        self
+    }
+
+    /// The state with the language of the mails and pages.
+    pub fn with_mail_lang(mut self, mail_lang: MailLang) -> Self {
+        self.mail_lang = mail_lang;
         self
     }
 
@@ -457,7 +466,13 @@ async fn signup(
     })
     .await?;
     if let (Some((mailer, public_url)), Some((email, token))) = (confirmation, pending) {
-        tokio::spawn(send_confirmation(mailer, public_url, email, token));
+        tokio::spawn(send_confirmation(
+            mailer,
+            public_url,
+            email,
+            token,
+            state.mail_lang,
+        ));
     }
     Ok(Json(response))
 }
@@ -481,11 +496,13 @@ async fn send_confirmation(
     public_url: String,
     email: String,
     token: String,
+    lang: MailLang,
 ) {
     let message = mail::verify_mail(
         &email,
         &mail::confirm_link(&public_url, &token),
         Some(&public_url),
+        lang,
     );
     if let Err(err) = mailer.send(&email, &message).await {
         tracing::warn!(error = %err, "confirmation e-mail not sent");
@@ -530,14 +547,21 @@ async fn resend_confirmation(
     })
     .await?;
     if let Some((email, token)) = pending {
-        tokio::spawn(send_confirmation(mailer, public_url, email, token));
+        tokio::spawn(send_confirmation(
+            mailer,
+            public_url,
+            email,
+            token,
+            state.mail_lang,
+        ));
     }
     Ok(StatusCode::NO_CONTENT)
 }
 
 /// An HTML page of the confirmation flow.
-fn confirm_html(status: StatusCode, title: &str, body: &str) -> Response {
-    let mut response = (status, crate::mail_template::page(title, body)).into_response();
+fn confirm_html(lang: MailLang, status: StatusCode, title: &str, body: &str) -> Response {
+    let mut response =
+        (status, crate::mail_template::page(lang.code(), title, body)).into_response();
     response.headers_mut().insert(
         CONTENT_TYPE,
         HeaderValue::from_static("text/html; charset=utf-8"),
@@ -559,25 +583,34 @@ fn token_field(pairs: &str, key: &str) -> Option<String> {
     })
 }
 
-fn link_dead_page() -> Response {
+fn link_dead_page(lang: MailLang) -> Response {
     let body = [
-        crate::mail_template::paragraph(
+        crate::mail_template::paragraph(lang.pick(
+            "It may have been used already, or it has expired (it is valid for 24 hours).",
             "Il a peut-être déjà servi, ou il a expiré (il est valable 24 heures).",
-        ),
-        crate::mail_template::quiet(
+        )),
+        crate::mail_template::quiet(lang.pick(
+            "If your address is not confirmed yet, open Taido, go to Settings › Account \
+             and choose \"Resend the email\".",
             "Si ton adresse n'est pas encore confirmée, ouvre Taido, va dans Réglages › Compte \
              et choisis « Renvoyer le mail ».",
-        ),
+        )),
     ]
     .concat();
-    confirm_html(StatusCode::BAD_REQUEST, "Ce lien ne marche plus", &body)
+    confirm_html(
+        lang,
+        StatusCode::BAD_REQUEST,
+        lang.pick("This link no longer works", "Ce lien ne marche plus"),
+        &body,
+    )
 }
 
 /// `GET /confirmer?t=<token>`: a page with one button that confirms. The link only shows
 /// the page: mail scanners open links on their own, a click is asked for.
-async fn confirm_page(uri: Uri) -> Response {
+async fn confirm_page(State(state): State<AppState>, uri: Uri) -> Response {
+    let lang = state.mail_lang;
     let Some(token) = uri.query().and_then(|q| token_field(q, "t")) else {
-        return link_dead_page();
+        return link_dead_page(lang);
     };
     let body = format!(
         "{}<form method=\"post\" action=\"{}\" style=\"margin:8px 0 0;\">\
@@ -585,11 +618,15 @@ async fn confirm_page(uri: Uri) -> Response {
          <button type=\"submit\" style=\"display:block;width:100%;padding:14px 20px;border:0;\
          border-radius:10px;background:#142a78;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,\
          'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;\
-         font-weight:600;cursor:pointer;\">Confirmer mon adresse</button></form>",
-        crate::mail_template::paragraph("Un clic pour finir ton inscription à Taido."),
+         font-weight:600;cursor:pointer;\">{}</button></form>",
+        crate::mail_template::paragraph(lang.pick(
+            "One click to finish signing up for Taido.",
+            "Un clic pour finir ton inscription à Taido.",
+        )),
         mail::CONFIRM_PATH,
+        crate::mail_template::escape(lang.pick("Confirm my address", "Confirmer mon adresse")),
     );
-    confirm_html(StatusCode::OK, "Confirme ton adresse", &body)
+    confirm_html(lang, StatusCode::OK, mail::verify_subject(lang), &body)
 }
 
 /// `POST /confirmer` (form `t=<token>`): confirms the address of the link.
@@ -603,15 +640,19 @@ async fn confirm_submit(
             .ok()
             .and_then(|f| token_field(f, "t"))
     });
+    let lang = state.mail_lang;
     let client = format!("client:{}", client_key(&headers));
     let Some(reservation) = state.confirm_limiter.try_reserve_keys(
         &[(&client, auth::MAX_CONFIRM_FAILURES_PER_CLIENT)],
         Instant::now(),
     ) else {
         return confirm_html(
+            lang,
             StatusCode::TOO_MANY_REQUESTS,
-            "Trop d'essais",
-            &crate::mail_template::paragraph("Réessaie dans une heure."),
+            lang.pick("Too many tries", "Trop d'essais"),
+            &crate::mail_template::paragraph(
+                lang.pick("Try again in an hour.", "Réessaie dans une heure."),
+            ),
         );
     };
     let store = Arc::clone(&state.store);
@@ -631,7 +672,7 @@ async fn confirm_submit(
             drop(reservation);
             tracing::info!("address confirmed");
             if let Some((mailer, public_url)) = state.confirmation_mailer() {
-                let message = mail::welcome_mail(&email, &public_url);
+                let message = mail::welcome_mail(&email, &public_url, lang);
                 let to = email.clone();
                 tokio::spawn(async move {
                     if let Err(err) = mailer.send(&to, &message).await {
@@ -640,23 +681,38 @@ async fn confirm_submit(
                 });
             }
             let body = [
-                crate::mail_template::paragraph(&format!("{email} est confirmée.")),
-                crate::mail_template::quiet("Tu peux fermer cette page et revenir dans Taido."),
+                crate::mail_template::paragraph(&match lang {
+                    MailLang::En => format!("{email} is confirmed."),
+                    MailLang::Fr => format!("{email} est confirmée."),
+                }),
+                crate::mail_template::quiet(lang.pick(
+                    "You can close this page and go back to Taido.",
+                    "Tu peux fermer cette page et revenir dans Taido.",
+                )),
             ]
             .concat();
-            confirm_html(StatusCode::OK, "Adresse confirmée", &body)
+            confirm_html(
+                lang,
+                StatusCode::OK,
+                lang.pick("Address confirmed", "Adresse confirmée"),
+                &body,
+            )
         }
         Ok(None) => {
             reservation.fail(Instant::now());
             tracing::info!("confirmation link refused");
-            link_dead_page()
+            link_dead_page(lang)
         }
         Err(err) => {
             tracing::error!(error = %err, "address confirmation failed");
             confirm_html(
+                lang,
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Un souci est survenu",
-                &crate::mail_template::paragraph("Réessaie dans quelques minutes."),
+                lang.pick("Something went wrong", "Un souci est survenu"),
+                &crate::mail_template::paragraph(lang.pick(
+                    "Try again in a few minutes.",
+                    "Réessaie dans quelques minutes.",
+                )),
             )
         }
     }
@@ -772,6 +828,7 @@ async fn forgot_password(
     // mail is always valid), then the mail.
     let store = Arc::clone(&state.store);
     let public_url = state.public_url.clone();
+    let lang = state.mail_lang;
     tokio::spawn(async move {
         let pending = tokio::task::spawn_blocking(move || prepare_reset_code(&store, &email))
             .await
@@ -779,7 +836,7 @@ async fn forgot_password(
             .and_then(|r| r);
         match pending {
             Ok(Some((email, code))) => {
-                let message = mail::code_mail(&code, public_url.as_deref());
+                let message = mail::code_mail(&code, public_url.as_deref(), lang);
                 if let Err(err) = mailer.send(&email, &message).await {
                     tracing::warn!(error = %err, "password reset e-mail not sent");
                 }

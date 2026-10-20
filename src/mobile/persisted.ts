@@ -1,7 +1,7 @@
 /**
  * What the phone keeps in IndexedDB (docs/SYNC.md § 6.2): one consistent set of five keys,
- * written in a single transaction. Plain JSON-compatible data only. Since V2.7 bis `sync` is
- * stored under `SYNC_KEY` (below), renamed again by V2.8, so that older builds refuse the set.
+ * written in a single transaction. Plain JSON-compatible data only. `sync` is stored
+ * under `SYNC_KEY` (below), so that older builds refuse the set.
  */
 
 import type { AccountInfo, Settings, SyncErrorKind } from "../bindings";

@@ -98,7 +98,7 @@ fn row_size(id: &str, stored: &Stored) -> usize {
         + stored.device_id.len()
 }
 
-/// What a push may add to the account's synced data (security review 2026-10-12). A push
+/// What a push may add to the account's synced data. A push
 /// that does not grow the data always passes: a full account can still delete.
 #[derive(Debug, Clone, Copy)]
 pub struct RecordsQuota {

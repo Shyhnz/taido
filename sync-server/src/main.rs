@@ -4,14 +4,17 @@
 //! `TAIDO_SMTP_PASSWORD`, `TAIDO_MAIL_FROM`, `TAIDO_PUBLIC_URL`, and for the attachment files
 //! `TAIDO_MAX_FILE_BYTES`, `TAIDO_ACCOUNT_QUOTA_BYTES` (the files are stored under the data
 //! directory; the old `TAIDO_R2_*` settings are ignored with a warning), and `TAIDO_SIGNUPS`
-//! (`open`, the default, or `closed`) for the account creation.
+//! (`open`, the default, or `closed`) for the account creation, and `TAIDO_MAIL_LANG` (`en`,
+//! the default, or `fr`) for the language of the mails and of the confirmation pages.
 
 use std::io::Write;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use taido_sync_server::mail::MailConfig;
-use taido_sync_server::{auth, healthcheck, store, Config, FileLimits, ServerError, Signups};
+use taido_sync_server::{
+    auth, healthcheck, store, Config, FileLimits, MailLang, ServerError, Signups,
+};
 use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Parser)]
@@ -113,7 +116,10 @@ async fn serve(config: &Config) -> Result<(), ServerError> {
             Signups::Closed => "closed",
         }
     );
-    let server = taido_sync_server::bind_with(config, mail.as_ref(), limits, signups).await?;
+    let mail_lang = MailLang::from_env()?;
+    tracing::info!(lang = mail_lang.code(), "mail language");
+    let server =
+        taido_sync_server::bind_with(config, mail.as_ref(), limits, signups, mail_lang).await?;
     let addr = server.local_addr()?;
     {
         let mut out = std::io::stdout().lock();

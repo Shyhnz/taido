@@ -29,6 +29,7 @@ use tokio::task::JoinHandle;
 pub use error::{ApiError, ServerError};
 pub use files::{FileLimits, FileStore};
 pub use http::{router, AppState};
+pub use mail::MailLang;
 
 /// Default bind address outside Docker.
 pub const DEFAULT_BIND: &str = "127.0.0.1:3020";
@@ -138,21 +139,31 @@ impl BoundServer {
 /// Opens the database and binds the listener, without e-mail and with the default file limits
 /// (see [`bind_with`]).
 pub async fn bind(config: &Config) -> Result<BoundServer, ServerError> {
-    bind_with(config, None, FileLimits::default(), Signups::Open).await
+    bind_with(
+        config,
+        None,
+        FileLimits::default(),
+        Signups::Open,
+        MailLang::default(),
+    )
+    .await
 }
 
 /// Opens the database and binds the listener; e-mails go through SMTP when `mail` is set,
 /// else `/api/password/forgot` answers 503 `mail_unavailable`. Attachment files are kept in
-/// `<data_dir>/files` within `limits`; `/api/signup` follows `signups`. Must run inside Tokio.
+/// `<data_dir>/files` within `limits`; `/api/signup` follows `signups`; mails and confirmation
+/// pages are in `mail_lang`. Must run inside Tokio.
 pub async fn bind_with(
     config: &Config,
     mail: Option<&mail::MailConfig>,
     limits: FileLimits,
     signups: Signups,
+    mail_lang: MailLang,
 ) -> Result<BoundServer, ServerError> {
     let files = FileStore::in_data_dir(&config.data_dir, limits);
-    let mut state =
-        AppState::new(store::Store::open(&config.data_dir)?, files).with_signups(signups);
+    let mut state = AppState::new(store::Store::open(&config.data_dir)?, files)
+        .with_signups(signups)
+        .with_mail_lang(mail_lang);
     if let Some(mail) = mail {
         state = state.with_mailer(Arc::new(mail::SmtpMailer::new(mail)?));
         if let Some(url) = &mail.public_url {
@@ -332,10 +343,22 @@ pub async fn start_for_tests_at(
     data_dir: &Path,
     bind_addr: &str,
 ) -> Result<TestServer, ServerError> {
-    start_test_server(data_dir, bind_addr).await
+    start_test_server(data_dir, bind_addr, MailLang::default()).await
 }
 
-async fn start_test_server(data_dir: &Path, bind_addr: &str) -> Result<TestServer, ServerError> {
+/// [`start_for_tests`] with the mails and pages in `mail_lang` (English by default).
+pub async fn start_for_tests_with_lang(
+    data_dir: &Path,
+    mail_lang: MailLang,
+) -> Result<TestServer, ServerError> {
+    start_test_server(data_dir, "127.0.0.1:0", mail_lang).await
+}
+
+async fn start_test_server(
+    data_dir: &Path,
+    bind_addr: &str,
+    mail_lang: MailLang,
+) -> Result<TestServer, ServerError> {
     let config = Config {
         bind: bind_addr.to_string(),
         data_dir: data_dir.to_path_buf(),
@@ -349,6 +372,7 @@ async fn start_test_server(data_dir: &Path, bind_addr: &str) -> Result<TestServe
     let files = FileStore::in_data_dir(data_dir, limits);
     let state = AppState::new(store::Store::open(data_dir)?, files)
         .with_mailer(mailer.clone())
+        .with_mail_lang(mail_lang)
         .with_public_url(TEST_PUBLIC_URL);
     let server = bind_state(&config, state.clone()).await?;
     let addr = server.local_addr()?;

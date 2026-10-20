@@ -1403,6 +1403,7 @@ outside tests.
 | `TAIDO_SYNC_STATIC_DIR` | unset = no static files | `/app/public` (built PWA) |
 | `TAIDO_PUBLIC_URL` | unset = no address-confirmation e-mail and no host in mail footers; read only when `TAIDO_SMTP_HOST` is set; must start with `https://` or `http://` | unset (for example `https://sync.example.com`) |
 | `TAIDO_SIGNUPS` | `open` (also when unset or empty); `closed` refuses `POST /api/signup` with 403 `signups_closed`; case-insensitive; any other value stops `serve` naming the variable | unset (`open`) |
+| `TAIDO_MAIL_LANG` | `en` (also when unset or empty) or `fr`: language of the e-mails and of the address-confirmation pages; case-insensitive; any other value stops `serve` naming the variable | unset (`en`) |
 | `TAIDO_SMTP_HOST` | unset = no e-mail (`forgot` answers 503, accounts are confirmed at signup) | unset |
 | `TAIDO_SMTP_PORT` | `465` (implicit TLS; any other port = STARTTLS) | `465` |
 | `TAIDO_SMTP_USER` / `TAIDO_SMTP_PASSWORD` | none; given together or not at all | none |
