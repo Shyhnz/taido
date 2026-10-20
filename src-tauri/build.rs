@@ -5,7 +5,41 @@ fn main() {
         println!("cargo:rustc-link-arg=-Wl,-weak_framework,CoreAudio");
         link_clang_rt_osx();
     }
-    tauri_build::build()
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
+        embed_windows_manifest();
+        let windows = tauri_build::WindowsAttributes::new_without_app_manifest();
+        tauri_build::try_build(tauri_build::Attributes::new().windows_attributes(windows))
+            .expect("tauri build script failed");
+    } else {
+        tauri_build::build()
+    }
+}
+
+/// Embeds the Common-Controls v6 manifest in every executable of this crate, tests included.
+///
+/// tauri-build only attaches its manifest to the app binary, so the unit-test executable of
+/// the library fails to start on Windows (`STATUS_ENTRYPOINT_NOT_FOUND`, comctl32 v5 lacks
+/// `TaskDialogIndirect`). The same manifest content as tauri-build's, linked into all targets.
+fn embed_windows_manifest() {
+    if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() != Ok("msvc") {
+        return;
+    }
+    let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR is set"));
+    let manifest = out_dir.join("taido.manifest");
+    std::fs::write(
+        &manifest,
+        r#"<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0" processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*" />
+    </dependentAssembly>
+  </dependency>
+</assembly>
+"#,
+    )
+    .expect("write the Windows manifest");
+    println!("cargo:rustc-link-arg=/MANIFEST:EMBED");
+    println!("cargo:rustc-link-arg=/MANIFESTINPUT:{}", manifest.display());
 }
 
 /// Links clang's compiler runtime, which provides `__isPlatformVersionAtLeast`.
