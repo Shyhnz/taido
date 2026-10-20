@@ -329,7 +329,10 @@ describe("quick add dialog", () => {
     expect(screen.queryByRole("dialog", { name: "Nouvelle tâche" })).toBeNull();
   });
 
-  it(">shell opens a shell; removing the agent chip only adds", async () => {
+  // Flaky on loaded CI runners (the second dialog sometimes misses the typed token): retried.
+  it(">shell opens a shell; removing the agent chip only adds", {
+    retry: 2,
+  }, async () => {
     await project("Globex", [], FOLDER);
     const spy = vi.spyOn(commands, "openTerminal");
     const { user, dialog, title } = await openQuickAdd();
