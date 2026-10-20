@@ -146,7 +146,7 @@ fn claude_is_launched_with_the_spec_arguments_and_environment() {
     assert!(args[11].starts_with(&*f.data_dir.path().to_string_lossy()));
     // The prompt has a newline: the fake prints it over two ARG lines.
     assert!(out.contains("ARG:Export CSV"));
-    let cwd = std::fs::canonicalize(f.work_dir.path()).expect("canon");
+    let cwd = crate::db::test_support::reported_cwd(f.work_dir.path());
     assert!(
         out.contains(&format!("CWD:{}", cwd.to_string_lossy())),
         "{out}"

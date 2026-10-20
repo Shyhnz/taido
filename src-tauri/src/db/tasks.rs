@@ -886,10 +886,10 @@ mod tests {
                 },
             )
         };
-        set(&in_web, Some("/elsewhere")).expect("override");
+        set(&in_web, Some(crate::abs!("/elsewhere"))).expect("override");
         assert_eq!(
             wd(&in_web),
-            Some(("/elsewhere".to_string(), WorkdirSource::Task))
+            Some((crate::abs!("/elsewhere").to_string(), WorkdirSource::Task))
         );
         set(&inbox, Some("/inbox-dir")).expect("override");
         assert_eq!(

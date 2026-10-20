@@ -19,6 +19,16 @@ macro_rules! abs {
     };
 }
 
+/// The folder a child process reports as its working directory: resolved on Unix (macOS
+/// temp dirs are symlinks), as given on Windows (`canonicalize` returns the `\\?\` long form).
+pub fn reported_cwd(path: &std::path::Path) -> std::path::PathBuf {
+    if cfg!(windows) {
+        path.to_path_buf()
+    } else {
+        std::fs::canonicalize(path).expect("canonicalize")
+    }
+}
+
 /// `abs!` for a path built at run time.
 pub fn abs(path: &str) -> String {
     if cfg!(windows) {

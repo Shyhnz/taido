@@ -521,7 +521,7 @@ fn a_finished_conversation_is_resumed_in_a_new_tab() {
     );
     let out = rig.output_until(&resumed.id, "READY");
     assert_eq!(resumed.cwd, original_cwd);
-    let canon = std::fs::canonicalize(&original_cwd).expect("canon");
+    let canon = crate::db::test_support::reported_cwd(std::path::Path::new(&original_cwd));
     assert!(
         out.contains(&format!("CWD:{}", canon.to_string_lossy())),
         "{out}"
