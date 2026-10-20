@@ -27,14 +27,6 @@ use crate::pty::{ExitHook, PtyManager, Sink, DEFAULT_BUFFER_BYTES};
 use crate::session_service::{Flush, FlushSink, SessionService, Timing};
 use crate::state::machine::Session;
 
-const FAKE_CLAUDE: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../tools/fake-claude/fake-claude"
-);
-const FAKE_CODEX: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../tools/fake-codex/fake-codex"
-);
 /// Divides the fake's delays: an ordinary turn lasts 750 ms, tool steps are 125 ms apart.
 const FAKE_SPEED: &str = "4";
 /// Requirement: « chaque état atteint en moins de 300 ms ».
@@ -150,8 +142,8 @@ impl Rig {
             token,
             port,
             super::AgentOverrides {
-                claude: Some(FAKE_CLAUDE.to_string()),
-                codex: Some(FAKE_CODEX.to_string()),
+                claude: Some(crate::agents::fake_bin("fake-claude")),
+                codex: Some(crate::agents::fake_bin("fake-codex")),
             },
         );
         let mut env = crate::env::resolve();

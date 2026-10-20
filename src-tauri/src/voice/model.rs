@@ -127,7 +127,8 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 fn map_disk_error(e: std::io::Error) -> AppError {
-    if e.raw_os_error() == Some(libc::ENOSPC) {
+    // `StorageFull`: ENOSPC on macOS, ERROR_DISK_FULL / ERROR_HANDLE_DISK_FULL on Windows.
+    if e.kind() == std::io::ErrorKind::StorageFull {
         AppError::DiskFull(e.to_string())
     } else {
         AppError::Io(e)

@@ -227,6 +227,8 @@ fn private_files_are_0600() {
     }
 }
 
+// Unix only: a POSIX `PATH` and execute bits (Windows: `agents::tests`).
+#[cfg(unix)]
 #[test]
 fn binary_resolution_order() {
     let dir = tempfile::tempdir().expect("tempdir");

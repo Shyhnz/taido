@@ -9,10 +9,9 @@ use crate::db::test_support::task;
 use crate::model::{CreateSubjectInput, PermissionMode, TerminalInfo};
 use crate::pty::{ExitHook, Sink, DEFAULT_BUFFER_BYTES};
 
-const FAKE_CLAUDE: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../tools/fake-claude/fake-claude"
-);
+fn fake_claude() -> String {
+    crate::agents::fake_bin("fake-claude")
+}
 
 struct Fixture {
     db: Mutex<Connection>,
@@ -113,7 +112,7 @@ impl Fixture {
 
 #[test]
 fn claude_is_launched_with_the_spec_arguments_and_environment() {
-    let f = fixture(Some(FAKE_CLAUDE));
+    let f = fixture(Some(&fake_claude()));
     let t = f.task_with_folder();
     let mut input = f.input(&t, TerminalKind::Agent);
     input.initial_prompt = Some("Export CSV\n\nAvec les colonnes".into());
@@ -177,7 +176,7 @@ fn claude_is_launched_with_the_spec_arguments_and_environment() {
 
 #[test]
 fn without_task_context_no_file_is_passed() {
-    let f = fixture(Some(FAKE_CLAUDE));
+    let f = fixture(Some(&fake_claude()));
     let t = f.task_with_folder();
     let mut input = f.input(&t, TerminalKind::Agent);
     input.add_task_context = Some(false);
@@ -245,7 +244,7 @@ fn the_claude_path_setting_is_read_at_each_launch() {
     ));
     assert_eq!(f.count("terminals"), 0);
     // Changed in Réglages: the next launch uses it, without restarting.
-    set_claude_path(&f, FAKE_CLAUDE);
+    set_claude_path(&f, &fake_claude());
     let info = f
         .service
         .open(&f.db, &f.input(&t, TerminalKind::Agent))
@@ -256,7 +255,7 @@ fn the_claude_path_setting_is_read_at_each_launch() {
 
 #[test]
 fn the_override_wins_over_the_claude_path_setting() {
-    let f = fixture(Some(FAKE_CLAUDE));
+    let f = fixture(Some(&fake_claude()));
     let t = f.task_with_folder();
     set_claude_path(&f, "/nope/claude");
     let info = f
@@ -267,6 +266,8 @@ fn the_override_wins_over_the_claude_path_setting() {
     f.service.shutdown(&f.db);
 }
 
+// Unix only: the stand-in is a shell script.
+#[cfg(unix)]
 #[test]
 fn check_claude_uses_the_binary_a_launch_would_use() {
     let f = fixture(None);
@@ -309,12 +310,15 @@ fn a_command_runs_in_the_login_shell_and_its_exit_is_reported() {
     let f = fixture(None);
     let t = f.task_with_folder();
     let mut input = f.input(&t, TerminalKind::Command);
-    input.command = Some("echo \"hello $((40 + 2))\"; exit 7".into());
+    // The login shell on macOS, PowerShell on Windows.
+    let command = if cfg!(windows) {
+        "Write-Output \"hello $(40 + 2)\"; exit 7"
+    } else {
+        "echo \"hello $((40 + 2))\"; exit 7"
+    };
+    input.command = Some(command.into());
     let info = f.service.open(&f.db, &input).expect("open");
-    assert_eq!(
-        info.command.as_deref(),
-        Some("echo \"hello $((40 + 2))\"; exit 7")
-    );
+    assert_eq!(info.command.as_deref(), Some(command));
     let exited = f.exits.recv_timeout(Duration::from_secs(15)).expect("exit");
     assert_eq!(exited.exit_code, Some(7));
     f.output_until(&info.id, "hello 42");
@@ -349,7 +353,7 @@ fn closing_marks_the_terminal_closed_by_user_then_stops_it() {
 
 #[test]
 fn closing_a_tasks_terminals_and_shutting_down() {
-    let f = fixture(Some(FAKE_CLAUDE));
+    let f = fixture(Some(&fake_claude()));
     let t = f.task_with_folder();
     let a = f
         .service
@@ -390,7 +394,7 @@ fn closing_a_tasks_terminals_and_shutting_down() {
 /// launched, unknown to the PTY manager yet) cannot be resumed a second time.
 #[test]
 fn a_session_being_launched_cannot_be_resumed_twice() {
-    let f = fixture(Some(FAKE_CLAUDE));
+    let f = fixture(Some(&fake_claude()));
     let t = f.task_with_folder();
     {
         let conn = f.db.lock().expect("lock");

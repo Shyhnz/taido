@@ -55,6 +55,7 @@ import { t } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { features } from "../../lib/features";
 import { subjectColorVar } from "../../lib/format";
+import { keys as osKeys } from "../../lib/platform";
 import {
   useCounts,
   useHasNoProjectTasks,
@@ -94,7 +95,7 @@ const DOT_COLOR: Record<SubjectDot, string> = {
 
 /** « Label (⌘K) » where keyboard shortcuts exist, else the label alone (the phone). */
 export function withShortcut(label: string, keys: string): string {
-  return features.shortcuts ? `${label} (${keys})` : label;
+  return features.shortcuts ? `${label} (${osKeys(keys)})` : label;
 }
 
 /** Delay before the projects skeleton shows, so a fast load never flashes it (audit B2). */
@@ -188,7 +189,7 @@ function NavButton({
           aria-hidden="true"
           className="font-sans text-[12px] font-normal text-text-3"
         >
-          {shortcut}
+          {osKeys(shortcut)}
         </span>
       )}
     </button>
@@ -1021,7 +1022,9 @@ export function Sidebar() {
           </span>
           <span className="flex-1 text-left">{t.sidebar.newTask}</span>
           {features.shortcuts && (
-            <kbd className="font-sans text-[12px] text-text-3">⌘N</kbd>
+            <kbd className="font-sans text-[12px] text-text-3">
+              {osKeys("⌘N")}
+            </kbd>
           )}
         </button>
         {/* « Recherche » as a row, like Todoist; it opens ⌘K. */}
@@ -1032,15 +1035,15 @@ export function Sidebar() {
             aria-haspopup="dialog"
             aria-label={t.sidebar.searchRow}
             onClick={() => useUi.getState().openDialog({ type: "search" })}
-            title={
-              features.shortcuts ? `${t.search.open} (⌘K)` : t.sidebar.searchRow
-            }
+            title={features.shortcuts ? t.search.open : t.sidebar.searchRow}
             className="nav-row flex h-[34px] w-full items-center gap-2.5 rounded-md px-2 text-body text-text"
           >
             <Search size={18} aria-hidden strokeWidth={1.75} />
             <span className="flex-1 text-left">{t.sidebar.searchRow}</span>
             {features.shortcuts && (
-              <kbd className="font-sans text-[12px] text-text-3">⌘K</kbd>
+              <kbd className="font-sans text-[12px] text-text-3">
+                {osKeys("⌘K")}
+              </kbd>
             )}
           </button>
         )}

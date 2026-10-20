@@ -244,5 +244,6 @@ pub fn clean(output: &str) -> Option<String> {
     (!line.is_empty()).then_some(line)
 }
 
-#[cfg(test)]
+// Unix only: the stand-in agents are shell scripts.
+#[cfg(all(test, unix))]
 mod tests;

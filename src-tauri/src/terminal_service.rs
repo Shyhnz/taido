@@ -322,7 +322,7 @@ impl TerminalService {
         let detail = tasks::detail(conn, &input.task_id)?;
         let workdir = checked_workdir(&detail)?;
         terminal_env(&mut env, terminal_id);
-        let shell = env::login_shell();
+        let shell = env::terminal_shell(&env);
         let mut session = None;
         let mut command = None;
         let (program, args) = match input.kind {

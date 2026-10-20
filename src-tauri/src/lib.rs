@@ -263,19 +263,22 @@ pub fn run() {
         )
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_opener::init())
-        .invoke_handler({
-            // `attach_terminal` takes a raw-bytes channel that specta cannot describe: it is
-            // routed outside the generated handler (see commands/terminals.rs).
-            let typed = builder.invoke_handler();
-            move |invoke: tauri::ipc::Invoke<tauri::Wry>| {
-                if invoke.message.command() == "attach_terminal" {
-                    raw_handler(invoke)
-                } else {
-                    typed(invoke)
-                }
+        .plugin(tauri_plugin_opener::init());
+    // Windows notifications go through Tauri's plugin (see notify/windows.rs).
+    #[cfg(windows)]
+    let app_builder = app_builder.plugin(tauri_plugin_notification::init());
+    let app_builder = app_builder.invoke_handler({
+        // `attach_terminal` takes a raw-bytes channel that specta cannot describe: it is
+        // routed outside the generated handler (see commands/terminals.rs).
+        let typed = builder.invoke_handler();
+        move |invoke: tauri::ipc::Invoke<tauri::Wry>| {
+            if invoke.message.command() == "attach_terminal" {
+                raw_handler(invoke)
+            } else {
+                typed(invoke)
             }
-        });
+        }
+    });
     // The macOS menu bar. Windows gets none: a menu would sit inside the window.
     #[cfg(target_os = "macos")]
     let app_builder = app_builder
@@ -557,7 +560,7 @@ fn task_state_sink(app: AppHandle, notifier: Arc<Notifier>) -> FlushSink {
 }
 
 /// System notifications: macOS's own in the installed app (they say which one was clicked),
-/// none elsewhere. Called from `setup`, on the main thread.
+/// Tauri's plugin on Windows, none elsewhere. Called from `setup`, on the main thread.
 fn start_notifier(app: &AppHandle) -> Notifier {
     #[cfg(target_os = "macos")]
     {
@@ -568,14 +571,23 @@ fn start_notifier(app: &AppHandle) -> Notifier {
             return Notifier::new(Some(Arc::new(banner)));
         }
     }
-    #[cfg(not(target_os = "macos"))]
-    let _ = app;
-    Notifier::new(None)
+    #[cfg(windows)]
+    {
+        let clicked = app.clone();
+        let on_click: notify::windows::ClickHook =
+            Arc::new(move |task_id| notification_clicked(&clicked, task_id));
+        Notifier::new(Some(Arc::new(notify::windows::banner(app, on_click))))
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        Notifier::new(None)
+    }
 }
 
 /// A notification was clicked: the window comes forward and the UI opens the task on the
 /// terminal of the session.
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+#[cfg_attr(not(any(target_os = "macos", windows)), allow(dead_code))]
 fn notification_clicked(app: &AppHandle, task_id: String) {
     show_main_window(app);
     let terminal_id = app

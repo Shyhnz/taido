@@ -52,6 +52,7 @@ pub struct VoiceStatus {
 
 /// Microphone permission, as macOS reports it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub enum Permission {
     Granted,
     Denied,

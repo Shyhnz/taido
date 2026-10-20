@@ -14,6 +14,8 @@
 
 import type { TerminalInfo } from "../../bindings";
 import { attachTerminal, commands, errorMessage } from "../../lib/ipc";
+import { OS } from "../../lib/platform";
+import { terminalKey } from "./terminalKeys";
 import { createXterm, terminalTheme, type XtermHandle } from "./xterm";
 
 /** Debounce of the ResizeObserver before `fit()` + `resize_terminal`. */
@@ -124,20 +126,14 @@ function create(info: TerminalInfo): Entry {
       }
       return false;
     }
-    if (e.metaKey) {
-      // ⌘C copies a selection; without one nothing is sent (Ctrl+C stays the interrupt).
-      if (
-        e.type === "keydown" &&
-        e.key.toLowerCase() === "c" &&
-        term.hasSelection()
-      ) {
-        void navigator.clipboard?.writeText(term.getSelection());
-      }
-      // Other ⌘ keys belong to the app (⌘T, ⌘⇧F, ⌘1…); ⌘V pastes through the paste event,
-      // which xterm handles (bracketed paste).
-      return false;
+    // ⌘ keys (Ctrl ones on Windows) belong to the app (⌘T, ⌘⇧F, ⌘1…); ⌘C copies a
+    // selection; ⌘V pastes through the paste event, which xterm handles (bracketed paste).
+    const action = terminalKey(e, OS, term.hasSelection());
+    if (action === "terminal") return true;
+    if (action === "copy" && e.type === "keydown") {
+      void navigator.clipboard?.writeText(term.getSelection());
     }
-    return true;
+    return false;
   });
   // Late output of a closed terminal must not reach its disposed instance.
   attachTerminal(info.id, (bytes) => {

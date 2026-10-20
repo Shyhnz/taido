@@ -64,6 +64,7 @@ import { type SettingsTab, useUi } from "../../stores/ui";
 import { checkAgentStatus } from "../claude-check/claudeCheck";
 import { SyncSettings } from "../sync";
 import { useTutorial } from "../tutorial/store";
+import { useVoiceStatus } from "../voice/useVoiceController";
 import { HookEvents } from "./HookEvents";
 
 /**
@@ -545,6 +546,8 @@ function agentShortStatus(status: AgentStatus | undefined, pending: boolean) {
 /** Réglages › Agents: the default agent, the session switches, then each agent's details. */
 function AgentsTab() {
   const settings = useSettings().data;
+  const voice = useVoiceStatus();
+  const dictation = voice !== null && voice.model.state !== "unavailable";
   const save = useSaveSetting();
   const claude = useAgentStatus("claude");
   const codex = useAgentStatus("codex");
@@ -602,14 +605,17 @@ function AgentsTab() {
               void save({ notifications: !settings.notifications })
             }
           />
-          <SettingSwitch
-            on={settings.voiceSpaceHold}
-            label={strings.settings.voiceSpaceHold}
-            help={strings.settings.voiceSpaceHoldHelp}
-            onToggle={() =>
-              void save({ voiceSpaceHold: !settings.voiceSpaceHold })
-            }
-          />
+          {/* Dictation exists on macOS only for now: hidden elsewhere (Windows). */}
+          {dictation && (
+            <SettingSwitch
+              on={settings.voiceSpaceHold}
+              label={strings.settings.voiceSpaceHold}
+              help={strings.settings.voiceSpaceHoldHelp}
+              onToggle={() =>
+                void save({ voiceSpaceHold: !settings.voiceSpaceHold })
+              }
+            />
+          )}
           <SettingSwitch
             on={settings.chronoCountsWaiting}
             label={strings.chrono.settingWaiting}

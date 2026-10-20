@@ -58,10 +58,14 @@ function readConfig(overrides) {
     if (hook) {
       const at = value.indexOf("command = ");
       const command = at >= 0 ? tomlString(value.slice(at + 10)) : null;
+      const atWindows = value.indexOf("command_windows = ");
+      const commandWindows =
+        atWindows >= 0 ? tomlString(value.slice(atWindows + 18)) : null;
       const timeout = /timeout = (\d+)/.exec(value);
       if (command) {
         hooks[hook[1]] = {
           command,
+          commandWindows,
           timeout: timeout ? Number(timeout[1]) : 600,
         };
       }
@@ -109,9 +113,17 @@ function hook(event, fields = {}) {
   if (!h) return Promise.resolve();
   const payload = JSON.stringify({ ...common(event), ...fields });
   return new Promise((resolve) => {
-    const child = spawn("/bin/sh", ["-c", h.command], {
-      stdio: ["pipe", "ignore", "ignore"],
-    });
+    // Like Codex on Windows: `command_windows` when given, through the system shell
+    // (cmd.exe); `command` through sh elsewhere.
+    const child =
+      process.platform === "win32"
+        ? spawn(h.commandWindows ?? h.command, [], {
+            shell: true,
+            stdio: ["pipe", "ignore", "ignore"],
+          })
+        : spawn("/bin/sh", ["-c", h.command], {
+            stdio: ["pipe", "ignore", "ignore"],
+          });
     const timer = setTimeout(() => child.kill("SIGKILL"), h.timeout * 1000);
     child.on("error", () => {
       clearTimeout(timer);

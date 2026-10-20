@@ -169,7 +169,7 @@ impl Asks {
 }
 
 /// Kills the agent and what it started (Codex's shell commands): on Unix the whole process
-/// group, which keeps the output pipe open otherwise.
+/// group, which keeps the output pipe open otherwise; on Windows its process tree.
 fn kill(child: &Mutex<Option<Child>>) {
     if let Ok(mut c) = child.lock() {
         if let Some(c) = c.as_mut() {
@@ -180,6 +180,9 @@ fn kill(child: &Mutex<Option<Child>>) {
                     libc::kill(-pid, libc::SIGKILL);
                 }
             }
+            // Windows: the tree, as `taskkill /T` (Codex's shell commands, node under a shim).
+            #[cfg(windows)]
+            crate::env::kill_tree(c.id());
             let _ = c.kill();
         }
     }
@@ -193,9 +196,12 @@ fn run(
     stopped: &AtomicBool,
     emit: &Emit,
 ) -> AskUpdate {
-    let mut command = Command::new(&l.program);
+    // Windows: an npm shim runs its script with node (`agents::launch_command`).
+    let (program, args) =
+        crate::agents::launch_command(&l.program.to_string_lossy(), &l.args, &l.env);
+    let mut command = Command::new(program);
     crate::env::hide_console(&mut command)
-        .args(&l.args)
+        .args(&args)
         .env_clear()
         .envs(&l.env)
         .current_dir(&l.cwd)

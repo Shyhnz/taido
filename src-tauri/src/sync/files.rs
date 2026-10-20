@@ -939,6 +939,7 @@ async fn checked(row: &FileRow, part: &Path, resumed: bool) -> bool {
 /// The value macOS puts in `com.apple.quarantine` for a downloaded file, as browsers and
 /// messaging apps write it (`<flags>;<hex Unix time>;<agent>;<event id>`, the event id left
 /// empty): flags 0x0081, a download not yet opened.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 fn quarantine_value(now: std::time::SystemTime) -> String {
     let secs = now
         .duration_since(std::time::UNIX_EPOCH)

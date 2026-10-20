@@ -536,6 +536,8 @@ async fn too_large_and_a_full_account_are_shown_and_tasks_still_sync() {
 
 /// A file the server refuses is answered by the empty first chunk: its copy is never read for
 /// it (an unreadable copy is still refused, not left for later), at any run.
+// Unix only: makes the copy unreadable with permission bits.
+#[cfg(unix)]
 #[tokio::test]
 async fn a_refused_file_is_never_read() {
     use std::os::unix::fs::PermissionsExt;

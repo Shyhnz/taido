@@ -64,6 +64,11 @@ cpal = "=0.18.2"
 transcribe-cpp = { version = "=0.4.0", default-features = false, features = ["metal"] }
 objc2-av-foundation = { version = "0.3", default-features = false, features = ["std", "block2", "AVCaptureDevice", "AVMediaFormat"] }
 
+# Windows notifications: Tauri's notification plugin (notify-rust / WinRT toasts underneath),
+# which on Windows reports a click on a toast still on screen. Pinned: a 3.0 alpha exists.
+[target.'cfg(windows)'.dependencies]
+tauri-plugin-notification = "=2.7.0"
+
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

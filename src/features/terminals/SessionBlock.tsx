@@ -48,6 +48,7 @@ import { type MenuItem, openMenuAt } from "../../components/Menu";
 import { t as strings } from "../../i18n";
 import { useDefaultAgent } from "../../lib/agent";
 import { commands } from "../../lib/ipc";
+import { keys as osKeys } from "../../lib/platform";
 import { queryKeys, useTaskSessions } from "../../lib/queries";
 import { useUi } from "../../stores/ui";
 import { hasStateDot, StateDot } from "../task-row/StateDot";
@@ -246,7 +247,7 @@ function QuickActions({ taskId }: { taskId: string }) {
       >
         <Sparkles size={14} aria-hidden />
         {strings.terminals.launchAgent(agent)}
-        <span className="text-[11.5px] opacity-70">⌘T</span>
+        <span className="text-[11.5px] opacity-70">{osKeys("⌘T")}</span>
       </Button>
       <Button size="sm" onClick={() => void openTerminal(taskId, "shell")}>
         <SquareTerminal size={14} aria-hidden />

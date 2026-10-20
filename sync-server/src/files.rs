@@ -635,6 +635,7 @@ fn is_disk_full(err: &ServerError) -> bool {
 }
 
 /// Free bytes for an unprivileged process on the volume of `path` (`statvfs`).
+#[cfg(unix)]
 #[allow(unsafe_code)]
 fn available_bytes(path: &Path) -> io::Result<u64> {
     use std::ffi::CString;
@@ -654,6 +655,16 @@ fn available_bytes(path: &Path) -> io::Result<u64> {
     #[allow(clippy::unnecessary_cast)]
     let (blocks, block_size) = (stat.f_bavail as u64, stat.f_frsize as u64);
     Ok(blocks.saturating_mul(block_size))
+}
+
+/// The server runs on Linux; elsewhere (tests of the desktop app on Windows) the free space is
+/// unknown, which lets uploads go (see [`FileStore::below_floor`]).
+#[cfg(not(unix))]
+fn available_bytes(_path: &Path) -> io::Result<u64> {
+    Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "free space is only read on Unix",
+    ))
 }
 
 /// The `files` row of the attachment when it can be trusted. A complete row whose file is gone
@@ -1081,6 +1092,8 @@ mod tests {
         assert_eq!(ErrorCode::QuotaExceeded.http_status(), 507);
     }
 
+    // Unix only: `statvfs` (the server runs on Linux).
+    #[cfg(unix)]
     #[test]
     fn the_free_space_is_read_from_the_nearest_existing_folder() {
         let dir = tempfile::tempdir().expect("tmp");

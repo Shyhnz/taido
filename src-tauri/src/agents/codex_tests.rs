@@ -1,3 +1,6 @@
+// The Unix-only tests (shell-script fakes) are the only users of some imports.
+#![cfg_attr(not(unix), allow(unused_imports))]
+
 use std::collections::BTreeMap;
 use std::path::Path;
 
@@ -47,6 +50,52 @@ fn hooks_are_the_same_text_at_every_launch() {
             "Codex clamps some hooks to 3 s: {h}"
         );
     }
+}
+
+#[test]
+fn windows_hooks_go_through_powershell() {
+    use crate::agents::Os;
+    use base64::Engine as _;
+    let handler = |os: Os| -> toml::Table {
+        let table = toml::from_str::<toml::Table>(&hook_override("Stop", os)).expect("toml");
+        table["hooks"]["Stop"][0]["hooks"][0]
+            .as_table()
+            .expect("handler")
+            .clone()
+    };
+    let unix = handler(Os::Unix);
+    // macOS: the same text as before (a changed hook asks for a new trust).
+    assert!(!unix.contains_key("command_windows"), "{unix:?}");
+    let win = handler(Os::Windows);
+    assert_eq!(win["command"], unix["command"]);
+    let command = win["command_windows"].as_str().expect("command_windows");
+    let encoded = command
+        .strip_prefix("powershell.exe -NoProfile -NonInteractive -EncodedCommand ")
+        .expect("powershell");
+    // Only base64 characters: nothing any shell (cmd, PowerShell, sh) would interpret.
+    assert!(encoded
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || "+/=".contains(c)));
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(encoded)
+        .expect("base64");
+    let units: Vec<u16> = bytes
+        .chunks(2)
+        .map(|b| u16::from_le_bytes([b[0], b[1]]))
+        .collect();
+    let script = String::from_utf16(&units).expect("UTF-16LE");
+    for needle in [
+        "$env:TAIDO_HOOK_URL",
+        "$env:TAIDO_HOOK_TOKEN",
+        "$env:TAIDO_TERMINAL_ID",
+        "-TimeoutSec 2",
+        "Out-Null",
+    ] {
+        assert!(script.contains(needle), "{needle} in {script}");
+    }
+    // The launch uses this system's form.
+    let args = new_session_args(&launch());
+    assert!(args.contains(&hook_override("Stop", Os::CURRENT)));
 }
 
 #[test]

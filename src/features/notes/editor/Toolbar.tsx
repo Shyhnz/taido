@@ -16,6 +16,7 @@ import {
   useRef,
 } from "react";
 import { t } from "../../../i18n";
+import { keys as osKeys } from "../../../lib/platform";
 import { ACTIONS, type ActionId, activeActions } from "./actions";
 import { startWikiLink } from "./linkSuggest";
 
@@ -146,7 +147,9 @@ export function Toolbar({
               <ToolbarButton
                 key={id}
                 label={a.label}
-                title={a.keys ? `${a.label} (${a.keys.trim()})` : a.label}
+                title={
+                  a.keys ? `${a.label} (${osKeys(a.keys.trim())})` : a.label
+                }
                 pressed={on[id] === true}
                 onPress={() => a.run(editor)}
                 className="h-7 w-7"

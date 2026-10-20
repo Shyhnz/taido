@@ -1,0 +1,2 @@
+# Batch files need CRLF line endings to run under cmd.exe.
+*.cmd text eol=crlf

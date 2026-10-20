@@ -8,11 +8,17 @@
 //! environment, which is used as is.
 
 use std::collections::BTreeMap;
+#[cfg(not(windows))]
 use std::io::Read;
 use std::process::{Command, Stdio};
+#[cfg(not(windows))]
 use std::time::{Duration, Instant};
 
+// Windows has no login shell to probe: the marker and its parser are only used elsewhere
+// (and by the tests).
+#[cfg_attr(windows, allow(dead_code))]
 const MARKER: &str = "__TAIDO_ENV_START__";
+#[cfg(not(windows))]
 const PROBE_TIMEOUT: Duration = Duration::from_secs(3);
 
 /// Variables injected by a running Claude Code session. When the app itself is started from a
@@ -63,11 +69,48 @@ pub fn login_shell() -> String {
     std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string())
 }
 
-/// Windows PowerShell, present on every Windows 10 and 11.
+/// The program of a « Terminal » or « Commande » terminal: the login shell.
+#[cfg(not(windows))]
+pub fn terminal_shell(_vars: &BTreeMap<String, String>) -> String {
+    login_shell()
+}
+
+/// The program of a « Terminal » or « Commande » terminal: PowerShell ([`windows_shell`]),
+/// looked for in the terminals' environment `vars`.
 #[cfg(windows)]
-pub fn login_shell() -> String {
-    let root = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
-    format!("{root}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe")
+pub fn terminal_shell(vars: &BTreeMap<String, String>) -> String {
+    let get = |name: &str| {
+        vars.iter()
+            .find(|(k, _)| k.eq_ignore_ascii_case(name))
+            .map(|(_, v)| v.as_str())
+    };
+    windows_shell(get("PATH").unwrap_or(""), get("SystemRoot"), |p| {
+        std::path::Path::new(p).is_file()
+    })
+}
+
+/// Windows shell: PowerShell 7 (`pwsh.exe`) when a folder of `path` (`;`-separated) has it,
+/// else Windows PowerShell, present on every Windows 10 and 11. Pure: `exists` says whether a
+/// file is there.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub fn windows_shell(
+    path: &str,
+    system_root: Option<&str>,
+    exists: impl Fn(&str) -> bool,
+) -> String {
+    let pwsh = path
+        .split(';')
+        .map(|dir| dir.trim().trim_matches('"').trim_end_matches(['\\', '/']))
+        .filter(|dir| !dir.is_empty())
+        .map(|dir| format!("{dir}\\pwsh.exe"))
+        .find(|candidate| exists(candidate));
+    pwsh.unwrap_or_else(|| {
+        let root = system_root
+            .map(|r| r.trim_end_matches(['\\', '/']))
+            .filter(|r| !r.is_empty())
+            .unwrap_or("C:\\Windows");
+        format!("{root}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe")
+    })
 }
 
 /// Arguments of a « Terminal » (interactive shell).
@@ -107,13 +150,69 @@ pub fn hide_console(command: &mut Command) -> &mut Command {
     command
 }
 
+/// Windows has no process groups to signal: `taskkill /T /F` ends a process and every process
+/// it started (its tree), at once.
+#[cfg(windows)]
+pub fn kill_tree(pid: u32) {
+    let pid = pid.to_string();
+    let status = hide_console(&mut Command::new("taskkill"))
+        .args(["/PID", pid.as_str(), "/T", "/F"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
+    if let Err(e) = status {
+        log::warn!("cannot run taskkill for {pid}: {e}");
+    }
+}
+
+/// Arguments for `program`, made safe when it is a batch file (`claude.cmd`, `codex.cmd`: npm's
+/// shims on Windows). Windows runs a batch file through `cmd.exe`, which reads the command
+/// line again: a `"` would end the quoting, `%NAME%` would expand, and `& | < > ^` outside
+/// quotes would start another command. The terminal's command line quotes only arguments
+/// with blanks (portable-pty 0.9), so in user text (task title, first prompt) `"` becomes `'`,
+/// line breaks become spaces, `%` and, in an unquoted argument, `& | < > ^` become their
+/// full-width look-alikes. Any other program gets its arguments untouched.
+pub fn batch_safe_args(program: &str, args: &[String]) -> Vec<String> {
+    let lower = program.to_ascii_lowercase();
+    if !(lower.ends_with(".cmd") || lower.ends_with(".bat")) {
+        return args.to_vec();
+    }
+    args.iter()
+        .map(|arg| {
+            let arg: String = arg
+                .chars()
+                .map(|c| match c {
+                    '"' => '\'',
+                    '\r' | '\n' => ' ',
+                    '%' => '\u{FF05}',
+                    c => c,
+                })
+                .collect();
+            let quoted = arg.is_empty() || arg.contains([' ', '\t', '\u{0B}']);
+            if quoted {
+                return arg;
+            }
+            arg.chars()
+                .map(|c| match c {
+                    '&' => '\u{FF06}',
+                    '|' => '\u{FF5C}',
+                    '<' => '\u{FF1C}',
+                    '>' => '\u{FF1E}',
+                    '^' => '\u{FF3E}',
+                    c => c,
+                })
+                .collect()
+        })
+        .collect()
+}
+
 /// Resolves the environment of the user's login shell, cleaned of Claude Code session variables.
 pub fn resolve() -> ResolvedEnv {
-    let probed = if cfg!(windows) {
-        None
-    } else {
-        probe_login_shell()
-    };
+    #[cfg(windows)]
+    let probed = None;
+    #[cfg(not(windows))]
+    let probed = probe_login_shell();
     let (mut vars, from_login_shell) = match probed {
         Some(vars) => (vars, true),
         None => {
@@ -134,6 +233,7 @@ pub fn resolve() -> ResolvedEnv {
 
 /// Runs `$SHELL -ilc` and parses the environment printed after the marker.
 /// Interactive (`-i`) so that PATH changes made in `.zshrc` (nvm, rustup…) are included.
+#[cfg(not(windows))]
 fn probe_login_shell() -> Option<BTreeMap<String, String>> {
     let script = format!("printf '%s' '{MARKER}'; env -0");
     let mut child = Command::new(login_shell())
@@ -167,6 +267,7 @@ fn probe_login_shell() -> Option<BTreeMap<String, String>> {
     parse_env_output(&output)
 }
 
+#[cfg_attr(windows, allow(dead_code))]
 fn parse_env_output(output: &[u8]) -> Option<BTreeMap<String, String>> {
     let text = String::from_utf8_lossy(output);
     let start = text.rfind(MARKER)? + MARKER.len();
@@ -232,6 +333,57 @@ mod tests {
     fn rejects_output_without_marker_or_path() {
         assert!(parse_env_output(b"PATH=/bin\0").is_none());
         assert!(parse_env_output(format!("{MARKER}HOME=/x\0").as_bytes()).is_none());
+    }
+
+    #[test]
+    fn default_shell_on_windows_prefers_pwsh() {
+        let path = "C:\\Windows\\System32;C:\\Program Files\\PowerShell\\7\\;C:\\Tools";
+        let with_pwsh = windows_shell(path, Some("C:\\Windows"), |p| {
+            p == "C:\\Program Files\\PowerShell\\7\\pwsh.exe"
+        });
+        assert_eq!(with_pwsh, "C:\\Program Files\\PowerShell\\7\\pwsh.exe");
+        assert!(with_pwsh.ends_with("pwsh.exe"));
+
+        let without = windows_shell(path, Some("D:\\WINDOWS"), |_| false);
+        assert_eq!(
+            without,
+            "D:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+        );
+        assert_eq!(
+            windows_shell("", None, |_| true),
+            "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+        );
+    }
+
+    #[test]
+    fn batch_shim_arguments_cannot_break_out() {
+        let args: Vec<String> = [
+            "--name",
+            "Acme · \"Q&A\" 100%",
+            "a&b|c>d<e^f",
+            "two\nlines",
+            "C:\\Users\\Jane Doe\\AppData\\Roaming\\taido\\claude-hooks.json",
+        ]
+        .map(String::from)
+        .to_vec();
+        let safe = batch_safe_args(
+            "C:\\Users\\Jane Doe\\AppData\\Roaming\\npm\\claude.CMD",
+            &args,
+        );
+        assert_eq!(
+            safe,
+            [
+                "--name",
+                "Acme · 'Q&A' 100\u{FF05}",
+                "a\u{FF06}b\u{FF5C}c\u{FF1E}d\u{FF1C}e\u{FF3E}f",
+                "two lines",
+                "C:\\Users\\Jane Doe\\AppData\\Roaming\\taido\\claude-hooks.json",
+            ]
+        );
+        // A real program gets its arguments untouched.
+        assert_eq!(batch_safe_args("C:\\Tools\\claude.exe", &args), args);
+        assert_eq!(batch_safe_args("/usr/local/bin/claude", &args), args);
+        assert_eq!(batch_safe_args("C:\\x\\run.bat", &args), safe);
     }
 
     #[test]

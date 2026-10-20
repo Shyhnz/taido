@@ -8,6 +8,7 @@
  */
 
 import type { Settings } from "../bindings";
+import { forPlatform, OS } from "../lib/platform";
 import { settingsPatch } from "../lib/settingsPatch";
 import { en, enHelpers } from "./en";
 import { type Fr, fr, frHelpers } from "./fr";
@@ -72,10 +73,18 @@ export function currentLanguage(): Language {
 /** The language of this window, read once at startup like `t` (a change reloads the window). */
 export const activeLanguage: Language = currentLanguage();
 
-/** The active string table. */
-export const t: Strings = activeLanguage === "fr" ? fr : en;
+/** The active string table, worded for this computer's system (Finder or Explorer, ⌘ or Ctrl). */
+export const t: Strings = forPlatform<Strings>(
+  activeLanguage === "fr" ? fr : en,
+  OS,
+  activeLanguage,
+);
 
-const helpers = activeLanguage === "fr" ? frHelpers : enHelpers;
+const helpers = forPlatform(
+  activeLanguage === "fr" ? frHelpers : enHelpers,
+  OS,
+  activeLanguage,
+);
 
 export const {
   agentName,

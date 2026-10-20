@@ -264,6 +264,7 @@ mod tests {
         }
     }
 
+    #[cfg(unix)]
     /// Writes an executable shell script `claude` in `dir`.
     fn script(dir: &Path, body: &str) -> PathBuf {
         let path = dir.join("claude");
@@ -276,6 +277,7 @@ mod tests {
         path
     }
 
+    #[cfg(unix)]
     fn env_with(dir: &Path) -> BTreeMap<String, String> {
         let mut env = BTreeMap::new();
         env.insert("PATH".into(), "/usr/bin:/bin".into());
@@ -284,6 +286,8 @@ mod tests {
         env
     }
 
+    // Unix only: the stand-in is a shell script.
+    #[cfg(unix)]
     #[test]
     fn check_runs_both_commands_with_the_given_environment() {
         let dir = tempfile::tempdir().expect("tempdir");
@@ -307,6 +311,8 @@ esac"#,
         );
     }
 
+    // Unix only: the stand-in is a shell script.
+    #[cfg(unix)]
     #[test]
     fn missing_binary_and_unreadable_answers() {
         let dir = tempfile::tempdir().expect("tempdir");
@@ -320,6 +326,8 @@ esac"#,
         assert_eq!((status.version, status.logged_in), (None, None));
     }
 
+    // Unix only: the stand-in is a shell script.
+    #[cfg(unix)]
     #[test]
     fn a_hanging_command_is_killed_at_the_timeout() {
         let dir = tempfile::tempdir().expect("tempdir");

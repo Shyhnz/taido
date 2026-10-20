@@ -1,4 +1,6 @@
 //! Audio helpers of the dictation, pure so they are tested without a microphone.
+// Dictation exists on macOS only for now: elsewhere only the tests use them.
+#![cfg_attr(not(target_os = "macos"), allow(dead_code))]
 
 /// Sample rate the transcription model expects (mono f32 in [-1, 1]).
 pub const MODEL_RATE: u32 = 16_000;

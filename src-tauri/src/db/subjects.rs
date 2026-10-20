@@ -5,7 +5,6 @@
 //! when it has none, and is deleted and restored with its parent.
 
 use std::collections::{BTreeMap, HashMap};
-use std::path::Path;
 
 use rusqlite::{params, Connection, OptionalExtension, Row};
 
@@ -231,14 +230,19 @@ pub const FOLDER_NAME_MAX_BYTES: usize = 200;
 
 /// Folder name for a project: its name without path separators nor leading dots, cut to
 /// [`FOLDER_NAME_MAX_BYTES`]. On Windows, also without the characters it forbids in file
-/// names nor trailing dots.
+/// names nor trailing dots, and never a reserved device name (`CON`, `NUL`, `COM1`…).
 pub fn folder_name(name: &str) -> String {
+    folder_name_on(name, cfg!(windows))
+}
+
+/// [`folder_name`] with Windows' rules or not.
+fn folder_name_on(name: &str, windows: bool) -> String {
     let cleaned: String = name
         .trim()
         .chars()
         .map(|c| {
             let forbidden_on_windows =
-                cfg!(windows) && (matches!(c, '<' | '>' | '"' | '|' | '?' | '*') || c.is_control());
+                windows && (matches!(c, '<' | '>' | '"' | '|' | '?' | '*') || c.is_control());
             if matches!(c, '/' | '\\' | ':' | '\0') || forbidden_on_windows {
                 '-'
             } else {
@@ -247,7 +251,7 @@ pub fn folder_name(name: &str) -> String {
         })
         .collect();
     let mut cleaned = cleaned.trim_start_matches('.').trim();
-    if cfg!(windows) {
+    if windows {
         cleaned = cleaned.trim_end_matches(['.', ' ']);
     }
     // macOS refuses path components over 255 bytes; names typed on the phone are unlimited
@@ -256,7 +260,14 @@ pub fn folder_name(name: &str) -> String {
     while !cleaned.is_char_boundary(end) {
         end -= 1;
     }
-    let cleaned = cleaned[..end].trim_end().to_string();
+    let mut cleaned = cleaned[..end].trim_end().to_string();
+    if windows {
+        // `CON`, `nul.txt`…: device names whatever the extension; `CON_` is a plain name.
+        let stem_end = cleaned.find('.').unwrap_or(cleaned.len());
+        if is_reserved_on_windows(&cleaned[..stem_end]) {
+            cleaned.insert(stem_end, '_');
+        }
+    }
     if cleaned.is_empty() {
         "project".to_string()
     } else {
@@ -620,13 +631,35 @@ pub fn parse_color(s: &str) -> SubjectColor {
     SubjectColor::parse(s).unwrap_or(SubjectColor::Gray)
 }
 
+/// A device name Windows reserves in every folder.
+fn is_reserved_on_windows(stem: &str) -> bool {
+    let upper = stem.trim_end().to_ascii_uppercase();
+    matches!(upper.as_str(), "CON" | "PRN" | "AUX" | "NUL")
+        || ((upper.starts_with("COM") || upper.starts_with("LPT"))
+            && upper.len() == 4
+            && upper.as_bytes()[3].is_ascii_digit()
+            && upper.as_bytes()[3] != b'0')
+}
+
 /// Absolute path; an empty string means "no folder" (`None`).
 fn validate_root_path(path: &str) -> AppResult<Option<String>> {
+    validate_root_path_on(path, cfg!(windows))
+}
+
+/// [`validate_root_path`] with Windows' notion of absolute (`C:\…`, `\\server\…`) or Unix's.
+fn validate_root_path_on(path: &str, windows: bool) -> AppResult<Option<String>> {
     let path = path.trim();
     if path.is_empty() {
         return Ok(None);
     }
-    if !Path::new(path).is_absolute() {
+    let absolute = if windows {
+        let b = path.as_bytes();
+        (b.len() >= 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && matches!(b[2], b'\\' | b'/'))
+            || path.starts_with("\\\\")
+    } else {
+        path.starts_with('/')
+    };
+    if !absolute {
         return Err(AppError::Invalid(format!(
             "subject folder must be an absolute path: {path}"
         )));
@@ -677,6 +710,78 @@ mod tests {
             root_path: None,
             parent_id: None,
         }
+    }
+
+    /// A Windows project folder: spaces, backslashes, a drive letter.
+    const WINDOWS_ROOT: &str = "C:\\Users\\Jane Doe\\Projects\\My App";
+
+    #[test]
+    fn paths_with_spaces_and_backslashes_round_trip() {
+        // The project folder: kept exactly as given, on both systems' conventions.
+        assert_eq!(
+            validate_root_path_on(&format!("  {WINDOWS_ROOT} "), true).expect("valid"),
+            Some(WINDOWS_ROOT.to_string())
+        );
+        assert_eq!(
+            validate_root_path_on("\\\\server\\share\\My App", true).expect("valid"),
+            Some("\\\\server\\share\\My App".to_string())
+        );
+        assert!(validate_root_path_on("Projects\\My App", true).is_err());
+        assert!(validate_root_path_on(WINDOWS_ROOT, false).is_err());
+        assert_eq!(
+            validate_root_path_on("/Users/Jane Doe/My App", false).expect("valid"),
+            Some("/Users/Jane Doe/My App".to_string())
+        );
+        // Stored and read back unchanged (this system's form).
+        let root = if cfg!(windows) {
+            WINDOWS_ROOT
+        } else {
+            "/Users/Jane Doe/Projects/My App \\ v2"
+        };
+        let conn = open_in_memory().expect("db");
+        let created = create(
+            &conn,
+            &CreateSubjectInput {
+                root_path: Some(root.into()),
+                ..bare("My App")
+            },
+        )
+        .expect("create");
+        assert_eq!(
+            get(&conn, &created.id).expect("get").root_path.as_deref(),
+            Some(root)
+        );
+        // Folder names made from names (attachments): nothing Windows refuses.
+        assert_eq!(
+            folder_name_on("My App: v2 <beta>?", true),
+            "My App- v2 -beta--"
+        );
+        assert_eq!(folder_name_on("a\\b/c \"d\" e|f*", true), "a-b-c -d- e-f-");
+        assert_eq!(folder_name_on("Release 1.0. ", true), "Release 1.0");
+        assert_eq!(folder_name_on("CON", true), "CON_");
+        assert_eq!(folder_name_on("nul.txt", true), "nul_.txt");
+        assert_eq!(folder_name_on("Com1", true), "Com1_");
+        assert_eq!(folder_name_on("Console", true), "Console");
+        // An attachment's file in such a folder keeps the folder as is.
+        let dir = std::path::Path::new(WINDOWS_ROOT).join(folder_name_on("Q3: plan", true));
+        let mut taken = 0;
+        let free = crate::db::attachments::first_free(&dir, "Q3 report.pdf", |_| {
+            taken += 1;
+            Ok(taken > 1)
+        })
+        .expect("free name");
+        assert!(free.to_string_lossy().starts_with(WINDOWS_ROOT), "{free:?}");
+        assert_eq!(free.parent(), Some(dir.as_path()));
+        assert_eq!(
+            free.file_name().and_then(|n| n.to_str()),
+            Some("Q3 report (2).pdf")
+        );
+        // macOS keeps what it accepts.
+        assert_eq!(
+            folder_name_on("My App: v2 <beta>?", false),
+            "My App- v2 <beta>?"
+        );
+        assert_eq!(folder_name_on("CON", false), "CON");
     }
 
     #[test]

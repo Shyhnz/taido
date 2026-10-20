@@ -54,6 +54,7 @@ import { type MenuItem, openMenuAt } from "../../components/Menu";
 import { t } from "../../i18n";
 import { features } from "../../lib/features";
 import { commands, isNotFound } from "../../lib/ipc";
+import { keys as osKeys } from "../../lib/platform";
 import { queryKeys, useInstalledEditors, useSettings } from "../../lib/queries";
 import { IS_MOBILE } from "../../lib/target";
 import { useUi } from "../../stores/ui";
@@ -472,7 +473,7 @@ function PanelActions({ task }: { task: TaskDetail | undefined }) {
           label={focusMode ? t.terminals.leaveFullWidth : t.terminals.fullWidth}
           title={`${
             focusMode ? t.terminals.leaveFullWidth : t.terminals.fullWidth
-          } (⌘⇧F${focusMode ? ", Échap" : ""})`}
+          } (${osKeys("⌘⇧F")}${focusMode ? `, ${t.shortcuts.escape}` : ""})`}
           aria-pressed={focusMode}
           onClick={() => setFocusMode(!focusMode)}
         >

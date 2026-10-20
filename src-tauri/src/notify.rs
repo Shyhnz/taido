@@ -3,7 +3,7 @@
 //! brings the app forward on the terminal of that session.
 //!
 //! The decisions ([`Gate`], [`Notifier`]) know nothing of the system: the display goes to a
-//! [`Banner`] (macOS: `notify/macos.rs`, only in the installed app).
+//! [`Banner`] (macOS: `notify/macos.rs`, only in the installed app; Windows: `notify/windows.rs`).
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -15,6 +15,8 @@ use crate::state::machine::Session;
 
 #[cfg(target_os = "macos")]
 pub mod macos;
+#[cfg(windows)]
+pub mod windows;
 
 /// At most one notification per task in this window.
 pub const PER_TASK_INTERVAL: Duration = Duration::from_secs(10);

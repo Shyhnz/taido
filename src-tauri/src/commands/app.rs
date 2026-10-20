@@ -158,9 +158,76 @@ pub async fn open_path(
         (OpenWith::Editor, None) => settings::get(&*state.db.lock()?)?.editor,
         (OpenWith::Finder | OpenWith::Terminal, _) => Editor::default(),
     };
+    if Platform::CURRENT == Platform::Windows {
+        return open_on_windows(&app, &state, &path, with, editor);
+    }
     app.opener()
-        .open_path(path, program(with, editor, cfg!(target_os = "macos")))?;
+        .open_path(path, program(with, editor, Platform::CURRENT))?;
     Ok(())
+}
+
+/// Windows: an editor through the full path of its launcher (`code.cmd` is not found by name
+/// alone), the terminal as a new PowerShell window in the folder.
+fn open_on_windows(
+    app: &AppHandle,
+    state: &State<'_, AppState>,
+    path: &str,
+    with: OpenWith,
+    editor: Editor,
+) -> AppResult<()> {
+    match with {
+        OpenWith::Finder => app.opener().open_path(path, None::<&str>)?,
+        OpenWith::Editor => {
+            let dirs = path_dirs();
+            let found = launcher(&dirs, editor, Platform::Windows)
+                .ok_or_else(|| AppError::Internal(format!("{editor:?} is not installed")))?;
+            app.opener()
+                .open_path(path, Some(found.to_string_lossy().into_owned()))?;
+        }
+        OpenWith::Terminal => {
+            let shell = crate::env::terminal_shell(&state.terminals.env().vars);
+            let mut command = std::process::Command::new(shell);
+            command.arg("-NoLogo").current_dir(path);
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                const CREATE_NEW_CONSOLE: u32 = 0x0000_0010;
+                command.creation_flags(CREATE_NEW_CONSOLE);
+            }
+            command
+                .spawn()
+                .map_err(|e| AppError::Internal(format!("cannot open a terminal: {e}")))?;
+        }
+    }
+    Ok(())
+}
+
+/// The folders of the app's `PATH`.
+fn path_dirs() -> Vec<PathBuf> {
+    std::env::var_os("PATH")
+        .map(|p| std::env::split_paths(&p).collect())
+        .unwrap_or_default()
+}
+
+/// The conventions « Ouvrir dans » follows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Platform {
+    /// App bundles, `open -a`.
+    Mac,
+    /// Launchers `<name>.exe` or `<name>.cmd` on `PATH`.
+    Windows,
+    /// A launcher `<name>` on `PATH`.
+    Other,
+}
+
+impl Platform {
+    const CURRENT: Platform = if cfg!(target_os = "macos") {
+        Platform::Mac
+    } else if cfg!(windows) {
+        Platform::Windows
+    } else {
+        Platform::Other
+    };
 }
 
 /// Editors « Ouvrir dans » knows, in the order of its list.
@@ -181,7 +248,7 @@ const EDITORS: [Editor; 5] = [
 #[specta::specta]
 pub async fn installed_editors() -> AppResult<Vec<Editor>> {
     let home = std::env::var_os("HOME").map(PathBuf::from);
-    let dirs: Vec<PathBuf> = if cfg!(target_os = "macos") {
+    let dirs: Vec<PathBuf> = if Platform::CURRENT == Platform::Mac {
         let mut dirs = vec![
             PathBuf::from("/Applications"),
             PathBuf::from("/Applications/Setapp"),
@@ -191,28 +258,37 @@ pub async fn installed_editors() -> AppResult<Vec<Editor>> {
         }
         dirs
     } else {
-        std::env::var_os("PATH")
-            .map(|p| std::env::split_paths(&p).collect())
-            .unwrap_or_default()
+        path_dirs()
     };
-    Ok(installed_in(&dirs, cfg!(target_os = "macos")))
+    Ok(installed_in(&dirs, Platform::CURRENT))
 }
 
-/// The editors found in `dirs`: `<App>.app` on macOS, the launcher elsewhere.
-fn installed_in(dirs: &[PathBuf], macos: bool) -> Vec<Editor> {
+/// The editors found in `dirs` ([`launcher`]).
+fn installed_in(dirs: &[PathBuf], platform: Platform) -> Vec<Editor> {
     EDITORS
         .into_iter()
-        .filter(|&editor| {
-            let program = editor_program(editor, macos);
-            dirs.iter().any(|dir| {
-                if macos {
-                    dir.join(format!("{program}.app")).is_dir()
-                } else {
-                    dir.join(program).is_file()
-                }
-            })
-        })
+        .filter(|&editor| launcher(dirs, editor, platform).is_some())
         .collect()
+}
+
+/// Where `editor` is in `dirs`: `<App>.app` on macOS, `<name>.exe` then `<name>.cmd` on
+/// Windows, the launcher `<name>` elsewhere.
+fn launcher(dirs: &[PathBuf], editor: Editor, platform: Platform) -> Option<PathBuf> {
+    let program = editor_program(editor, platform == Platform::Mac);
+    let names: Vec<String> = match platform {
+        Platform::Mac => vec![format!("{program}.app")],
+        Platform::Windows => vec![format!("{program}.exe"), format!("{program}.cmd")],
+        Platform::Other => vec![program.to_string()],
+    };
+    dirs.iter()
+        .flat_map(|dir| names.iter().map(move |n| dir.join(n)))
+        .find(|p| {
+            if platform == Platform::Mac {
+                p.is_dir()
+            } else {
+                p.is_file()
+            }
+        })
 }
 
 /// Absolute and existing; returns the trimmed path.
@@ -232,12 +308,13 @@ fn checked_path(path: &str) -> AppResult<String> {
 /// Program passed to the opener: `open -a <app> -- <path>` on macOS, `<program> <path>`
 /// elsewhere (verified in the `open` crate 5.4.4 that tauri-plugin-opener 2.7.0 calls);
 /// `None` = default handler, i.e. the file manager for a folder.
-fn program(with: OpenWith, editor: Editor, macos: bool) -> Option<&'static str> {
+fn program(with: OpenWith, editor: Editor, platform: Platform) -> Option<&'static str> {
+    let macos = platform == Platform::Mac;
     match with {
         OpenWith::Finder => None,
         OpenWith::Editor => Some(editor_program(editor, macos)),
         OpenWith::Terminal if macos => Some("Terminal"),
-        // Windows: pick the terminal; the file manager meanwhile.
+        // Windows opens a terminal itself (`open_on_windows`); elsewhere the file manager.
         OpenWith::Terminal => None,
     }
 }
@@ -361,11 +438,41 @@ mod tests {
         std::fs::write(apps.path().join("Cursor.app"), "").expect("cursor");
         std::fs::create_dir(apps.path().join("subl")).expect("subl dir");
         let dirs = [apps.path().to_path_buf(), user_apps.path().to_path_buf()];
-        assert_eq!(installed_in(&dirs, true), vec![Editor::Vscode, Editor::Zed]);
-        assert_eq!(installed_in(&dirs, false), vec![]);
+        assert_eq!(
+            installed_in(&dirs, Platform::Mac),
+            vec![Editor::Vscode, Editor::Zed]
+        );
+        assert_eq!(installed_in(&dirs, Platform::Other), vec![]);
         std::fs::write(apps.path().join("windsurf"), "").expect("windsurf");
-        assert_eq!(installed_in(&dirs, false), vec![Editor::Windsurf]);
-        assert_eq!(installed_in(&[], true), vec![]);
+        assert_eq!(installed_in(&dirs, Platform::Other), vec![Editor::Windsurf]);
+        assert_eq!(installed_in(&[], Platform::Mac), vec![]);
+    }
+
+    #[test]
+    fn windows_editors_are_found_through_their_launchers() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let code_bin = dir.path().join("Microsoft VS Code").join("bin");
+        let zed_bin = dir.path().join("Zed").join("bin");
+        std::fs::create_dir_all(&code_bin).expect("mkdir");
+        std::fs::create_dir_all(&zed_bin).expect("mkdir");
+        std::fs::write(code_bin.join("code.cmd"), "@echo off").expect("code");
+        std::fs::write(zed_bin.join("zed.exe"), "").expect("zed");
+        // A bare name is not a Windows launcher.
+        std::fs::write(code_bin.join("cursor"), "").expect("cursor");
+        let dirs = [code_bin.clone(), zed_bin.clone()];
+        assert_eq!(
+            installed_in(&dirs, Platform::Windows),
+            vec![Editor::Vscode, Editor::Zed]
+        );
+        assert_eq!(
+            launcher(&dirs, Editor::Vscode, Platform::Windows),
+            Some(code_bin.join("code.cmd"))
+        );
+        assert_eq!(
+            launcher(&dirs, Editor::Zed, Platform::Windows),
+            Some(zed_bin.join("zed.exe"))
+        );
+        assert_eq!(launcher(&dirs, Editor::Cursor, Platform::Windows), None);
     }
 
     #[test]
@@ -388,11 +495,11 @@ mod tests {
 
     #[test]
     fn finder_uses_the_default_handler() {
-        for macos in [true, false] {
-            assert_eq!(program(OpenWith::Finder, Editor::Zed, macos), None);
+        for platform in [Platform::Mac, Platform::Windows, Platform::Other] {
+            assert_eq!(program(OpenWith::Finder, Editor::Zed, platform), None);
         }
         assert_eq!(
-            program(OpenWith::Terminal, Editor::Zed, true),
+            program(OpenWith::Terminal, Editor::Zed, Platform::Mac),
             Some("Terminal")
         );
     }
@@ -407,8 +514,14 @@ mod tests {
             (Editor::Sublime, "Sublime Text", "subl"),
         ];
         for (editor, macos_app, command) in cases {
-            assert_eq!(program(OpenWith::Editor, editor, true), Some(macos_app));
-            assert_eq!(program(OpenWith::Editor, editor, false), Some(command));
+            assert_eq!(
+                program(OpenWith::Editor, editor, Platform::Mac),
+                Some(macos_app)
+            );
+            assert_eq!(
+                program(OpenWith::Editor, editor, Platform::Other),
+                Some(command)
+            );
         }
         assert_eq!(Editor::default(), Editor::Vscode);
     }

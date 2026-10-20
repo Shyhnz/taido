@@ -98,8 +98,10 @@ impl PtyManager {
             pixel_height: 0,
         };
         let pair = native_pty_system().openpty(size).map_err(pty_err)?;
-        let mut cmd = CommandBuilder::new(&spec.program);
-        cmd.args(&spec.args);
+        // Windows: an npm shim (`codex.cmd`) runs its script with node, never through cmd.exe.
+        let (program, args) = crate::agents::launch_command(&spec.program, &spec.args, &spec.env);
+        let mut cmd = CommandBuilder::new(&program);
+        cmd.args(&args);
         cmd.cwd(&spec.cwd);
         cmd.env_clear();
         for (k, v) in &spec.env {
@@ -431,23 +433,16 @@ fn signal(pid: libc::pid_t, signal: libc::c_int) {
     }
 }
 
-/// Windows: no sessions nor signals. `taskkill /T /F` ends each terminal's process and every
-/// process it started (its tree), at once.
+/// Windows: no sessions nor signals. Each terminal's process tree ends at once.
 #[cfg(windows)]
 fn stop_all(terms: &[Arc<Term>]) {
     for pid in terms.iter().filter_map(|t| t.pid) {
-        let pid = pid.to_string();
-        let status = crate::env::hide_console(&mut std::process::Command::new("taskkill"))
-            .args(["/PID", pid.as_str(), "/T", "/F"])
-            .stdin(std::process::Stdio::null())
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .status();
-        if let Err(e) = status {
-            log::warn!("cannot run taskkill for {pid}: {e}");
-        }
+        crate::env::kill_tree(pid);
     }
 }
 
-#[cfg(test)]
+// Unix only: POSIX shells, sessions and signals.
+#[cfg(all(test, unix))]
 mod tests;
+#[cfg(all(test, windows))]
+mod windows_tests;

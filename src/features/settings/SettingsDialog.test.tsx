@@ -99,6 +99,30 @@ describe("Réglages", () => {
     expect((await commands.getSettings()).notifications).toBe(true);
   });
 
+  it("shows the dictation setting where dictation exists", async () => {
+    const { dialog } = await openSettings("Agents");
+    expect(
+      await within(dialog).findByRole("switch", {
+        name: "Garder Espace enfoncée pour dicter",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the dictation setting when the system has no dictation", async () => {
+    backend().voice.model = { state: "unavailable" };
+    const { dialog } = await openSettings("Agents");
+    await within(dialog).findByRole("switch", {
+      name: "Me prévenir quand Claude a fini ou m'attend",
+    });
+    await waitFor(() =>
+      expect(
+        within(dialog).queryByRole("switch", {
+          name: "Garder Espace enfoncée pour dicter",
+        }),
+      ).toBeNull(),
+    );
+  });
+
   it("moves between tabs with the arrow keys", async () => {
     const { user, dialog } = await openSettings();
     expect(

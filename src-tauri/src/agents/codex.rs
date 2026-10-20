@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use super::BinarySpec;
+use super::{BinarySpec, Os};
 
 /// Development override pointing to `fake-codex` (like `TAIDO_CLAUDE_BIN`).
 pub const CODEX_BIN_VAR: &str = "TAIDO_CODEX_BIN";
@@ -13,12 +13,14 @@ pub const CODEX_BIN_VAR: &str = "TAIDO_CODEX_BIN";
 pub const HOOK_URL_VAR: &str = "TAIDO_HOOK_URL";
 
 pub const BINARY: BinarySpec = BinarySpec {
-    name: if cfg!(windows) { "codex.exe" } else { "codex" },
+    name: "codex",
     common_locations: &[
         "~/.local/bin/codex",
         "/opt/homebrew/bin/codex",
         "/usr/local/bin/codex",
     ],
+    // npm's `codex.cmd` (`npm install -g @openai/codex`).
+    windows_dirs: &[super::WINDOWS_NPM_DIR],
 };
 
 /// Hook events we subscribe to: the same names as Claude's, plus `Interrupt`.
@@ -38,6 +40,48 @@ pub const EVENTS: &[&str] = &[
 const RELAY: &str = "curl -s -m 2 -o /dev/null -X POST -H 'Content-Type: application/json' \
 -H \"X-App-Token: $TAIDO_HOOK_TOKEN\" -H \"X-Terminal-Id: $TAIDO_TERMINAL_ID\" \
 --data-binary @- \"$TAIDO_HOOK_URL\" || true";
+
+/// The relay on Windows, where Codex runs `command_windows` instead of `command`: the same
+/// POST through Windows PowerShell (present on every Windows 10 and 11). The payload is read
+/// as UTF-8 and sent as bytes; nothing is printed (Codex reads a hook's output).
+const RELAY_WINDOWS: &str = "$ErrorActionPreference = 'SilentlyContinue'
+[Console]::InputEncoding = [Text.Encoding]::UTF8
+$body = [Text.Encoding]::UTF8.GetBytes([Console]::In.ReadToEnd())
+try {
+  Invoke-WebRequest -UseBasicParsing -Method Post -TimeoutSec 2 -Uri $env:TAIDO_HOOK_URL `
+    -ContentType 'application/json' -Body $body `
+    -Headers @{ 'X-App-Token' = $env:TAIDO_HOOK_TOKEN; 'X-Terminal-Id' = $env:TAIDO_TERMINAL_ID } |
+    Out-Null
+} catch {}
+exit 0";
+
+/// `-EncodedCommand` (base64 of UTF-16LE): no character for cmd.exe or PowerShell to read,
+/// whichever shell Codex runs the command with.
+fn relay_windows() -> String {
+    use base64::Engine as _;
+    let bytes: Vec<u8> = RELAY_WINDOWS
+        .encode_utf16()
+        .flat_map(u16::to_le_bytes)
+        .collect();
+    format!(
+        "powershell.exe -NoProfile -NonInteractive -EncodedCommand {}",
+        base64::engine::general_purpose::STANDARD.encode(bytes)
+    )
+}
+
+/// The `-c` override of one hook event. Windows adds `command_windows`; macOS keeps the
+/// text it always had (Codex asks to trust a hook again when its text changes).
+pub(crate) fn hook_override(event: &str, os: Os) -> String {
+    let windows = match os {
+        Os::Windows => format!(", command_windows = {}", toml_string(&relay_windows())),
+        Os::Unix => String::new(),
+    };
+    format!(
+        "hooks.{event}=[{{ matcher = \"*\", hooks = [{{ type = \"command\", command = {}{windows}, \
+         timeout = 3 }}] }}]",
+        toml_string(RELAY)
+    )
+}
 
 /// What a launch (or a resume) needs.
 pub struct Launch<'a> {
@@ -89,11 +133,7 @@ fn options(l: &Launch<'_>) -> Vec<String> {
         overrides.push(format!("developer_instructions={}", toml_string(context)));
     }
     for event in EVENTS {
-        overrides.push(format!(
-            "hooks.{event}=[{{ matcher = \"*\", hooks = [{{ type = \"command\", command = {}, \
-             timeout = 3 }}] }}]",
-            toml_string(RELAY)
-        ));
+        overrides.push(hook_override(event, Os::CURRENT));
     }
     // `-c` makes Codex run without its shared background server: say so, or it warns.
     let mut args = vec!["--no-daemon".to_string()];

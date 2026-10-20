@@ -137,6 +137,8 @@ pub mod activity {
 
 // -- Menu bar --------------------------------------------------------------------------------
 
+/// The macOS menu bar (Windows has none).
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub mod menu {
     use super::{pick, Language};
 

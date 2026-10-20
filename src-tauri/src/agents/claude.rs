@@ -18,25 +18,19 @@ const APP_NAME: &str = "Taido";
 /// Description length kept in the context file.
 const DESCRIPTION_MAX_CHARS: usize = 2000;
 
-/// Usual install locations, after the `PATH` of the login shell.
-#[cfg(not(windows))]
+/// Usual install locations on macOS, after the `PATH` of the login shell.
 const COMMON_LOCATIONS: &[&str] = &[
     "~/.claude/local/claude",
     "~/.local/bin/claude",
     "/opt/homebrew/bin/claude",
     "/usr/local/bin/claude",
 ];
-/// Where Claude Code's native installer puts it on Windows.
-#[cfg(windows)]
-const COMMON_LOCATIONS: &[&str] = &["~\\.local\\bin\\claude.exe"];
 
 pub const BINARY: BinarySpec = BinarySpec {
-    name: if cfg!(windows) {
-        "claude.exe"
-    } else {
-        "claude"
-    },
+    name: "claude",
     common_locations: COMMON_LOCATIONS,
+    // The native installer's `claude.exe`, then npm's `claude.cmd`.
+    windows_dirs: &[&[".local", "bin"], super::WINDOWS_NPM_DIR],
 };
 
 /// The `claude` binary to run (see [`super::resolve_binary`]).

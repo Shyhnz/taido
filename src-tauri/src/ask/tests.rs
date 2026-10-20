@@ -1,3 +1,6 @@
+// The Unix-only tests (shell-script fakes) are the only users of some imports.
+#![cfg_attr(not(unix), allow(unused_imports))]
+
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
