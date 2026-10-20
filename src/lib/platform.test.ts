@@ -9,10 +9,19 @@ const MAC_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)";
 
 describe("detectOs", () => {
-  it("knows Windows from its WebView, and keeps the Mac look elsewhere", () => {
+  it("knows Windows from its WebView, macOS and iOS from theirs", () => {
     expect(detectOs(WINDOWS_UA)).toBe("windows");
     expect(detectOs(MAC_UA)).toBe("mac");
-    expect(detectOs(undefined)).toBe("mac");
+    expect(
+      detectOs("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"),
+    ).toBe("mac");
+    expect(detectOs("Mozilla/5.0 (Linux; Android 15)")).toBe("other");
+    expect(detectOs(undefined)).toBe("other");
+  });
+
+  it("only Windows changes the words", () => {
+    expect(keysFor("⌘K", "other")).toBe("⌘K");
+    expect(forPlatform(en, "other", "en")).toBe(en);
   });
 });
 

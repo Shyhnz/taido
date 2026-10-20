@@ -380,11 +380,17 @@ fn relative_inside(root: &str, path: &str) -> Option<String> {
     if root.is_empty() {
         return None;
     }
-    let rel = Path::new(path).strip_prefix(Path::new(root)).ok()?;
-    if rel.as_os_str().is_empty() || !rel.components().all(|c| matches!(c, Component::Normal(_))) {
+    // Windows: without regard to case nor to the slash (`crate::paths`).
+    let rel = crate::paths::relative(path, root)?;
+    let parts = Path::new(&rel);
+    if rel.is_empty()
+        || !parts
+            .components()
+            .all(|c| matches!(c, Component::Normal(_)))
+    {
         return None;
     }
-    Some(rel.to_string_lossy().into_owned())
+    Some(rel)
 }
 
 #[cfg(test)]

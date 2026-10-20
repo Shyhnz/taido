@@ -11,6 +11,7 @@ mod i18n;
 mod mcp;
 mod model;
 mod notify;
+mod paths;
 mod pty;
 mod session_service;
 mod state;

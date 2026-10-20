@@ -547,7 +547,8 @@ function agentShortStatus(status: AgentStatus | undefined, pending: boolean) {
 function AgentsTab() {
   const settings = useSettings().data;
   const voice = useVoiceStatus();
-  const dictation = voice !== null && voice.model.state !== "unavailable";
+  // Hidden only once the core says dictation does not exist here (Windows), not while loading.
+  const dictation = voice?.model.state !== "unavailable";
   const save = useSaveSetting();
   const claude = useAgentStatus("claude");
   const codex = useAgentStatus("codex");

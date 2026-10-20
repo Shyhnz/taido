@@ -260,8 +260,7 @@ pub async fn ask_file_path(
         .ok_or_else(|| AppError::NotFound("project folder".into()))?;
     let (relative, _) = ask::verify::read_inside(&root, &path)
         .ok_or_else(|| AppError::NotFound(format!("file {path}")))?;
-    Ok(root
-        .canonicalize()?
+    Ok(crate::paths::canonical(&root)?
         .join(relative)
         .to_string_lossy()
         .into_owned())

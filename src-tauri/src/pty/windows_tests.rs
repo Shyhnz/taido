@@ -120,3 +120,35 @@ fn typing_and_resizing_reach_an_interactive_powershell() {
     let exited = exits.recv_timeout(Duration::from_secs(30)).expect("exit");
     assert!(!exited.running);
 }
+
+#[test]
+fn user_text_cannot_run_commands_through_a_batch_file() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    // A space in the folder, like a profile `C:\Users\Jane Doe`: the quotes get shifted.
+    let tools = dir.path().join("Jane Doe");
+    std::fs::create_dir(&tools).expect("mkdir");
+    // Not an npm shim: it runs through cmd.exe with its arguments.
+    let script = tools.join("run.cmd");
+    std::fs::write(&script, "@echo off\r\necho args: %*\r\n").expect("script");
+    let env: BTreeMap<String, String> = std::env::vars().collect();
+    let spec = SpawnSpec {
+        program: script.to_string_lossy().into_owned(),
+        args: vec![
+            "--name".into(),
+            "a & echo pwned> p.txt".into(),
+            "b\" & echo pwned2> p2.txt".into(),
+        ],
+        cwd: tools.clone(),
+        env,
+        cols: 200,
+        rows: 40,
+    };
+    let (m, exits) = manager();
+    m.spawn(info("w3", &tools), spec).expect("spawn");
+    let (sink, data) = collector();
+    m.attach("w3", sink).expect("attach");
+    exits.recv_timeout(Duration::from_secs(30)).expect("exit");
+    wait_until("the script's echo", &data, "args:");
+    assert!(!tools.join("p.txt").exists(), "a command ran");
+    assert!(!tools.join("p2.txt").exists(), "a command ran");
+}

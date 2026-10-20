@@ -14,6 +14,7 @@ import type { DragDropEvent } from "@tauri-apps/api/webview";
 import { showToast } from "../../components/Toast";
 import { t } from "../../i18n";
 import { commands } from "../../lib/ipc";
+import { OS } from "../../lib/platform";
 import { run } from "../../lib/run";
 import { noteDropAt } from "../notes/editor/noteDrop";
 import { formatDroppedPaths } from "./droppedPaths";
@@ -27,7 +28,7 @@ import { markDropTarget, pasteIntoTerminal, terminalAt } from "./registry";
  */
 export function cssPoint(
   position: { x: number; y: number },
-  mac = /Mac/.test(navigator.userAgent),
+  mac = OS === "mac",
 ): [number, number] {
   const scale = mac ? 1 : window.devicePixelRatio || 1;
   return [position.x / scale, position.y / scale];

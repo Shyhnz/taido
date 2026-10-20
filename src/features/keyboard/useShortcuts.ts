@@ -17,6 +17,7 @@ import { showToast } from "../../components/Toast";
 import { t } from "../../i18n";
 import { features } from "../../lib/features";
 import { commands } from "../../lib/ipc";
+import { OS } from "../../lib/platform";
 import { run } from "../../lib/run";
 import { type ActiveView, useUi } from "../../stores/ui";
 import { setCompleted } from "../task-row/actions";
@@ -33,13 +34,9 @@ const VIEW_SHORTCUTS: Record<string, ActiveView> = {
   Digit3: { kind: "upcoming", subjectId: null },
 };
 
-const IS_MAC =
-  typeof navigator !== "undefined" &&
-  /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-
 /** ⌘ on macOS, Ctrl elsewhere. On macOS Ctrl stays free for text fields. */
 function isMod(e: KeyboardEvent): boolean {
-  return e.metaKey || (!IS_MAC && e.ctrlKey);
+  return e.metaKey || (OS !== "mac" && e.ctrlKey);
 }
 
 /**

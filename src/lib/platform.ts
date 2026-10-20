@@ -5,17 +5,20 @@
  * languages, so a component never has to know the system. Keys typed in components go through
  * `keys`.
  *
- * Only Windows changes anything: any other user agent (macOS, the tests' jsdom, the phone)
- * keeps the tables as written.
+ * Only Windows changes the words: any other user agent (macOS, the tests' jsdom, the phone)
+ * keeps the tables as written. `other` (not Apple, not Windows) matters for the keys only:
+ * Ctrl acts as ⌘ there (`useShortcuts`).
  */
 
 import type { Language } from "../i18n";
 
-export type Os = "mac" | "windows";
+export type Os = "mac" | "windows" | "other";
 
-/** Windows from the WebView's user agent (WebView2 says « Windows NT »), else the Mac look. */
+/** From the WebView's user agent: WebView2 says « Windows NT », Apple's « Mac » or « iPhone ». */
 export function detectOs(userAgent: string | undefined): Os {
-  return userAgent && /Windows/.test(userAgent) ? "windows" : "mac";
+  if (!userAgent) return "other";
+  if (/Windows/.test(userAgent)) return "windows";
+  return /Mac|iPhone|iPad/.test(userAgent) ? "mac" : "other";
 }
 
 /** The system of this window. */

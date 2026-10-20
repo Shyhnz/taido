@@ -166,13 +166,16 @@ pub fn kill_tree(pid: u32) {
     }
 }
 
-/// Arguments for `program`, made safe when it is a batch file (`claude.cmd`, `codex.cmd`: npm's
-/// shims on Windows). Windows runs a batch file through `cmd.exe`, which reads the command
-/// line again: a `"` would end the quoting, `%NAME%` would expand, and `& | < > ^` outside
-/// quotes would start another command. The terminal's command line quotes only arguments
-/// with blanks (portable-pty 0.9), so in user text (task title, first prompt) `"` becomes `'`,
-/// line breaks become spaces, `%` and, in an unquoted argument, `& | < > ^` become their
-/// full-width look-alikes. Any other program gets its arguments untouched.
+/// Arguments for `program`, made safe when it is a batch file (`.cmd`, `.bat`) that is not an
+/// npm shim Taido can skip (`agents::launch_command`). Windows runs a batch file through
+/// `cmd.exe /c` without `/s`: with more than two quotes on the line, cmd drops the first and
+/// the last one, which shifts every quoted argument, so no quoting can be trusted. Every
+/// argument is therefore made free of what cmd.exe interprets: `"` becomes `'`, line breaks
+/// become spaces, and `& | < > ^ % !` become their full-width look-alikes (`＆ ｜ ＜ ＞ ＾ ％ ！`).
+/// Parentheses stay: outside a block they are plain text (the attachments folders have them).
+/// The outer-quote form `cmd /d /s /c "…"` (Rust's std) cannot be built here: portable-pty 0.9
+/// writes every inner `"` as `\"`, which cmd.exe does not understand. Any other program gets
+/// its arguments untouched.
 pub fn batch_safe_args(program: &str, args: &[String]) -> Vec<String> {
     let lower = program.to_ascii_lowercase();
     if !(lower.ends_with(".cmd") || lower.ends_with(".bat")) {
@@ -180,26 +183,17 @@ pub fn batch_safe_args(program: &str, args: &[String]) -> Vec<String> {
     }
     args.iter()
         .map(|arg| {
-            let arg: String = arg
-                .chars()
+            arg.chars()
                 .map(|c| match c {
                     '"' => '\'',
                     '\r' | '\n' => ' ',
-                    '%' => '\u{FF05}',
-                    c => c,
-                })
-                .collect();
-            let quoted = arg.is_empty() || arg.contains([' ', '\t', '\u{0B}']);
-            if quoted {
-                return arg;
-            }
-            arg.chars()
-                .map(|c| match c {
                     '&' => '\u{FF06}',
                     '|' => '\u{FF5C}',
                     '<' => '\u{FF1C}',
                     '>' => '\u{FF1E}',
                     '^' => '\u{FF3E}',
+                    '%' => '\u{FF05}',
+                    '!' => '\u{FF01}',
                     c => c,
                 })
                 .collect()
@@ -374,7 +368,7 @@ mod tests {
             safe,
             [
                 "--name",
-                "Acme · 'Q&A' 100\u{FF05}",
+                "Acme · 'Q\u{FF06}A' 100\u{FF05}",
                 "a\u{FF06}b\u{FF5C}c\u{FF1E}d\u{FF1C}e\u{FF3E}f",
                 "two lines",
                 "C:\\Users\\Jane Doe\\AppData\\Roaming\\taido\\claude-hooks.json",
@@ -384,6 +378,63 @@ mod tests {
         assert_eq!(batch_safe_args("C:\\Tools\\claude.exe", &args), args);
         assert_eq!(batch_safe_args("/usr/local/bin/claude", &args), args);
         assert_eq!(batch_safe_args("C:\\x\\run.bat", &args), safe);
+    }
+
+    /// The command line portable-pty 0.9 gives `CreateProcessW` for a batch file (blank-free
+    /// arguments as they are, the others in quotes), then what cmd.exe runs: without `/s` and
+    /// with more than two quotes it drops the first and the last quote of the line.
+    fn as_cmd_runs_it(program: &str, args: &[String]) -> String {
+        let quote = |a: &str| {
+            if a.is_empty() || a.contains([' ', '\t', '"']) {
+                format!("\"{a}\"")
+            } else {
+                a.to_string()
+            }
+        };
+        let line: Vec<String> = std::iter::once(program)
+            .chain(args.iter().map(String::as_str))
+            .map(quote)
+            .collect();
+        let line = line.join(" ");
+        let first = line.find('"').map_or(line.clone(), |i| {
+            let mut l = line.clone();
+            l.remove(i);
+            l
+        });
+        match first.rfind('"') {
+            Some(i) => {
+                let mut l = first.clone();
+                l.remove(i);
+                l
+            }
+            None => first,
+        }
+    }
+
+    #[test]
+    fn user_text_never_reaches_cmd_as_an_operator() {
+        let program = "C:\\Users\\Jane Doe\\tools\\run.cmd";
+        let args: Vec<String> = [
+            "--name",
+            "a & echo pwned> p.txt",
+            "b\" & echo pwned2> p2.txt",
+            "solo|x",
+            "%PATH%!x!^",
+            "C:\\Users\\Jane Doe\\Taido\\Attachments\\Globex\\Task (abc123)",
+        ]
+        .map(String::from)
+        .to_vec();
+        let safe = batch_safe_args(program, &args);
+        // Whatever cmd.exe does with the quotes, no operator nor expansion is left.
+        let line = as_cmd_runs_it(program, &safe);
+        let after_program = &line[line.find("run.cmd").expect("program") + 7..];
+        for c in ['&', '|', '<', '>', '^', '%', '!'] {
+            assert!(!after_program.contains(c), "{c:?} in {line}");
+        }
+        assert_eq!(safe[1], "a \u{FF06} echo pwned\u{FF1E} p.txt");
+        assert_eq!(safe[2], "b' \u{FF06} echo pwned2\u{FF1E} p2.txt");
+        // Parentheses stay (the attachments folders have them); they are not operators here.
+        assert_eq!(safe[5], args[5]);
     }
 
     #[test]

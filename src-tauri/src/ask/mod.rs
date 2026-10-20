@@ -387,11 +387,10 @@ pub fn shown_path(scope: &Scope, path: &str) -> String {
         return path.to_string();
     };
     let p = Path::new(path);
-    let root = root.canonicalize().unwrap_or_else(|_| root.clone());
-    let real = p.canonicalize().unwrap_or_else(|_| p.to_path_buf());
-    real.strip_prefix(&root)
-        .map(|r| r.to_string_lossy().into_owned())
-        .unwrap_or_else(|_| path.to_string())
+    let root = crate::paths::canonical(root).unwrap_or_else(|_| root.clone());
+    let real = crate::paths::canonical(p).unwrap_or_else(|_| p.to_path_buf());
+    crate::paths::relative(&real.to_string_lossy(), &root.to_string_lossy())
+        .unwrap_or_else(|| path.to_string())
 }
 
 /// The checked answer, stored. An answer without text is none.

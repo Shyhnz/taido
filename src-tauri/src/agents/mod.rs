@@ -166,22 +166,28 @@ pub fn launch_command_on(
     }
 }
 
-/// The script an npm shim (cmd-shim) runs: the last `"%dp0%\…"` of its line ending in `%*`,
-/// `%dp0%` being the shim's folder `dir`.
+/// The script an npm shim runs: the last `"%dp0%\…"` (npm's cmd-shim) or `"%~dp0\…"` (pnpm)
+/// of its line ending in `%*`, `%dp0%` / `%~dp0` being the shim's folder `dir`. `..` goes up
+/// (pnpm points into its store from `bin\`).
 fn npm_shim_script(text: &str, dir: &Path) -> Option<PathBuf> {
-    const DP0: &str = "\"%dp0%\\";
     let line = text.lines().rev().find(|l| l.trim_end().ends_with("%*"))?;
-    let start = line.rfind(DP0)? + DP0.len();
+    let start = ["\"%dp0%\\", "\"%~dp0\\"]
+        .iter()
+        .filter_map(|marker| line.rfind(marker).map(|at| at + marker.len()))
+        .max()?;
     let relative = &line[start..start + line[start..].find('"')?];
-    if relative.is_empty() || relative.contains("..") || relative.contains('%') {
+    if relative.is_empty() || relative.contains('%') {
         return None;
     }
-    Some(
-        relative
-            .split('\\')
-            .filter(|p| !p.is_empty())
-            .fold(dir.to_path_buf(), |d, p| d.join(p)),
-    )
+    let mut path = dir.to_path_buf();
+    for part in relative.split('\\').filter(|p| !p.is_empty() && *p != ".") {
+        if part == ".." {
+            path.pop();
+        } else {
+            path.push(part);
+        }
+    }
+    Some(path)
 }
 
 /// A file the system can run: with an execute bit on Unix, any file on Windows (where
@@ -333,6 +339,36 @@ title %COMSPEC% & \"%_prog%\"  \"%dp0%\\node_modules\\@openai\\codex\\bin\\codex
             launch_command_on(Os::Unix, &shim_s, &args, &env),
             (shim_s.clone(), args.clone())
         );
+    }
+
+    /// What pnpm writes on Windows for a global `@openai/codex` (`%~dp0`, a `..` path).
+    const PNPM_SHIM: &str = "@SETLOCAL\r\n@IF NOT DEFINED NODE_PATH (\r\n  \
+@SET \"NODE_PATH=%~dp0\\..\\node_modules\"\r\n)\r\n@IF EXIST \"%~dp0\\node.exe\" (\r\n  \
+\"%~dp0\\node.exe\"  \"%~dp0\\..\\node_modules\\@openai\\codex\\bin\\codex.js\" %*\r\n\
+) ELSE (\r\n  @SET PATHEXT=%PATHEXT:;.JS;=;%\r\n  \
+node  \"%~dp0\\..\\node_modules\\@openai\\codex\\bin\\codex.js\" %*\r\n)\r\n";
+
+    #[test]
+    fn pnpm_shim_runs_its_script_with_node() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let home = dir.path().join("Jane Doe").join("pnpm");
+        let bin = home.join("bin");
+        std::fs::create_dir_all(&bin).expect("mkdir");
+        let shim = bin.join("codex.cmd");
+        std::fs::write(&shim, PNPM_SHIM).expect("write");
+        let script = ["node_modules", "@openai", "codex", "bin", "codex.js"]
+            .iter()
+            .fold(home.clone(), |d, p| d.join(p));
+        touch(&script);
+        let nodejs = dir.path().join("nodejs");
+        touch(&nodejs.join("node.exe"));
+        let env = windows_env(dir.path(), &nodejs);
+        let args = vec!["-c".to_string(), "a=\"b\"".to_string()];
+        let (program, launched) =
+            launch_command_on(Os::Windows, &shim.to_string_lossy(), &args, &env);
+        assert_eq!(PathBuf::from(program), nodejs.join("node.exe"));
+        assert_eq!(PathBuf::from(&launched[0]), script);
+        assert_eq!(&launched[1..], args.as_slice());
     }
 
     #[test]

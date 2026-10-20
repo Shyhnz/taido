@@ -1,8 +1,6 @@
 //! Texts derived from Claude's messages and tools: question detection, the
 //! Done sentence, tool and permission summaries, error lines. French, already truncated.
 
-use std::path::Path;
-
 use serde_json::Value;
 
 use crate::i18n::{activity, Language};
@@ -198,8 +196,8 @@ fn with_file(verb: &str, path: Option<&str>, cwd: Option<&str>) -> String {
         return verb.to_string();
     };
     let shown = cwd
-        .and_then(|cwd| Path::new(path).strip_prefix(cwd).ok())
-        .map(|rel| rel.to_string_lossy().into_owned())
+        // Windows: without regard to case nor to the slash (`crate::paths`).
+        .and_then(|cwd| crate::paths::relative(path, cwd))
         .filter(|rel| !rel.is_empty())
         .unwrap_or_else(|| path.to_string());
     format!("{verb} {}", truncate_start(&shown, PATH_MAX))

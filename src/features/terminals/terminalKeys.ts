@@ -31,7 +31,8 @@ export function terminalKey(
   hasSelection: boolean,
 ): TerminalKeyAction {
   const key = e.key.toLowerCase();
-  if (os === "mac") {
+  // Windows only: elsewhere (macOS, and as before on other systems) ⌘ keys are the app's.
+  if (os !== "windows") {
     if (!e.metaKey) return "terminal";
     return key === "c" && hasSelection ? "copy" : "app";
   }
