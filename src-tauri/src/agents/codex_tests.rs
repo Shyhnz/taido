@@ -11,7 +11,6 @@ fn launch() -> Launch<'static> {
         port: 4242,
         context: None,
         prompt: None,
-        add_dir: None,
     }
 }
 
@@ -178,17 +177,18 @@ fn a_prompt_starting_with_a_dash_stays_a_prompt() {
     assert_eq!(args.last().map(String::as_str), Some(" -v"));
 }
 
+/// An untrusted folder makes Codex start read-only, and it then refuses `--add-dir` and
+/// exits. It reads the attachments anyway (the path is in the context), so never pass it.
 #[test]
-fn attachments_folder_is_added() {
-    let args = new_session_args(&Launch {
-        add_dir: Some(Path::new("/Users/u/Taido/Pièces jointes/t1")),
+fn codex_never_gets_add_dir_even_with_attachments() {
+    let l = Launch {
+        context: Some("- Attachments (readable):\n  - /Users/u/Taido/Pièces jointes/t1/a.png\n"),
         ..launch()
-    });
-    let i = args
+    };
+    assert!(!new_session_args(&l).iter().any(|a| a == "--add-dir"));
+    assert!(!resume_args("019a-real", &l)
         .iter()
-        .position(|a| a == "--add-dir")
-        .expect("--add-dir");
-    assert_eq!(args[i + 1], "/Users/u/Taido/Pièces jointes/t1");
+        .any(|a| a == "--add-dir"));
 }
 
 #[test]
@@ -260,4 +260,30 @@ mod check {
         let s = codex_check::check(None, &env(), std::time::Duration::from_secs(5));
         assert_eq!((s.path, s.version, s.logged_in), (None, None, None));
     }
+}
+
+/// Codex gets no `--add-dir`: the context it receives must name the attachments.
+#[test]
+fn codex_context_lists_the_attachments() {
+    let files = ["/Users/u/Taido/Pièces jointes/t1/a.png".to_string()];
+    let context = crate::agents::claude::context_text(&crate::agents::claude::TaskContext {
+        subject: None,
+        parent: None,
+        title: "T",
+        description: "",
+        subtasks: vec![],
+        attachments: &files,
+    });
+    let args = new_session_args(&Launch {
+        context: Some(&context),
+        ..launch()
+    });
+    let instructions = overrides(&args)
+        .into_iter()
+        .find_map(|t| {
+            t.get("developer_instructions")
+                .and_then(|v| v.as_str().map(String::from))
+        })
+        .expect("developer_instructions");
+    assert!(instructions.contains("/Users/u/Taido/Pièces jointes/t1/a.png"));
 }

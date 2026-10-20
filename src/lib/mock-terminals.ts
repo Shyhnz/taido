@@ -11,6 +11,7 @@
  */
 
 import type { TerminalInfo, TerminalSize } from "../bindings";
+import { activeLanguage } from "../i18n";
 
 const encoder = new TextEncoder();
 
@@ -156,7 +157,10 @@ export class MockTerminals {
           return;
         }
         if (cmd.length > 0) {
-          this.emit(t, `(simulé) ${cmd}\r\n`);
+          this.emit(
+            t,
+            `(${activeLanguage === "fr" ? "simulé" : "simulated"}) ${cmd}\r\n`,
+          );
         }
         this.emit(t, promptOf(t.info));
       } else if (ch === "\x7f") {

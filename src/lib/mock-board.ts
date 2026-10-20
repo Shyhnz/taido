@@ -9,6 +9,8 @@
  * Mac's may be on their way) and queues those it makes (`onDefaultsCreated`).
  */
 
+import { activeLanguage } from "../i18n";
+
 export interface ColumnRec {
   id: string;
   subjectId: string | null;
@@ -37,7 +39,10 @@ export interface MockBoardOptions {
   onDefaultsCreated?: (columns: ColumnRec[]) => void;
 }
 
-export const DEFAULT_COLUMNS = ["À faire", "En cours", "À valider", "Terminé"];
+export const DEFAULT_COLUMNS =
+  activeLanguage === "fr"
+    ? ["À faire", "En cours", "À valider", "Terminé"]
+    : ["To do", "In progress", "To review", "Done"];
 
 function invalid(message: string) {
   return { kind: "invalid", message };
