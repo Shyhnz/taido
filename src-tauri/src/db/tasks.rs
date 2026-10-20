@@ -891,10 +891,10 @@ mod tests {
             wd(&in_web),
             Some((crate::abs!("/elsewhere").to_string(), WorkdirSource::Task))
         );
-        set(&inbox, Some("/inbox-dir")).expect("override");
+        set(&inbox, Some(crate::abs!("/inbox-dir"))).expect("override");
         assert_eq!(
             wd(&inbox),
-            Some(("/inbox-dir".to_string(), WorkdirSource::Task))
+            Some((crate::abs!("/inbox-dir").to_string(), WorkdirSource::Task))
         );
         assert!(matches!(
             set(&inbox, Some("relative")),
