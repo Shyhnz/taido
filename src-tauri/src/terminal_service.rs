@@ -387,7 +387,6 @@ impl TerminalService {
                             port: self.hook_port,
                             context: context.as_deref(),
                             prompt: input.initial_prompt.as_deref(),
-                            add_dir: add_dir.as_deref(),
                         })
                     }
                 };
@@ -515,7 +514,6 @@ impl TerminalService {
                             port: self.hook_port,
                             context: context.as_deref(),
                             prompt: None,
-                            add_dir: add_dir.as_deref(),
                         },
                     )
                 }

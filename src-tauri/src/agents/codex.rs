@@ -2,8 +2,6 @@
 //! command-line arguments. Codex is configured only with `-c key=value` overrides (TOML
 //! values), never through `~/.codex` nor the task's folder. Pure functions.
 
-use std::path::Path;
-
 use super::{BinarySpec, Os};
 
 /// Development override pointing to `fake-codex` (like `TAIDO_CLAUDE_BIN`).
@@ -91,8 +89,6 @@ pub struct Launch<'a> {
     pub context: Option<&'a str>,
     /// First message; ignored by a resume.
     pub prompt: Option<&'a str>,
-    /// The task's attachments folder.
-    pub add_dir: Option<&'a Path>,
 }
 
 /// A TOML basic string (JSON escapes are valid TOML ones for these characters).
@@ -141,10 +137,9 @@ fn options(l: &Launch<'_>) -> Vec<String> {
         args.push("-c".into());
         args.push(o);
     }
-    if let Some(dir) = l.add_dir {
-        args.push("--add-dir".into());
-        args.push(dir.to_string_lossy().into_owned());
-    }
+    // No `--add-dir` for the attachments: in a folder Codex does not trust it starts
+    // read-only, rejects that option and exits. It reads them anyway, their paths are in
+    // the context.
     args
 }
 
