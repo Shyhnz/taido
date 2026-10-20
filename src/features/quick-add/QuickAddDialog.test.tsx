@@ -349,7 +349,7 @@ describe("quick add dialog", () => {
     });
     await user.type(field, "Relire >claude");
     await user.click(
-      within(chips(again)).getByRole("button", {
+      await within(chips(again)).findByRole("button", {
         name: "Retirer : Claude Code, ouvert à l'ajout",
       }),
     );
