@@ -62,9 +62,13 @@ pub fn run_status(
     env: &BTreeMap<String, String>,
     timeout: Duration,
 ) -> Option<bool> {
-    let mut command = Command::new(program);
+    // Windows: the same launch as a terminal (a shim runs its script with node, or its native exe).
+    let owned: Vec<String> = args.iter().map(|a| a.to_string()).collect();
+    let (launched, launched_args) =
+        crate::agents::launch_command(&program.to_string_lossy(), &owned, env).ok()?;
+    let mut command = Command::new(launched);
     crate::env::hide_console(&mut command)
-        .args(args)
+        .args(launched_args)
         .env_clear()
         .envs(env)
         .stdin(Stdio::null())
@@ -111,9 +115,13 @@ pub fn run_in(
     input: Option<&str>,
     timeout: Duration,
 ) -> Option<String> {
-    let mut command = Command::new(program);
+    // Windows: the same launch as a terminal (a shim runs its script with node, or its native exe).
+    let owned: Vec<String> = args.iter().map(|a| a.to_string()).collect();
+    let (launched, launched_args) =
+        crate::agents::launch_command(&program.to_string_lossy(), &owned, env).ok()?;
+    let mut command = Command::new(launched);
     crate::env::hide_console(&mut command)
-        .args(args)
+        .args(launched_args)
         .env_clear()
         .envs(env)
         .stdin(if input.is_some() {
