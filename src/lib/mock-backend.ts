@@ -681,7 +681,7 @@ export class MockBackend {
 
   /**
    * The CSV of « Exporter les temps » (Taido V2.8): the web app saves it as a download, where
-   * the Mac's core writes a file (`exportTimeCsv`).
+   * the desktop core writes a file (`exportTimeCsv`).
    */
   timeCsv(days: number): string {
     return timeCsv(
@@ -698,6 +698,8 @@ export class MockBackend {
       },
       days,
       this.now(),
+      // Like the core: the stored choice, English while none is stored.
+      this.state.settings.language ?? "en",
     );
   }
 

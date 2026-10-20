@@ -43,8 +43,8 @@ describe("TaskEditor draft", () => {
       "tomorrow",
     );
     expect(dueChoiceOf({ date: null, time: null }, now)).toBeNull();
-    const picked = dueChoiceOf({ date: "2026-10-20", time: "9:30" }, now);
-    expect(dueDateOf(picked, now)).toBe("2026-10-20");
+    const picked = dueChoiceOf({ date: "2027-10-20", time: "9:30" }, now);
+    expect(dueDateOf(picked, now)).toBe("2027-10-20");
     expect(dueTimeOf(picked)).toBe("9:30");
     expect(addedInView(today, { ...draftFromTarget(today), due: picked })).toBe(
       false,

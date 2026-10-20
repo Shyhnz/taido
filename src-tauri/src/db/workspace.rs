@@ -37,9 +37,13 @@ pub fn no_project_folder(conn: &Connection) -> AppResult<Option<String>> {
         return Ok(None);
     };
     let folder = root.join(no_project_name(conn, &root));
-    // Made on first use, not at startup: the language is chosen after the first launch.
-    if let Err(e) = std::fs::create_dir_all(&folder) {
-        log::warn!("cannot create {}: {e}", folder.display());
+    // Made on first use, not at startup: the window tells the core its language right after
+    // the first launch, and a view built before that must not make « Inbox » on a French
+    // system. Until then only the path is given.
+    if settings::language(conn).is_some() {
+        if let Err(e) = std::fs::create_dir_all(&folder) {
+            log::warn!("cannot create {}: {e}", folder.display());
+        }
     }
     Ok(Some(folder.to_string_lossy().into_owned()))
 }

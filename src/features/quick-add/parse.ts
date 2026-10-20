@@ -198,7 +198,13 @@ type DateRule = {
   /** Extra condition on the match (`end` after the part of the day; `marked`: after an `@`). */
   accept?: (
     m: RegExpExecArray,
-    at: { folded: string; end: number; marked: boolean },
+    at: {
+      folded: string;
+      end: number;
+      marked: boolean;
+      /** A time (« 2pm », « at 14:30 ») follows the match. */
+      timeFollows: boolean;
+    },
   ) => boolean;
   dayPart?: boolean;
   /**
@@ -358,7 +364,8 @@ const EN_WEEKDAYS: Record<string, number> = {
 
 /**
  * Short weekday names are everyday words too (« sun », « sat », « wed »): they are a date only
- * after `next`, `on`, `this` or `@`, or at the end of the title ("Call Ana fri").
+ * after `next`, `on`, `this` or `@`, before a time ("Demo fri 2pm"), or at the end of the
+ * title ("Call Ana fri").
  */
 const EN_SHORT_WEEKDAYS: Record<string, number> = {
   sun: 0,
@@ -451,7 +458,10 @@ const EN: DateWords = {
       ),
       resolve: (m, today) => nextWeekday(today, EN_SHORT_WEEKDAYS[m[2]]),
       accept: (m, at) =>
-        m[1] !== undefined || at.marked || endsTitle(at.folded, at.end),
+        m[1] !== undefined ||
+        at.marked ||
+        at.timeFollows ||
+        endsTitle(at.folded, at.end),
       dayPart: true,
     },
     {
@@ -550,7 +560,14 @@ function matchDate(
       }
     }
     if (!endsWord(folded, end)) continue;
-    if (rule.accept && !rule.accept(m, { folded, end, marked })) continue;
+    if (rule.accept) {
+      const next = /\s+/y;
+      next.lastIndex = end;
+      const gap = next.exec(folded);
+      const timeFollows =
+        gap !== null && matchTime(words, folded, end + gap[0].length) !== null;
+      if (!rule.accept(m, { folded, end, marked, timeFollows })) continue;
+    }
     const date = rule.resolve(m, today);
     if (!date) {
       if (rule.final) return null;

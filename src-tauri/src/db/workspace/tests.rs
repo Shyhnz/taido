@@ -193,3 +193,24 @@ fn the_inbox_folder_is_named_in_the_language_of_its_creation_and_then_kept() {
     ensure(&fresh, other.path()).expect("startup");
     assert!(other.path().join(FOLDER_NAME).join("Inbox").is_dir());
 }
+
+/// A French first launch: the task views are built while the window has not yet told the core
+/// its language, and building them must not make the English folder.
+#[test]
+fn a_task_view_before_the_language_is_chosen_never_makes_the_inbox_folder() {
+    let conn = open_in_memory().expect("db");
+    let docs = tempfile::tempdir().expect("documents");
+    set_language(&conn, None);
+    ensure(&conn, docs.path()).expect("startup");
+    let root = docs.path().join(FOLDER_NAME);
+    // A view-model load reaches the folder of a task without project (the path is given...).
+    let early = no_project_folder(&conn).expect("folder").expect("root");
+    assert!(!Path::new(&early).exists(), "no folder is made yet");
+    assert!(!root.join("Inbox").exists() && !root.join("Sans projet").exists());
+    // ... then the window writes its language (French), and the folder is made in it.
+    set_language(&conn, Some("fr"));
+    let folder = no_project_folder(&conn).expect("folder").expect("root");
+    assert_eq!(Path::new(&folder), root.join("Sans projet"));
+    assert!(Path::new(&folder).is_dir());
+    assert!(!root.join("Inbox").exists());
+}

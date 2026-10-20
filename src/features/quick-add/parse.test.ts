@@ -587,6 +587,20 @@ describe("quick add in English", () => {
       { title: "Demo", due: { date: "2026-10-09", time: "14:00" } },
     ],
     ["Demo fri", { title: "Demo", due: { date: "2026-10-09" } }],
+    // A time right after a short weekday makes it a date too.
+    [
+      "Demo fri 2pm",
+      { title: "Demo", due: { date: "2026-10-09", time: "14:00" } },
+    ],
+    [
+      "Demo fri at 14:30 #Perso",
+      {
+        title: "Demo",
+        subject: "Perso",
+        due: { date: "2026-10-09", time: "14:30" },
+      },
+    ],
+    ["Wed 3 apples", { title: "Wed 3 apples" }],
     // Short weekday names are words too: a date only after next/on/this/@ or at the end.
     [
       "Buy sun cream tomorrow",
