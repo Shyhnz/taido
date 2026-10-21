@@ -1,13 +1,57 @@
-name: Relay probe (temporary)
+name: Relay loop (temporary)
 on:
   push:
     branches: [fix-windows-hook-relay]
 jobs:
-  probe:
+  loop:
     runs-on: windows-latest
     steps:
+      - run: git config --global core.autocrlf false
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: node .github/probe/relay-probe.cjs
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Build tests
+        working-directory: src-tauri
+        run: cargo test --no-run
+      - name: Relay through every shell
+        working-directory: src-tauri
+        run: cargo test --lib agents::codex -- --nocapture
+      - name: Codex e2e x10 under CPU load (PowerShell, as Codex)
+        working-directory: src-tauri
+        run: |
+          $busy = 1..4 | ForEach-Object { Start-Process node -ArgumentList '-e','for(;;){}' -PassThru -WindowStyle Hidden }
+          $fail = 0
+          foreach ($i in 1..10) {
+            cargo test --lib codex 2>&1 | Select-String -Pattern 'test result|FAILED|panicked|never|no .* hook'
+            if ($LASTEXITCODE -ne 0) { $fail++ }
+          }
+          $busy | Stop-Process -Force
+          "failures: $fail"
+          if ($fail -ne 0) { exit 1 }
+      - name: Codex e2e x5 through cmd.exe (Codex fallback shell)
+        working-directory: src-tauri
+        env:
+          TAIDO_FAKE_CODEX_HOOK_SHELL: cmd
+        run: |
+          $fail = 0
+          foreach ($i in 1..5) {
+            cargo test --lib codex 2>&1 | Select-String -Pattern 'test result|FAILED|panicked'
+            if ($LASTEXITCODE -ne 0) { $fail++ }
+          }
+          "failures: $fail"
+          if ($fail -ne 0) { exit 1 }
+      - name: Full core tests x3
+        working-directory: src-tauri
+        run: |
+          $fail = 0
+          foreach ($i in 1..3) {
+            cargo test 2>&1 | Select-String -Pattern 'test result|FAILED|panicked'
+            if ($LASTEXITCODE -ne 0) { $fail++ }
+          }
+          "failures: $fail"
+          if ($fail -ne 0) { exit 1 }
