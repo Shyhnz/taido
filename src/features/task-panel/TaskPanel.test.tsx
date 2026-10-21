@@ -11,6 +11,7 @@ import {
 } from "../../lib/queries";
 import { settingsPatch } from "../../lib/settingsPatch";
 import { resetUi, useUi } from "../../stores/ui";
+import { openAddTaskForView } from "../views/addTarget";
 import { SAVE_DELAY_MS } from "./debouncedSave";
 
 function backend() {
@@ -119,6 +120,35 @@ describe("task panel", () => {
       within(panel).getByRole("button", { name: "Fermer le panneau" }),
     );
     await waitFor(() => expect(stored(task.id)?.description).toBe("Page 42"));
+  });
+
+  it("closing the panel leaves the focus to a dialog opened in the same frame", async () => {
+    const task = await createTask("Relire");
+    // Its row is in the list shown.
+    useUi.getState().setView({ kind: "inbox", subjectId: null });
+    render(<App />);
+    await screen.findByText("Relire");
+    const panel = await openPanel(task.id);
+    const title = within(panel).getByRole("textbox", {
+      name: "Titre de la tâche",
+    });
+    await waitFor(() => expect(title).toHaveFocus());
+    // The focus was in the panel: it goes back to the task's row on the next frame…
+    act(() => useUi.getState().openTask(null));
+    // …unless something took it meanwhile, here the quick add.
+    act(() => openAddTaskForView());
+    const dialog = await screen.findByRole("dialog", {
+      name: "Nouvelle tâche",
+    });
+    const field = within(dialog).getByRole("combobox", {
+      name: "Nom de la tâche",
+    });
+    expect(field).toHaveFocus();
+    await act(
+      () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    );
+    expect(field).toHaveFocus();
   });
 
   it("flushes the title when another task opens", async () => {
