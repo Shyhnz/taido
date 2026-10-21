@@ -6,7 +6,9 @@
 "use strict";
 
 const crypto = require("node:crypto");
+const fs = require("node:fs");
 const http = require("node:http");
+const path = require("node:path");
 const { spawn } = require("node:child_process");
 
 // ---------------------------------------------------------------------------------------
@@ -107,24 +109,66 @@ function common(event) {
   };
 }
 
+/** `name.exe` in a `PATH` folder (Codex looks `pwsh` up with `which`), or null. */
+function onPath(name) {
+  for (const dir of (process.env.PATH ?? "").split(path.delimiter)) {
+    if (!dir) continue;
+    const file = path.join(dir, `${name}.exe`);
+    if (fs.existsSync(file)) return file;
+  }
+  return null;
+}
+
+/**
+ * Starts a hook's command the way Codex does (codex-rs `hooks/src/engine/command_runner.rs`,
+ * `build_command`, and `core/src/shell.rs`, `derive_exec_args`). On Windows: `command_windows`
+ * when given, through the user's shell, which Codex picks as PowerShell (`pwsh` on `PATH`,
+ * else Windows PowerShell) with `-NoProfile -Command`; `TAIDO_FAKE_CODEX_HOOK_SHELL=cmd`
+ * selects Codex's fallback, `%COMSPEC% /C "<command>"` passed verbatim. Elsewhere `sh -c`.
+ */
+function startHook(h) {
+  const stdio = ["pipe", "ignore", "ignore"];
+  if (process.platform !== "win32") {
+    return spawn("/bin/sh", ["-c", h.command], { stdio, detached: true });
+  }
+  const command = h.commandWindows ?? h.command;
+  if (process.env.TAIDO_FAKE_CODEX_HOOK_SHELL === "cmd") {
+    return spawn(process.env.COMSPEC ?? "cmd.exe", ["/C", `"${command}"`], {
+      stdio,
+      windowsHide: true,
+      windowsVerbatimArguments: true,
+    });
+  }
+  const shell = onPath("pwsh") ?? "powershell.exe";
+  return spawn(shell, ["-NoProfile", "-Command", command], { stdio, windowsHide: true });
+}
+
+/** Ends a hook that ran out of time with every process it started, like Codex. */
+function killHook(child) {
+  if (child.pid === undefined) return;
+  if (process.platform === "win32") {
+    spawn("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
+      stdio: "ignore",
+      windowsHide: true,
+    });
+  } else {
+    try {
+      process.kill(-child.pid, "SIGKILL");
+    } catch {}
+  }
+}
+
 /** Runs the hook command of `event` with the payload on stdin; failures ignored. */
 function hook(event, fields = {}) {
   const h = config.hooks[event];
   if (!h) return Promise.resolve();
   const payload = JSON.stringify({ ...common(event), ...fields });
+  // Codex caps SessionEnd and Interrupt hooks at 3 s (`normalize_command_hook`).
+  const seconds =
+    event === "SessionEnd" || event === "Interrupt" ? Math.min(h.timeout, 3) : h.timeout;
   return new Promise((resolve) => {
-    // Like Codex on Windows: `command_windows` when given, through the system shell
-    // (cmd.exe); `command` through sh elsewhere.
-    const child =
-      process.platform === "win32"
-        ? spawn(h.commandWindows ?? h.command, [], {
-            shell: true,
-            stdio: ["pipe", "ignore", "ignore"],
-          })
-        : spawn("/bin/sh", ["-c", h.command], {
-            stdio: ["pipe", "ignore", "ignore"],
-          });
-    const timer = setTimeout(() => child.kill("SIGKILL"), h.timeout * 1000);
+    const child = startHook(h);
+    const timer = setTimeout(() => killHook(child), seconds * 1000);
     child.on("error", () => {
       clearTimeout(timer);
       resolve();
