@@ -474,6 +474,7 @@ fn rows() -> Vec<Row> {
             },
             event: Event::ProcessExited {
                 closed_by_user: false,
+                exit_code: None,
             },
             to: (Paused, None),
             effects: vec![],
@@ -484,19 +485,43 @@ fn rows() -> Vec<Row> {
             from: with_pending(session(Waiting, Some(Permission))),
             event: Event::ProcessExited {
                 closed_by_user: true,
+                exit_code: None,
             },
             to: (Paused, None),
             effects: vec![Effect::ReleasePermissions],
             check: |s| assert_eq!(s.pending_permission, None),
         },
         Row {
-            line: "tout | sortie du processus sans SessionEnd → Crashed",
+            line: "tout | sortie du processus en erreur sans SessionEnd → Crashed",
             from: session(Working, None),
             event: Event::ProcessExited {
                 closed_by_user: false,
+                exit_code: Some(1),
             },
             to: (Crashed, None),
             effects: vec![Effect::Notify],
+            check: none,
+        },
+        Row {
+            line: "tout | processus tué par un signal sans SessionEnd → Crashed",
+            from: session(Idle, None),
+            event: Event::ProcessExited {
+                closed_by_user: false,
+                exit_code: None,
+            },
+            to: (Crashed, None),
+            effects: vec![Effect::Notify],
+            check: none,
+        },
+        Row {
+            line: "tout | sortie du processus en code 0, SessionEnd pas encore arrivé → Paused",
+            from: session(Idle, None),
+            event: Event::ProcessExited {
+                closed_by_user: false,
+                exit_code: Some(0),
+            },
+            to: (Paused, None),
+            effects: vec![],
             check: none,
         },
         Row {

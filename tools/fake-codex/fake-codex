@@ -285,6 +285,8 @@ async function handle(line) {
   }
   if (line === "/exit" || line === "exit") return exitWith(0, "other");
   if (line === "/x") return process.exit(1);
+  // A clean exit whose SessionEnd never reaches the app (a hook relay slower than the exit).
+  if (line === "/exit-nohook") return process.exit(0);
   if (line === "/new" || line === "/clear") {
     sessionId = newId();
     pendingStart = line === "/new" ? "startup" : "clear";

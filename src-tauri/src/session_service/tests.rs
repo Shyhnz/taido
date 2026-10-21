@@ -428,6 +428,12 @@ fn process_exit_pauses_or_crashes() {
     }
     assert!(f.service.exited(&f.info(None)).expect("exit"));
     assert_eq!(f.state(), ("paused".into(), None));
+
+    // Exit code 0 before its SessionEnd arrived (a slow hook relay): Paused.
+    let f = fixture(slow_timers());
+    f.set_state("idle", None);
+    assert!(!f.service.exited(&f.info(Some(0))).expect("exit"));
+    assert_eq!(f.state(), ("paused".into(), None));
 }
 
 #[test]
