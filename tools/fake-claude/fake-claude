@@ -245,12 +245,14 @@ function runHttpHook(hook, body) {
   return { sent, done };
 }
 
-/// Runs a command hook with `/bin/sh -c`, the payload on stdin.
+/// Runs a command hook with `/bin/sh -c`, the payload on stdin. On Windows, Claude Code runs
+/// hooks with Git's bash, so the fake does the same.
 function runCommandHook(hook, body) {
   const done = new Promise((resolve) => {
     let child;
     try {
-      child = spawn("/bin/sh", ["-c", String(hook.command)], {
+      const shell = process.platform === "win32" ? "bash" : "/bin/sh";
+      child = spawn(shell, ["-c", String(hook.command)], {
         cwd: CWD,
         env: { ...process.env, CLAUDE_PROJECT_DIR: CWD },
         stdio: ["pipe", "pipe", "pipe"],

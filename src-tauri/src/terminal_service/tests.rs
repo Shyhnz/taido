@@ -124,7 +124,8 @@ fn claude_is_launched_with_the_spec_arguments_and_environment() {
 
     let args: Vec<&str> = out
         .lines()
-        .filter_map(|l| l.trim_end_matches('\r').strip_prefix("ARG:"))
+        // ConPTY prefixes the first line with terminal escape sequences.
+        .filter_map(|l| l.trim_end_matches('\r').split_once("ARG:").map(|(_, a)| a))
         .collect();
     let claude_id = args[1];
     assert_eq!(args[0], "--session-id");
@@ -145,7 +146,7 @@ fn claude_is_launched_with_the_spec_arguments_and_environment() {
     assert!(args[11].starts_with(&*f.data_dir.path().to_string_lossy()));
     // The prompt has a newline: the fake prints it over two ARG lines.
     assert!(out.contains("ARG:Export CSV"));
-    let cwd = std::fs::canonicalize(f.work_dir.path()).expect("canon");
+    let cwd = crate::db::test_support::reported_cwd(f.work_dir.path());
     assert!(
         out.contains(&format!("CWD:{}", cwd.to_string_lossy())),
         "{out}"

@@ -521,7 +521,7 @@ fn a_finished_conversation_is_resumed_in_a_new_tab() {
     );
     let out = rig.output_until(&resumed.id, "READY");
     assert_eq!(resumed.cwd, original_cwd);
-    let canon = std::fs::canonicalize(&original_cwd).expect("canon");
+    let canon = crate::db::test_support::reported_cwd(std::path::Path::new(&original_cwd));
     assert!(
         out.contains(&format!("CWD:{}", canon.to_string_lossy())),
         "{out}"
@@ -788,6 +788,8 @@ fn a_codex_session_without_message_cannot_be_resumed() {
     let first = rig.open_default().expect("open codex");
     rig.output_until(&first.id, "READY");
     rig.type_text(&first.id, "/exit\r");
+    // The hook is handled before the exit, as in a real session.
+    rig.wait_hooks("SessionEnd", 1);
     rig.wait_exit(1);
     let session_id = first.agent_session_id.clone().expect("session");
     assert!(matches!(rig.resume(&session_id), Err(AppError::Invalid(_))));

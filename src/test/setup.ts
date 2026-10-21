@@ -1,11 +1,14 @@
 import "./pin-language";
 import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
 import {
   PANEL_FOLDS_KEY,
   usePanelFolds,
 } from "../features/task-panel/PanelFold";
+
+// Shared CI runners are slow: `waitFor` and `findBy` wait longer than their 1 s default.
+if (process.env.CI) configure({ asyncUtilTimeout: 5000 });
 
 afterEach(() => {
   cleanup();

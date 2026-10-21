@@ -1080,6 +1080,8 @@ mod tests {
         }
     }
 
+    // Unix only: the errno values (`ENOSPC`, `EDQUOT`) are Unix's; the server runs on Linux.
+    #[cfg(unix)]
     #[test]
     fn a_full_disk_is_told_apart_from_other_write_errors() {
         for errno in [libc::ENOSPC, libc::EDQUOT] {

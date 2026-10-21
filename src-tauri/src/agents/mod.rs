@@ -147,6 +147,9 @@ impl std::fmt::Display for LaunchError {
 pub enum BatchKind {
     /// An npm or pnpm shim: its script runs with this node.
     Shim { node: PathBuf, script: PathBuf },
+    /// A shim whose target is a native program (recent `@anthropic-ai/claude-code`: `bin\claude.exe`):
+    /// it runs directly, never through node.
+    Native { exe: PathBuf },
     /// An npm or pnpm shim, but no `node.exe` beside it nor on `PATH`.
     ShimWithoutNode,
     /// Any other batch file: runs through cmd.exe with [`crate::env::batch_safe_args`].
@@ -162,6 +165,12 @@ pub fn classify_batch(shim: &Path, env: &BTreeMap<String, String>) -> BatchKind 
     let Some(script) = script else {
         return BatchKind::Other;
     };
+    let is_native = script
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("exe") || e.eq_ignore_ascii_case("com"));
+    if is_native {
+        return BatchKind::Native { exe: script };
+    }
     let beside = shim
         .parent()
         .map(|d| d.join("node.exe"))
@@ -217,6 +226,7 @@ pub fn launch_command_on(
             launched.extend(args.iter().cloned());
             Ok((node.to_string_lossy().into_owned(), launched))
         }
+        BatchKind::Native { exe } => Ok((exe.to_string_lossy().into_owned(), args.to_vec())),
         BatchKind::ShimWithoutNode => Err(LaunchError::NodeMissing),
         BatchKind::Other => Ok((
             program.to_string(),
@@ -410,6 +420,53 @@ title %COMSPEC% & \"%_prog%\"  \"%dp0%\\node_modules\\@openai\\codex\\bin\\codex
 \"%~dp0\\node.exe\"  \"%~dp0\\..\\node_modules\\@openai\\codex\\bin\\codex.js\" %*\r\n\
 ) ELSE (\r\n  @SET PATHEXT=%PATHEXT:;.JS;=;%\r\n  \
 node  \"%~dp0\\..\\node_modules\\@openai\\codex\\bin\\codex.js\" %*\r\n)\r\n";
+
+    /// What recent `@anthropic-ai/claude-code` installs on Windows: the shim targets a native exe.
+    const NPM_NATIVE_SHIM: &str =
+        "@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nEXIT /b\r\n\
+:start\r\nSETLOCAL\r\nCALL :find_dp0\r\n\r\nendLocal & goto #_undefined_# 2>NUL || \
+title %COMSPEC% & \"%dp0%\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe\"   %*\r\n";
+    const PNPM_NATIVE_SHIM: &str = "@SETLOCAL\r\n\"%~dp0\\..\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe\"   %*\r\n";
+
+    #[test]
+    fn a_shim_targeting_a_native_exe_runs_it_without_node() {
+        for (shim_text, up) in [(NPM_NATIVE_SHIM, false), (PNPM_NATIVE_SHIM, true)] {
+            let dir = tempfile::tempdir().expect("tempdir");
+            let home = dir.path().join("Jane Doe");
+            let bin = if up { home.join("bin") } else { home.clone() };
+            std::fs::create_dir_all(&bin).expect("mkdir");
+            let shim = bin.join("claude.cmd");
+            std::fs::write(&shim, shim_text).expect("write");
+            let exe = [
+                "node_modules",
+                "@anthropic-ai",
+                "claude-code",
+                "bin",
+                "claude.exe",
+            ]
+            .iter()
+            .fold(home.clone(), |d, p| d.join(p));
+            touch(&exe);
+            // No node anywhere: still launchable.
+            let env = windows_env(&home, &dir.path().join("empty"));
+            let args = vec!["--x".to_string(), "a b".to_string()];
+            let (program, launched) =
+                launch_command_on(Os::Windows, &shim.to_string_lossy(), &args, &env)
+                    .expect("launch");
+            assert_eq!(PathBuf::from(program), exe);
+            assert_eq!(launched, args);
+            assert_eq!(
+                resolve_binary_on(
+                    Os::Windows,
+                    &claude::BINARY,
+                    None,
+                    Some(&shim.to_string_lossy()),
+                    &env
+                ),
+                Some(shim.clone())
+            );
+        }
+    }
 
     #[test]
     fn pnpm_shim_runs_its_script_with_node() {

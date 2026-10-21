@@ -229,15 +229,18 @@ fn shutdown_reaches_the_jobs_of_an_interactive_zsh() {
     let (sink, data) = collector();
     m.attach("t9", sink).expect("attach");
     m.write("t9", b"sleep 300 & echo job=$!\n").expect("write");
-    wait_until("job pid", || {
-        text(&data).contains("job=") && text(&data).matches("job=").count() >= 2
-    });
-    let job: i32 = text(&data)
-        .rsplit("job=")
-        .next()
-        .and_then(|s| s.split_whitespace().next())
-        .and_then(|s| s.parse().ok())
-        .expect("job pid");
+    // The typed command is echoed (`job=$!`) before the real `job=<pid>` line.
+    let parse_job = || -> Option<i32> {
+        text(&data).split("job=").skip(1).find_map(|s| {
+            let digits: String = s.chars().take_while(char::is_ascii_digit).collect();
+            // A digit run that ends the text may be cut short.
+            (s.len() > digits.len())
+                .then(|| digits.parse().ok())
+                .flatten()
+        })
+    };
+    wait_until("job pid", || parse_job().is_some());
+    let job: i32 = parse_job().expect("job pid");
     assert!(alive(job));
     let started = Instant::now();
     m.shutdown_all();
