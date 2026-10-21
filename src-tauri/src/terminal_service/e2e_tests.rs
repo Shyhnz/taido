@@ -38,10 +38,14 @@ const STEP_TIMEOUT: Duration = Duration::from_secs(15);
 struct Timeline {
     /// Hook events, when the server handed them to the session service.
     hooks: Vec<(Instant, String)>,
+    /// Hook events the session service has finished handling.
+    handled_hooks: Vec<String>,
     /// Batches of task states, when they were emitted.
     flushes: Vec<(Instant, Flush)>,
     /// Process exits, when the PTY manager reported them.
     exits: Vec<(Instant, TerminalInfo)>,
+    /// Process exits the session service has finished handling.
+    handled_exits: usize,
 }
 
 /// What triggers a state change.
@@ -112,6 +116,7 @@ impl Rig {
         let token = server.token.clone();
         let port = server.port;
         let (seen, routed) = (Arc::clone(&timeline), Arc::clone(&sessions));
+        // Listed when received (latencies); counted again once handled (`wait_hooks`).
         let recorder: Recorder = Arc::new(move |terminal_id, event, payload| {
             let at = Instant::now();
             seen.lock()
@@ -119,6 +124,10 @@ impl Rig {
                 .hooks
                 .push((at, event.to_string()));
             routed.on_hook(terminal_id, event, payload);
+            seen.lock()
+                .expect("timeline")
+                .handled_hooks
+                .push(event.to_string());
         });
         let tool_db = Arc::clone(&db);
         let tools: ToolRunner = Arc::new(move |terminal, name, args| {
@@ -135,6 +144,7 @@ impl Rig {
                 .exits
                 .push((at, info.clone()));
             exited.exited(info).expect("exit recorded");
+            seen.lock().expect("timeline").handled_exits += 1;
         });
         let terminals = TerminalService::new(
             PtyManager::new(DEFAULT_BUFFER_BYTES, on_exit),
@@ -223,9 +233,10 @@ impl Rig {
         self.timeline.lock().expect("timeline").flushes.len()
     }
 
+    /// Hooks of this name already handled by the session service.
     fn hook_count(&self, name: &str) -> usize {
         let t = self.timeline.lock().expect("timeline");
-        t.hooks.iter().filter(|(_, n)| n == name).count()
+        t.handled_hooks.iter().filter(|n| *n == name).count()
     }
 
     fn wait_hooks(&self, name: &str, count: usize) {
@@ -473,11 +484,7 @@ fn a_finished_conversation_is_resumed_in_a_new_tab() {
     rig.wait_hooks("Stop", 1);
     rig.type_text(&first.id, "/exit\r");
     rig.wait_hooks("SessionEnd", 1);
-    let deadline = Instant::now() + STEP_TIMEOUT;
-    while rig.timeline.lock().expect("timeline").exits.is_empty() {
-        assert!(Instant::now() < deadline, "fake claude never exited");
-        std::thread::sleep(Duration::from_millis(5));
-    }
+    rig.wait_exit(1);
     let session_id = first.agent_session_id.clone().expect("session");
     let claude_id = rig.session(&first).conversation_id;
     // The project's folder changes meanwhile: Claude keeps the conversation under the folder
@@ -685,7 +692,7 @@ impl Rig {
 
     fn wait_exit(&self, count: usize) {
         let deadline = Instant::now() + STEP_TIMEOUT;
-        while self.timeline.lock().expect("timeline").exits.len() < count {
+        while self.timeline.lock().expect("timeline").handled_exits < count {
             assert!(Instant::now() < deadline, "no exit #{count}");
             std::thread::sleep(Duration::from_millis(5));
         }
@@ -788,11 +795,27 @@ fn a_codex_session_without_message_cannot_be_resumed() {
     let first = rig.open_default().expect("open codex");
     rig.output_until(&first.id, "READY");
     rig.type_text(&first.id, "/exit\r");
-    // The hook is handled before the exit, as in a real session.
+    // SessionEnd may reach Taido after the exit (a slow relay on Windows): both are awaited.
     rig.wait_hooks("SessionEnd", 1);
     rig.wait_exit(1);
     let session_id = first.agent_session_id.clone().expect("session");
     assert!(matches!(rig.resume(&session_id), Err(AppError::Invalid(_))));
+    assert_eq!(rig.session(&first).state, SessionState::Paused);
+}
+
+/// On Windows the hook relay (PowerShell) can take longer than Codex's own exit: a clean
+/// exit (code 0) is Paused even when its `SessionEnd` has not reached Taido.
+#[test]
+fn a_codex_exit_with_code_0_pauses_even_before_its_session_end() {
+    let rig = Rig::new();
+    rig.set_default_agent(Agent::Codex);
+    let first = rig.open_default().expect("open codex");
+    rig.output_until(&first.id, "READY");
+    rig.type_text(&first.id, "/exit-nohook\r");
+    rig.wait_exit(1);
+    let exit_code = rig.timeline.lock().expect("timeline").exits[0].1.exit_code;
+    assert_eq!(exit_code, Some(0));
+    assert_eq!(rig.hook_count("SessionEnd"), 0);
     assert_eq!(rig.session(&first).state, SessionState::Paused);
 }
 

@@ -169,13 +169,14 @@ impl SessionService {
     }
 
     /// A terminal's process exited: the terminal is closed in the database and its session
-    /// goes Paused (`SessionEnd` received, or closed by the user) or Crashed.
+    /// goes Paused (`SessionEnd` received, exit code 0, or closed by the user) or Crashed.
     /// Returns whether the user had closed it.
     pub fn exited(&self, info: &TerminalInfo) -> AppResult<bool> {
         let conn = self.inner.lock()?;
         let by_user = term_rows::mark_exited(&conn, &info.id, info.exit_code)?;
         let event = Event::ProcessExited {
             closed_by_user: by_user,
+            exit_code: info.exit_code,
         };
         self.inner
             .apply(&conn, &event, |c| agent_sessions::by_terminal(c, &info.id))?;

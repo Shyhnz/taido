@@ -132,9 +132,11 @@ pub enum Event {
     },
     /// « Interrompre », or Escape typed in the terminal.
     Interrupt,
-    /// The process exited; `closed_by_user` when the user closed the terminal (or quit).
+    /// The process exited; `closed_by_user` when the user closed the terminal (or quit);
+    /// `exit_code` is `None` when it was killed by a signal.
     ProcessExited {
         closed_by_user: bool,
+        exit_code: Option<i32>,
     },
     /// The app quits (⌘Q).
     AppQuit,
@@ -322,9 +324,19 @@ pub fn transition(
             release(&mut next, &mut effects);
             (Idle, None)
         }),
-        Event::ProcessExited { closed_by_user } => {
+        Event::ProcessExited {
+            closed_by_user,
+            exit_code,
+        } => {
             release(&mut next, &mut effects);
-            Some(if current.ended_cleanly || *closed_by_user {
+            // Exit code 0 is a clean exit even when `SessionEnd` has not arrived yet: the hook
+            // relay may still be on its way (a slow PowerShell on Windows, a hook timeout).
+            // Recorded as such, for the history too.
+            if *exit_code == Some(0) {
+                next.ended_cleanly = true;
+            }
+            let clean = next.ended_cleanly || *closed_by_user;
+            Some(if clean {
                 (Paused, None)
             } else {
                 (Crashed, None)
