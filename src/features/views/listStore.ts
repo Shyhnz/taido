@@ -18,6 +18,8 @@ interface ListState {
   sectionDraftFor: string | null;
   /** Row to focus as soon as it is rendered (after a completion, a move, a refetch). */
   pendingFocusId: string | null;
+  /** « Prochainement » day to scroll to as soon as its group is rendered (after a week change). */
+  pendingScrollDay: string | null;
 
   openEditor: (key: string | null) => void;
   closeSectionDraft: () => void;
@@ -28,11 +30,25 @@ export const useList = create<ListState>((set) => ({
   editorGroup: null,
   sectionDraftFor: null,
   pendingFocusId: null,
+  pendingScrollDay: null,
 
   openEditor: (editorGroup) => set({ editorGroup, sectionDraftFor: null }),
   closeSectionDraft: () => set({ sectionDraftFor: null }),
   focusRow: (pendingFocusId) => set({ pendingFocusId }),
 }));
+
+// A day waiting to be scrolled to belongs to the week and the list it was asked in: leaving
+// « Prochainement », switching to the calendar or moving to another week drops it, so a later
+// visit never jumps. A jump changes the week first, then asks for its day (`scrollToDay`).
+useUi.subscribe((ui, prev) => {
+  if (useList.getState().pendingScrollDay === null) return;
+  const leftUpcoming = ui.view !== prev.view && ui.view.kind !== "upcoming";
+  const leftList =
+    ui.upcomingMode !== prev.upcomingMode && ui.upcomingMode !== "list";
+  if (leftUpcoming || leftList || ui.upcomingWeek !== prev.upcomingWeek) {
+    useList.setState({ pendingScrollDay: null });
+  }
+});
 
 /** Identifies a group's editor across views: `today::today_rest`, `subject:<id>:no_section`. */
 export function editorKey(
@@ -93,5 +109,6 @@ export function resetList(): void {
     editorGroup: null,
     sectionDraftFor: null,
     pendingFocusId: null,
+    pendingScrollDay: null,
   });
 }

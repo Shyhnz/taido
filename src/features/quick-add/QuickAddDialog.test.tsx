@@ -329,10 +329,7 @@ describe("quick add dialog", () => {
     expect(screen.queryByRole("dialog", { name: "Nouvelle tâche" })).toBeNull();
   });
 
-  // Flaky on loaded CI runners (the second dialog sometimes misses the typed token): retried.
-  it(">shell opens a shell; removing the agent chip only adds", {
-    retry: 2,
-  }, async () => {
+  it(">shell opens a shell; removing the agent chip only adds", async () => {
     await project("Globex", [], FOLDER);
     const spy = vi.spyOn(commands, "openTerminal");
     const { user, dialog, title } = await openQuickAdd();
@@ -342,6 +339,13 @@ describe("quick add dialog", () => {
     await waitFor(() => expect(spy).toHaveBeenCalled());
     expect(spy.mock.calls[0][0]).toMatchObject({ kind: "shell" });
     expect(dialog).not.toBeInTheDocument();
+    // The shell starts in the panel and takes the focus once shown. Waited for: arriving late,
+    // that focus would leave the next dialog mid-typing and swallow the rest of the text.
+    await waitFor(() =>
+      expect(
+        document.activeElement?.closest("[data-terminal-host]"),
+      ).not.toBeNull(),
+    );
 
     spy.mockClear();
     act(() => useUi.getState().openTask(null));
