@@ -67,11 +67,14 @@ const SYSTEM_CURL: &str = r"C:\Windows\System32\curl.exe";
 #[test]
 fn macos_hooks_keep_their_exact_text() {
     // A changed hook text makes Codex ask the user to trust it again.
-    assert_eq!(
-        hook_override("Stop", None),
-        r#"hooks.Stop=[{ matcher = "*", hooks = [{ type = "command", command = "curl -s -m 2 -o /dev/null -X POST -H 'Content-Type: application/json' -H \"X-App-Token: $TAIDO_HOOK_TOKEN\" -H \"X-Terminal-Id: $TAIDO_TERMINAL_ID\" --data-binary @- \"$TAIDO_HOOK_URL\" || true", timeout = 3 }] }]"#
-    );
-    assert!(!handler("SessionEnd", None).contains_key("command_windows"));
+    for event in EVENTS {
+        assert_eq!(
+            hook_override(event, None),
+            format!(
+                r#"hooks.{event}=[{{ matcher = "*", hooks = [{{ type = "command", command = "curl -s -m 2 -o /dev/null -X POST -H 'Content-Type: application/json' -H \"X-App-Token: $TAIDO_HOOK_TOKEN\" -H \"X-Terminal-Id: $TAIDO_TERMINAL_ID\" --data-binary @- \"$TAIDO_HOOK_URL\" || true", timeout = 3 }}] }}]"#
+            )
+        );
+    }
 }
 
 #[test]
@@ -176,6 +179,59 @@ fn only_a_plain_curl_path_is_written_unquoted() {
     ] {
         assert!(!plain_path(path), "{path}");
     }
+}
+
+#[test]
+fn the_curl_relay_needs_a_plain_path_and_a_recent_curl() {
+    let curl = || Some(SYSTEM_CURL.to_string());
+    let recent = |_: &str| Some("curl 8.21.0 (Windows) libcurl/8.21.0".to_string());
+    assert_eq!(
+        pick_relay(curl(), recent),
+        WindowsRelay::Curl(SYSTEM_CURL.into())
+    );
+    let old = |_: &str| Some("curl 7.55.1 (Windows)".to_string());
+    assert_eq!(pick_relay(curl(), old), WindowsRelay::PowerShell);
+    // A probe that failed or ran out of time.
+    assert_eq!(pick_relay(curl(), |_| None), WindowsRelay::PowerShell);
+    let never = |_: &str| -> Option<String> { panic!("no probe without a usable path") };
+    assert_eq!(pick_relay(None, never), WindowsRelay::PowerShell);
+    let spaced = Some(r"C:\Program Files\curl.exe".to_string());
+    assert_eq!(pick_relay(spaced, never), WindowsRelay::PowerShell);
+}
+
+/// A program that prints `text` and exits, or sleeps 30 s first.
+fn slow_or_fast(text: &str, slow: bool) -> std::process::Command {
+    let mut command;
+    if cfg!(windows) {
+        command = std::process::Command::new("cmd.exe");
+        let wait = if slow {
+            "ping -n 31 127.0.0.1 >NUL & "
+        } else {
+            ""
+        };
+        command.args(["/C", &format!("{wait}echo {text}")]);
+    } else {
+        command = std::process::Command::new("/bin/sh");
+        let wait = if slow { "sleep 30; " } else { "" };
+        command.args(["-c", &format!("{wait}echo {text}")]);
+    }
+    command
+}
+
+#[test]
+fn a_probe_that_hangs_is_killed_after_its_limit() {
+    let limit = std::time::Duration::from_millis(300);
+    let fast = output_within(slow_or_fast("curl", false), CURL_PROBE_LIMIT * 5);
+    assert_eq!(fast.as_deref().map(str::trim), Some("curl"));
+    let started = std::time::Instant::now();
+    assert_eq!(output_within(slow_or_fast("curl", true), limit), None);
+    assert!(
+        started.elapsed() < std::time::Duration::from_secs(10),
+        "{:?}",
+        started.elapsed()
+    );
+    let missing = std::process::Command::new("no-such-program-for-taido");
+    assert_eq!(output_within(missing, limit), None);
 }
 
 /// The relay this Windows uses, run the way Codex runs `command_windows` (codex-rs

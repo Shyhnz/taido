@@ -122,39 +122,97 @@ pub(crate) fn plain_path(path: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || "\\:._-".contains(c))
 }
 
+/// How long `curl --version` may take (an antivirus can hold a program it scans) before the
+/// PowerShell relay is used instead.
+#[cfg(any(windows, test))]
+const CURL_PROBE_LIMIT: std::time::Duration = std::time::Duration::from_secs(2);
+
+/// Runs `command` and returns its output if it exits successfully within `limit`; otherwise
+/// kills it and returns `None`. The output must be small (it waits in the pipe until the end).
+#[cfg(any(windows, test))]
+pub(crate) fn output_within(
+    mut command: std::process::Command,
+    limit: std::time::Duration,
+) -> Option<String> {
+    use std::io::Read as _;
+    let mut child = command
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .ok()?;
+    let deadline = std::time::Instant::now() + limit;
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let mut out = String::new();
+                child.stdout.take()?.read_to_string(&mut out).ok()?;
+                return status.success().then_some(out);
+            }
+            Ok(None) if std::time::Instant::now() < deadline => {
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return None;
+            }
+        }
+    }
+}
+
+/// The relay for the curl at `curl` (`None`: no usable path), `probe` giving the output of
+/// its `--version` (`None`: failed or too slow).
+#[cfg(any(windows, test))]
+pub(crate) fn pick_relay(
+    curl: Option<String>,
+    probe: impl FnOnce(&str) -> Option<String>,
+) -> WindowsRelay {
+    let Some(curl) = curl.filter(|c| plain_path(c)) else {
+        return WindowsRelay::PowerShell;
+    };
+    match probe(&curl) {
+        Some(version) if curl_has_variables(&version) => WindowsRelay::Curl(curl),
+        _ => {
+            log::warn!("no curl 8.3 or later in System32: Codex hooks go through PowerShell");
+            WindowsRelay::PowerShell
+        }
+    }
+}
+
 /// This Windows' relay, looked up once: `%SystemRoot%\System32\curl.exe` when it is recent
-/// enough, else PowerShell.
+/// enough, else PowerShell. [`warm_windows_relay`] looks it up at startup, so a Codex launch
+/// does not wait for it.
 #[cfg(windows)]
 fn windows_relay() -> &'static WindowsRelay {
     static RELAY: std::sync::OnceLock<WindowsRelay> = std::sync::OnceLock::new();
     RELAY.get_or_init(|| {
-        let Some(root) = std::env::var_os("SystemRoot") else {
-            return WindowsRelay::PowerShell;
-        };
-        let curl = std::path::Path::new(&root)
-            .join("System32")
-            .join("curl.exe");
-        let curl = curl.to_string_lossy().into_owned();
-        if !plain_path(&curl) {
-            return WindowsRelay::PowerShell;
-        }
-        let output = crate::env::hide_console(&mut std::process::Command::new(&curl))
-            .arg("--version")
-            .stdin(std::process::Stdio::null())
-            .output();
-        match output {
-            Ok(o)
-                if o.status.success()
-                    && curl_has_variables(&String::from_utf8_lossy(&o.stdout)) =>
-            {
-                WindowsRelay::Curl(curl)
-            }
-            _ => {
-                log::warn!("no curl 8.3 or later in System32: Codex hooks go through PowerShell");
-                WindowsRelay::PowerShell
-            }
-        }
+        let curl = std::env::var_os("SystemRoot").map(|root| {
+            std::path::Path::new(&root)
+                .join("System32")
+                .join("curl.exe")
+                .to_string_lossy()
+                .into_owned()
+        });
+        pick_relay(curl, |curl| {
+            let mut command = std::process::Command::new(curl);
+            crate::env::hide_console(&mut command).arg("--version");
+            output_within(command, CURL_PROBE_LIMIT)
+        })
     })
+}
+
+/// Looks up the Windows relay on a background thread (app startup).
+#[cfg(windows)]
+pub fn warm_windows_relay() {
+    let spawned = std::thread::Builder::new()
+        .name("codex-relay".into())
+        .spawn(|| {
+            windows_relay();
+        });
+    if let Err(e) = spawned {
+        log::warn!("cannot look up the Codex hook relay in the background: {e}");
+    }
 }
 
 /// Codex caps the timeout of `SessionEnd` and `Interrupt` hooks at 3 s and lets the others
