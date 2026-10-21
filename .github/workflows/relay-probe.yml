@@ -21,14 +21,16 @@ jobs:
       - name: Relay through every shell
         working-directory: src-tauri
         run: cargo test --lib agents::codex -- --nocapture
-      - name: Codex e2e x10 under CPU load (PowerShell, as Codex)
+      - name: Codex e2e x25 under CPU load (PowerShell, as Codex)
         working-directory: src-tauri
         env:
           TAIDO_FAKE_CODEX_HOOK_LOG: ${{ runner.temp }}\hooks.log
+        continue-on-error: true
         run: |
           $busy = 1..4 | ForEach-Object { Start-Process node -ArgumentList '-e','for(;;){}' -PassThru -WindowStyle Hidden }
           $fail = 0
-          foreach ($i in 1..10) {
+          foreach ($i in 1..25) {
+            "round $i at $([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())"
             cargo test --lib codex 2>&1 | Select-String -Pattern 'test result|FAILED|panicked|never|no .* hook'
             if ($LASTEXITCODE -ne 0) { $fail++ }
           }
