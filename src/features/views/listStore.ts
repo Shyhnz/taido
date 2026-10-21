@@ -18,6 +18,8 @@ interface ListState {
   sectionDraftFor: string | null;
   /** Row to focus as soon as it is rendered (after a completion, a move, a refetch). */
   pendingFocusId: string | null;
+  /** « Prochainement » day to scroll to as soon as its group is rendered (after a week change). */
+  pendingScrollDay: string | null;
 
   openEditor: (key: string | null) => void;
   closeSectionDraft: () => void;
@@ -28,6 +30,7 @@ export const useList = create<ListState>((set) => ({
   editorGroup: null,
   sectionDraftFor: null,
   pendingFocusId: null,
+  pendingScrollDay: null,
 
   openEditor: (editorGroup) => set({ editorGroup, sectionDraftFor: null }),
   closeSectionDraft: () => set({ sectionDraftFor: null }),
@@ -93,5 +96,6 @@ export function resetList(): void {
     editorGroup: null,
     sectionDraftFor: null,
     pendingFocusId: null,
+    pendingScrollDay: null,
   });
 }

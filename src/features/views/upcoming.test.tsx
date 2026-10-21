@@ -6,7 +6,7 @@
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../../App";
 import { useToasts } from "../../components/Toast";
 import { todayString } from "../../lib/dates";
@@ -14,6 +14,7 @@ import { mockBackend } from "../../lib/ipc";
 import { resetUi, UPCOMING_MODE_KEY, useUi } from "../../stores/ui";
 import { useCompletion } from "../task-row/actions";
 import { resetList } from "./listStore";
+import { scrollToDay } from "./UpcomingBar";
 import {
   calendarDays,
   calendarRange,
@@ -284,6 +285,50 @@ describe("« Prochainement »", () => {
     const date = target?.dataset.date ?? "";
     expect(useUi.getState().upcomingWeek).toBe(mondayOf(date));
     expect(date > t).toBe(true);
+  });
+
+  it("scrolls to the chosen day once its week has rendered", async () => {
+    // jsdom has no scrollIntoView: record which group asks for it.
+    const scrolled: string[] = [];
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrolled.push((this as HTMLElement).dataset.group ?? "");
+    };
+    try {
+      const user = userEvent.setup();
+      useUi.getState().setView({ kind: "upcoming", subjectId: null });
+      render(<App />);
+      await user.click(
+        await within(main()).findByRole("button", {
+          name: /choisir une date$/,
+        }),
+      );
+      const picker = await screen.findByRole("dialog", {
+        name: /choisir une date$/,
+      });
+      await user.click(
+        within(picker).getByRole("button", { name: "Mois suivant" }),
+      );
+      const target = within(picker)
+        .getAllByRole("button")
+        .find((b) => b.dataset.date?.endsWith("-15") === true);
+      await user.click(target as HTMLElement);
+      const date = target?.dataset.date ?? "";
+      await waitFor(() => expect(daySection(date)).not.toBeNull());
+      expect(scrolled).toEqual([`day:${date}`]);
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+
+  it("a jump to a day not rendered yet leaves no timer running", () => {
+    // A timer outliving the screen (and the test) touched `document` after teardown.
+    vi.useFakeTimers();
+    try {
+      scrollToDay(shiftDays(today(), 60));
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("goes to the current week when the month button picks a past day", async () => {

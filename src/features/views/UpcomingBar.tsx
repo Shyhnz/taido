@@ -24,17 +24,27 @@ import {
   weekdayShort,
 } from "./upcomingModel";
 
-/** Scrolls to a day's group once it is rendered (after a week change). */
+function scrollToGroup(el: Element): void {
+  if (typeof el.scrollIntoView === "function") {
+    el.scrollIntoView({ block: "start" });
+  }
+}
+
+/**
+ * Scrolls to a day's group: now when it is rendered, else as soon as it is (after a week
+ * change, see `scrollToPendingDay`). No timer: none can outlive the screen.
+ */
 export function scrollToDay(date: string): void {
-  const run = (attempt: number) => {
-    const el = document.querySelector(`[data-group="day:${date}"]`);
-    if (el && typeof el.scrollIntoView === "function") {
-      el.scrollIntoView({ block: "start" });
-      return;
-    }
-    if (attempt < 10) setTimeout(() => run(attempt + 1), 50);
-  };
-  run(0);
+  const el = document.querySelector(`[data-group="day:${date}"]`);
+  useList.setState({ pendingScrollDay: el ? null : date });
+  if (el) scrollToGroup(el);
+}
+
+/** Called by a day group when its element is rendered: scrolls to it if a jump waits for it. */
+export function scrollToPendingDay(date: string, el: Element): void {
+  if (useList.getState().pendingScrollDay !== date) return;
+  useList.setState({ pendingScrollDay: null });
+  scrollToGroup(el);
 }
 
 /** Number of open tasks a day shows (its group in the view, if loaded). */
