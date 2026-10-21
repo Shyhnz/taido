@@ -684,6 +684,16 @@ function PanelSections({ task }: { task: TaskDetail }) {
   );
 }
 
+/** No element holds the focus (it is on the body, or on an element just removed). */
+function focusIsFree(): boolean {
+  const active = document.activeElement;
+  return !(
+    active instanceof HTMLElement &&
+    active !== document.body &&
+    active.isConnected
+  );
+}
+
 export function TaskPanel({ taskId }: { taskId: string }) {
   const openTask = useUi((s) => s.openTask);
   const focusMode = useUi((s) => s.focusMode);
@@ -698,20 +708,15 @@ export function TaskPanel({ taskId }: { taskId: string }) {
 
   // Closing the panel (×, Escape, delete…) puts the focus back on the task's row. Switching to
   // another task remounts the panel, which then focuses its own title.
+  // Leaves the focus alone when it was already moved somewhere useful: checked again on the
+  // frame, as a dialog opened meanwhile (⌘N right after Escape) holds the focus by then.
   useEffect(
     () => () => {
-      if (useUi.getState().openTaskId !== null) return;
-      const active = document.activeElement;
-      // Leave the focus alone when the user already moved it somewhere useful.
-      if (
-        active instanceof HTMLElement &&
-        active !== document.body &&
-        active.isConnected
-      ) {
-        return;
-      }
+      if (useUi.getState().openTaskId !== null || !focusIsFree()) return;
       requestAnimationFrame(() => {
-        if (useUi.getState().openTaskId === null) focusTaskRow(taskId);
+        if (useUi.getState().openTaskId === null && focusIsFree()) {
+          focusTaskRow(taskId);
+        }
       });
     },
     [taskId],

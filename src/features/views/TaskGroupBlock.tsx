@@ -34,6 +34,7 @@ import { groupId, groupPlace, groupTitle, projectGroupDrag } from "./groups";
 import { editorKey, useList } from "./listStore";
 import { sectionMenuItems } from "./sectionActions";
 import { TaskEditor } from "./TaskEditor";
+import { scrollToPendingDay } from "./UpcomingBar";
 
 /** Ghost « + Ajouter… » line: gray, never blue (audit V1). */
 export function AddTaskRow({ onClick }: { onClick: () => void }) {
@@ -260,8 +261,9 @@ export function TaskGroupBlock({
     (el: HTMLElement | null) => {
       setDropRef(el);
       setSortRef(el);
+      if (el && dayDate !== undefined) scrollToPendingDay(dayDate, el);
     },
-    [setDropRef, setSortRef],
+    [setDropRef, setSortRef, dayDate],
   );
   const dragged = sortable.active?.data.current as DragData | undefined;
   // A task held over another group's area: it lands at the end of that project.
