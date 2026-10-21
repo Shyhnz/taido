@@ -500,7 +500,7 @@ fn rows() -> Vec<Row> {
             },
             to: (Crashed, None),
             effects: vec![Effect::Notify],
-            check: none,
+            check: |s| assert!(!s.ended_cleanly),
         },
         Row {
             line: "tout | processus tué par un signal sans SessionEnd → Crashed",
@@ -514,7 +514,7 @@ fn rows() -> Vec<Row> {
             check: none,
         },
         Row {
-            line: "tout | sortie du processus en code 0, SessionEnd pas encore arrivé → Paused",
+            line: "tout | sortie du processus en code 0, SessionEnd pas encore arrivé → Paused, ended_cleanly = 1",
             from: session(Idle, None),
             event: Event::ProcessExited {
                 closed_by_user: false,
@@ -522,7 +522,7 @@ fn rows() -> Vec<Row> {
             },
             to: (Paused, None),
             effects: vec![],
-            check: none,
+            check: |s| assert!(s.ended_cleanly),
         },
         Row {
             line: "tout état vivant | sortie de l'appli → Paused",

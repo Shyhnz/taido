@@ -429,11 +429,30 @@ fn process_exit_pauses_or_crashes() {
     assert!(f.service.exited(&f.info(None)).expect("exit"));
     assert_eq!(f.state(), ("paused".into(), None));
 
-    // Exit code 0 before its SessionEnd arrived (a slow hook relay): Paused.
-    let f = fixture(slow_timers());
-    f.set_state("idle", None);
-    assert!(!f.service.exited(&f.info(Some(0))).expect("exit"));
-    assert_eq!(f.state(), ("paused".into(), None));
+    // Exit code 0 before its SessionEnd arrived (a slow hook relay): Paused, and the
+    // history does not flag it; exit code 1 still is.
+    for (code, state, crashed) in [(0, "paused", false), (1, "crashed", true)] {
+        let f = fixture(slow_timers());
+        f.set_state("idle", None);
+        {
+            let conn = f.db.lock().expect("lock");
+            crate::db::journal::add_for_session(
+                &conn,
+                &f.task_id,
+                SESSION,
+                crate::model::JournalKind::Prompt,
+                "bonjour",
+            )
+            .expect("prompt");
+        }
+        assert!(!f.service.exited(&f.info(Some(code))).expect("exit"));
+        assert_eq!(f.state(), (state.into(), None), "exit code {code}");
+        let conn = f.db.lock().expect("lock");
+        let history =
+            crate::db::history::sessions_of_task(&conn, &f.task_id, |_| false).expect("history");
+        assert_eq!(history.len(), 1, "exit code {code}");
+        assert_eq!(history[0].crashed, crashed, "exit code {code}");
+    }
 }
 
 #[test]
