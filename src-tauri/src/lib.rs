@@ -314,6 +314,9 @@ pub fn run() {
         })
         .setup(move |app| {
             builder.mount_events(app);
+            // Which curl Codex hooks use, found before the first Codex launch needs it.
+            #[cfg(windows)]
+            agents::codex::warm_windows_relay();
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
             let db_path = data_dir.join(db::v1_upgrade::DB_FILE);
