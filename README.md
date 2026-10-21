@@ -41,7 +41,7 @@ Everything stays on your computer. No account, no cloud, no telemetry.
 Get the latest build from the [Releases page](https://github.com/Shyhnz/taido/releases).
 
 - **macOS:** download `Taido_<version>_universal.dmg`, open it and drag Taido to Applications.
-- **Windows:** build coming soon (in testing).
+- **Windows 10/11 (x64):** download `Taido_<version>_x64-setup.exe` and run the installer.
 
 ### First launch on macOS
 
@@ -50,6 +50,15 @@ The app is not notarized by Apple yet, so macOS asks for confirmation the first 
 1. Open Taido from Applications. macOS says it cannot verify the app. Click **Done**.
 2. Open **System Settings > Privacy & Security**, scroll down and click **Open Anyway** next to Taido.
 3. Confirm with your password. The app opens, and it will not ask again.
+
+### First launch on Windows
+
+The installer is not signed yet, so Windows SmartScreen shows "Windows protected your PC" the first time.
+
+1. Click **More info**, then **Run anyway**.
+2. Follow the installer. Taido then opens from the Start menu like any other app.
+
+If you installed Claude Code or Codex with npm or pnpm, make sure Node.js is installed too.
 
 ## Requirements
 
@@ -81,7 +90,7 @@ Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) fi
 
 ## Known limitations
 
-- Windows support is in testing. No Windows build is published yet.
+- Windows: voice dictation and the menu bar icon are not available yet. "Open in Terminal" opens PowerShell.
 - Builds are not signed or notarized, so your system asks for confirmation on first launch.
 
 ## License
