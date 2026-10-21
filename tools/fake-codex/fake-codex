@@ -167,29 +167,14 @@ function hook(event, fields = {}) {
   const seconds =
     event === "SessionEnd" || event === "Interrupt" ? Math.min(h.timeout, 3) : h.timeout;
   return new Promise((resolve) => {
-    const started = Date.now();
-    let killed = false;
     const child = startHook(h);
-    const timer = setTimeout(() => {
-      killed = true;
-      killHook(child);
-    }, seconds * 1000);
-    const log = (code) => {
-      const file = process.env.TAIDO_FAKE_CODEX_HOOK_LOG;
-      if (file)
-        fs.appendFileSync(
-          file,
-          `${JSON.stringify({ event, ms: Date.now() - started, code, killed, at: started })}\n`,
-        );
-    };
+    const timer = setTimeout(() => killHook(child), seconds * 1000);
     child.on("error", () => {
       clearTimeout(timer);
-      log("error");
       resolve();
     });
-    child.on("exit", (code) => {
+    child.on("exit", () => {
       clearTimeout(timer);
-      log(code);
       resolve();
     });
     child.stdin.on("error", () => {});
