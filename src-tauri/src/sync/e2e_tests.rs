@@ -122,6 +122,14 @@ impl Device {
         }
     }
 
+    /// Drops the connections kept alive to a server stopped since. A restarted server is a new
+    /// process: reusing a dead keep-alive connection fails the request (`IncompleteMessage`)
+    /// whenever the client has not yet seen the close, a race the runtime decides. The app
+    /// reports that one run offline and reconnects on the next; these tests start clean.
+    pub(super) fn forget_connections(&mut self) {
+        self.client = SyncClient::new();
+    }
+
     pub(super) fn conn(&self) -> std::sync::MutexGuard<'_, Connection> {
         self.db.lock().expect("db lock")
     }
@@ -730,7 +738,7 @@ fn copy_db(from: &Path, to: &Path) {
 #[tokio::test]
 async fn a_restored_server_is_rebuilt_from_both_macs() {
     let mut server = Server::start().await;
-    let (a, b) = (Device::new(), Device::new());
+    let (mut a, mut b) = (Device::new(), Device::new());
     let p = a.project("Sauvegarde", None);
     let t = a.task("Avant", Some(&p), None);
     a.link(&server).await;
@@ -742,6 +750,8 @@ async fn a_restored_server_is_rebuilt_from_both_macs() {
     let backup = tempfile::tempdir().expect("backup");
     copy_db(&server.db_file(), backup.path());
     server.restart().await;
+    a.forget_connections();
+    b.forget_connections();
 
     // Work after the backup, on both Macs.
     a.retitle(&t, "Après (A)");
@@ -759,6 +769,8 @@ async fn a_restored_server_is_rebuilt_from_both_macs() {
     copy_db(&backup.path().join("sync.sqlite3"), server.dir.path());
     reset_epoch(server.dir.path()).expect("reset epoch");
     server.restart().await;
+    a.forget_connections();
+    b.forget_connections();
 
     let report = a.sync().await;
     assert!(report.epoch_reset, "A noticed the new epoch");
@@ -774,6 +786,34 @@ async fn a_restored_server_is_rebuilt_from_both_macs() {
     c.link(&server).await;
     c.sync().await;
     assert_eq!(c.dump(), expected);
+}
+
+/// The race behind the flaky restore test, made certain: the device's runtime does not run
+/// while the server restarts, so its pooled connection to the old process looks alive. With
+/// its connections forgotten, the first run after the restart reaches the new server.
+#[test]
+fn a_device_reaches_a_restarted_server_once_it_forgets_its_connections() {
+    let device_rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("device runtime");
+    let server_rt = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .expect("server runtime");
+    let mut server = server_rt.block_on(Server::start());
+    let mut a = Device::new();
+    a.task("Avant", None, None);
+    device_rt.block_on(a.link(&server));
+    device_rt.block_on(a.sync());
+
+    server_rt.block_on(server.stop());
+    server_rt.block_on(server.restart());
+    a.forget_connections();
+    a.task("Après", None, None);
+    device_rt.block_on(a.sync());
+    assert_eq!(a.pending(), 0);
 }
 
 #[tokio::test]
