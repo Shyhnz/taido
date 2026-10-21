@@ -4,7 +4,7 @@
  * the day, overdue tasks first with « Reporter à aujourd'hui ».
  */
 
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../../App";
@@ -315,6 +315,43 @@ describe("« Prochainement »", () => {
       const date = target?.dataset.date ?? "";
       await waitFor(() => expect(daySection(date)).not.toBeNull());
       expect(scrolled).toEqual([`day:${date}`]);
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+
+  it("forgets a day not reached when the view or the week changes", async () => {
+    const scrolled: string[] = [];
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrolled.push((this as HTMLElement).dataset.group ?? "");
+    };
+    try {
+      const t = today();
+      const nextMonday = shiftDays(mondayOf(t), 7);
+      const user = userEvent.setup();
+      useUi.getState().setView({ kind: "inbox", subjectId: null });
+      render(<App />);
+      // Asked from elsewhere, then « Prochainement » left before the day showed.
+      act(() => scrollToDay(nextMonday));
+      act(() => useUi.getState().setView({ kind: "today", subjectId: null }));
+      act(() => {
+        useUi.getState().setUpcomingWeek(nextMonday);
+        useUi.getState().setView({ kind: "upcoming", subjectId: null });
+      });
+      await waitFor(() => expect(daySection(nextMonday)).not.toBeNull());
+      // A week change that is not the jump itself drops it too.
+      const later = shiftDays(nextMonday, 28);
+      act(() => scrollToDay(later));
+      await user.click(
+        within(main()).getByRole("button", { name: "Semaine suivante" }),
+      );
+      await waitFor(() =>
+        expect(daySection(shiftDays(nextMonday, 7))).not.toBeNull(),
+      );
+      // Its week shown later: no jump. The only scroll was the button's own (its Monday).
+      act(() => useUi.getState().setUpcomingWeek(mondayOf(later)));
+      await waitFor(() => expect(daySection(later)).not.toBeNull());
+      expect(scrolled).toEqual([`day:${shiftDays(nextMonday, 7)}`]);
     } finally {
       delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
     }

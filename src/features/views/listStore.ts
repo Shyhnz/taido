@@ -37,6 +37,19 @@ export const useList = create<ListState>((set) => ({
   focusRow: (pendingFocusId) => set({ pendingFocusId }),
 }));
 
+// A day waiting to be scrolled to belongs to the week and the list it was asked in: leaving
+// « Prochainement », switching to the calendar or moving to another week drops it, so a later
+// visit never jumps. A jump changes the week first, then asks for its day (`scrollToDay`).
+useUi.subscribe((ui, prev) => {
+  if (useList.getState().pendingScrollDay === null) return;
+  const leftUpcoming = ui.view !== prev.view && ui.view.kind !== "upcoming";
+  const leftList =
+    ui.upcomingMode !== prev.upcomingMode && ui.upcomingMode !== "list";
+  if (leftUpcoming || leftList || ui.upcomingWeek !== prev.upcomingWeek) {
+    useList.setState({ pendingScrollDay: null });
+  }
+});
+
 /** Identifies a group's editor across views: `today::today_rest`, `subject:<id>:no_section`. */
 export function editorKey(
   kind: ViewKind,
