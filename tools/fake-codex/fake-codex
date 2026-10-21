@@ -112,6 +112,9 @@ function hook(event, fields = {}) {
   const h = config.hooks[event];
   if (!h) return Promise.resolve();
   const payload = JSON.stringify({ ...common(event), ...fields });
+  const startedAt = Date.now();
+  let timedOut = false;
+  const done = (how) => out(`DIAG-HOOK:${event}:${Date.now() - startedAt}ms:${how}:timedOut=${timedOut}`);
   return new Promise((resolve) => {
     // Like Codex on Windows: `command_windows` when given, through the system shell
     // (cmd.exe); `command` through sh elsewhere.
@@ -124,13 +127,18 @@ function hook(event, fields = {}) {
         : spawn("/bin/sh", ["-c", h.command], {
             stdio: ["pipe", "ignore", "ignore"],
           });
-    const timer = setTimeout(() => child.kill("SIGKILL"), h.timeout * 1000);
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, h.timeout * 1000);
     child.on("error", () => {
       clearTimeout(timer);
+      done("error");
       resolve();
     });
-    child.on("exit", () => {
+    child.on("exit", (code, signal) => {
       clearTimeout(timer);
+      done(`exit=${code}/${signal}`);
       resolve();
     });
     child.stdin.on("error", () => {});
