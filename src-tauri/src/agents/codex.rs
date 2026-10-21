@@ -2,7 +2,7 @@
 //! command-line arguments. Codex is configured only with `-c key=value` overrides (TOML
 //! values), never through `~/.codex` nor the task's folder. Pure functions.
 
-use super::{BinarySpec, Os};
+use super::BinarySpec;
 
 /// Development override pointing to `fake-codex` (like `TAIDO_CLAUDE_BIN`).
 pub const CODEX_BIN_VAR: &str = "TAIDO_CODEX_BIN";
@@ -39,10 +39,34 @@ const RELAY: &str = "curl -s -m 2 -o /dev/null -X POST -H 'Content-Type: applica
 -H \"X-App-Token: $TAIDO_HOOK_TOKEN\" -H \"X-Terminal-Id: $TAIDO_TERMINAL_ID\" \
 --data-binary @- \"$TAIDO_HOOK_URL\" || true";
 
-/// The relay on Windows, where Codex runs `command_windows` instead of `command`: the same
-/// POST through Windows PowerShell (present on every Windows 10 and 11). The payload is read
-/// as UTF-8 and sent as bytes; nothing is printed (Codex reads a hook's output).
-const RELAY_WINDOWS: &str = "$ErrorActionPreference = 'SilentlyContinue'
+/// The relay on Windows, where Codex runs `command_windows` instead of `command`, through the
+/// user's shell: PowerShell (`pwsh`, else Windows PowerShell) with `-NoProfile -Command`, or
+/// `cmd.exe /C` when there is none (codex-rs `hooks/src/engine/command_runner.rs`,
+/// `build_command`). So the command must mean the same to both shells.
+// Built only on Windows (and in the tests).
+#[cfg_attr(not(windows), allow(dead_code))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum WindowsRelay {
+    /// Windows' own `curl.exe` at this path (curl 8.3 or later, in Windows since the November
+    /// 2023 updates): starts in a few milliseconds.
+    Curl(String),
+    /// Older Windows: the same POST through Windows PowerShell, much slower to start.
+    PowerShell,
+}
+
+/// The curl relay on Windows. Nothing in it is read by cmd.exe or PowerShell: curl itself
+/// imports the variables (`--variable %NAME`, which cmd leaves alone since no `%NAME%` pair is
+/// closed) and expands them (`{{NAME}}`, quoted so PowerShell does not see a script block).
+/// `@-` is quoted too (PowerShell splatting). The payload goes from stdin to the server as is.
+const RELAY_WINDOWS_CURL: &str = "{curl} -s -m 2 -o NUL --variable %TAIDO_HOOK_URL \
+--variable %TAIDO_HOOK_TOKEN --variable %TAIDO_TERMINAL_ID -H \"Content-Type: application/json\" \
+--expand-header \"X-App-Token: {{TAIDO_HOOK_TOKEN}}\" \
+--expand-header \"X-Terminal-Id: {{TAIDO_TERMINAL_ID}}\" \
+--data-binary \"@-\" --expand-url \"{{TAIDO_HOOK_URL}}\"";
+
+/// The PowerShell relay, for a Windows without a recent curl. The payload is read as UTF-8
+/// and sent as bytes; nothing is printed (Codex reads a hook's output).
+const RELAY_WINDOWS_POWERSHELL: &str = "$ErrorActionPreference = 'SilentlyContinue'
 [Console]::InputEncoding = [Text.Encoding]::UTF8
 $body = [Text.Encoding]::UTF8.GetBytes([Console]::In.ReadToEnd())
 try {
@@ -53,30 +77,114 @@ try {
 } catch {}
 exit 0";
 
-/// `-EncodedCommand` (base64 of UTF-16LE): no character for cmd.exe or PowerShell to read,
-/// whichever shell Codex runs the command with.
-fn relay_windows() -> String {
-    use base64::Engine as _;
-    let bytes: Vec<u8> = RELAY_WINDOWS
-        .encode_utf16()
-        .flat_map(u16::to_le_bytes)
-        .collect();
-    format!(
-        "powershell.exe -NoProfile -NonInteractive -EncodedCommand {}",
-        base64::engine::general_purpose::STANDARD.encode(bytes)
-    )
+/// The `command_windows` text of `relay`.
+fn command_windows(relay: &WindowsRelay) -> String {
+    match relay {
+        WindowsRelay::Curl(curl) => RELAY_WINDOWS_CURL.replace("{curl}", curl),
+        // `-EncodedCommand` (base64 of UTF-16LE): no character for cmd.exe or PowerShell to
+        // read.
+        WindowsRelay::PowerShell => {
+            use base64::Engine as _;
+            let bytes: Vec<u8> = RELAY_WINDOWS_POWERSHELL
+                .encode_utf16()
+                .flat_map(u16::to_le_bytes)
+                .collect();
+            format!(
+                "powershell.exe -NoProfile -NonInteractive -EncodedCommand {}",
+                base64::engine::general_purpose::STANDARD.encode(bytes)
+            )
+        }
+    }
 }
 
-/// The `-c` override of one hook event. Windows adds `command_windows`; macOS keeps the
-/// text it always had (Codex asks to trust a hook again when its text changes).
-pub(crate) fn hook_override(event: &str, os: Os) -> String {
-    let windows = match os {
-        Os::Windows => format!(", command_windows = {}", toml_string(&relay_windows())),
-        Os::Unix => String::new(),
+/// Whether the first line of `curl --version` names curl 8.3 or later (`--variable`).
+#[cfg(any(windows, test))]
+pub(crate) fn curl_has_variables(version_output: &str) -> bool {
+    let mut numbers = version_output
+        .split_whitespace()
+        .nth(1)
+        .unwrap_or("")
+        .split('.')
+        .map(|n| n.parse::<u32>().ok());
+    let (Some(Some(major)), Some(Some(minor))) = (numbers.next(), numbers.next()) else {
+        return false;
+    };
+    (major, minor) >= (8, 3)
+}
+
+/// A curl path is written unquoted (a quoted path at the start of a command is a mere string
+/// to PowerShell): only characters neither shell reads.
+#[cfg(any(windows, test))]
+pub(crate) fn plain_path(path: &str) -> bool {
+    !path.is_empty()
+        && path
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || "\\:._-".contains(c))
+}
+
+/// This Windows' relay, looked up once: `%SystemRoot%\System32\curl.exe` when it is recent
+/// enough, else PowerShell.
+#[cfg(windows)]
+fn windows_relay() -> &'static WindowsRelay {
+    static RELAY: std::sync::OnceLock<WindowsRelay> = std::sync::OnceLock::new();
+    RELAY.get_or_init(|| {
+        let Some(root) = std::env::var_os("SystemRoot") else {
+            return WindowsRelay::PowerShell;
+        };
+        let curl = std::path::Path::new(&root)
+            .join("System32")
+            .join("curl.exe");
+        let curl = curl.to_string_lossy().into_owned();
+        if !plain_path(&curl) {
+            return WindowsRelay::PowerShell;
+        }
+        let output = crate::env::hide_console(&mut std::process::Command::new(&curl))
+            .arg("--version")
+            .stdin(std::process::Stdio::null())
+            .output();
+        match output {
+            Ok(o)
+                if o.status.success()
+                    && curl_has_variables(&String::from_utf8_lossy(&o.stdout)) =>
+            {
+                WindowsRelay::Curl(curl)
+            }
+            _ => {
+                log::warn!("no curl 8.3 or later in System32: Codex hooks go through PowerShell");
+                WindowsRelay::PowerShell
+            }
+        }
+    })
+}
+
+/// Codex caps the timeout of `SessionEnd` and `Interrupt` hooks at 3 s and lets the others
+/// run longer (codex-rs `hooks/src/engine/discovery.rs`, `normalize_command_hook`).
+const CAPPED_EVENTS: &[&str] = &["SessionEnd", "Interrupt"];
+/// Timeout of the other hooks on Windows, where PowerShell alone can take seconds to start on
+/// a busy computer: a late hook still arrives instead of being killed.
+const WINDOWS_TIMEOUT: u32 = 10;
+
+/// The `-c` override of one hook event. Windows (`windows` given) adds `command_windows` and
+/// a longer timeout where Codex allows one; macOS keeps the text it always had (Codex asks to
+/// trust a hook again when its text changes).
+pub(crate) fn hook_override(event: &str, windows: Option<&WindowsRelay>) -> String {
+    let (windows, timeout) = match windows {
+        Some(relay) => (
+            format!(
+                ", command_windows = {}",
+                toml_string(&command_windows(relay))
+            ),
+            if CAPPED_EVENTS.contains(&event) {
+                3
+            } else {
+                WINDOWS_TIMEOUT
+            },
+        ),
+        None => (String::new(), 3),
     };
     format!(
         "hooks.{event}=[{{ matcher = \"*\", hooks = [{{ type = \"command\", command = {}{windows}, \
-         timeout = 3 }}] }}]",
+         timeout = {timeout} }}] }}]",
         toml_string(RELAY)
     )
 }
@@ -128,8 +236,12 @@ fn options(l: &Launch<'_>) -> Vec<String> {
     if let Some(context) = l.context {
         overrides.push(format!("developer_instructions={}", toml_string(context)));
     }
+    #[cfg(windows)]
+    let windows = Some(windows_relay());
+    #[cfg(not(windows))]
+    let windows = None;
     for event in EVENTS {
-        overrides.push(hook_override(event, Os::CURRENT));
+        overrides.push(hook_override(event, windows));
     }
     // `-c` makes Codex run without its shared background server: say so, or it warns.
     let mut args = vec!["--no-daemon".to_string()];
