@@ -71,10 +71,19 @@ jobs:
         continue-on-error: true
         run: |
           cargo test --lib --no-run
-          for i in $(seq 1 5); do
-            echo "=== full round $i"
-            cargo test --lib -- --nocapture 2>&1 | grep -aE "DIAG|FAILED|panicked|test result" | sed -E 's/(DIAG output ).*(DIAG-HOOK[^\\]*).*/\1\2/' || true
+          for n in 1 2 3 4 5 6 7 8; do
+            powershell -NoProfile -Command 'while ($true) { $x = 1 }' &
           done
+          sleep 2
+          for i in $(seq 1 25); do
+            echo "=== loaded round $i"
+            cargo test --lib a_codex_session_without_message_cannot_be_resumed -- --nocapture 2>&1 | grep -aE "DIAG|panicked|test result" || true
+          done
+          for i in $(seq 1 2); do
+            echo "=== full round $i"
+            cargo test --lib -- --nocapture 2>&1 | grep -aE "DIAG|panicked|test result: .* [0-9]{3} passed" || true
+          done
+          taskkill //F //IM powershell.exe || true
       - name: Core tests
         working-directory: src-tauri
         run: cargo test

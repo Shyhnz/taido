@@ -114,7 +114,11 @@ function hook(event, fields = {}) {
   const payload = JSON.stringify({ ...common(event), ...fields });
   const startedAt = Date.now();
   let timedOut = false;
-  const done = (how) => out(`DIAG-HOOK:${event}:${Date.now() - startedAt}ms:${how}:timedOut=${timedOut}`);
+  const done = (how) => {
+    const line = `DIAG-HOOK:${event}:${Date.now() - startedAt}ms:${how}:timedOut=${timedOut}`;
+    out(line);
+    if (process.env.TAIDO_FAKE_DIAG) require("node:fs").appendFileSync(process.env.TAIDO_FAKE_DIAG, `${line}\n`);
+  };
   return new Promise((resolve) => {
     // Like Codex on Windows: `command_windows` when given, through the system shell
     // (cmd.exe); `command` through sh elsewhere.

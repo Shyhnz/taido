@@ -149,6 +149,14 @@ impl Rig {
         let mut env = crate::env::resolve();
         env.vars
             .insert("TAIDO_FAKE_SPEED".into(), FAKE_SPEED.into());
+        env.vars.insert(
+            "TAIDO_FAKE_DIAG".into(),
+            data_dir
+                .path()
+                .join("diag.log")
+                .to_string_lossy()
+                .into_owned(),
+        );
         assert!(terminals.env.set(env).is_ok(), "environment set once");
 
         Rig {
@@ -802,7 +810,10 @@ fn a_codex_session_without_message_cannot_be_resumed() {
         eprintln!("DIAG exit code {:?}", t.exits[0].1.exit_code);
     }
     eprintln!("DIAG state {:?}", rig.session(&first).state);
-    eprintln!("DIAG output {:?}", rig.output_until(&first.id, "READY"));
+    eprintln!(
+        "DIAG fake {:?}",
+        std::fs::read_to_string(rig._data_dir.path().join("diag.log"))
+    );
     let session_id = first.agent_session_id.clone().expect("session");
     assert!(matches!(rig.resume(&session_id), Err(AppError::Invalid(_))));
     assert_eq!(rig.session(&first).state, SessionState::Paused);
